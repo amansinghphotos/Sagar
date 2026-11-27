@@ -23,6 +23,7 @@ package struct LaunchField: View {
         TextField(text: $text, prompt: Text(verbatim: "")) { Text(prompt) }
             .textFieldStyle(.plain)
             .foregroundStyle(Role.ink)
+            .line(18)
             .background(alignment: .leading) {
                 // The field itself carries the prompt for VoiceOver, so the drawn one is not read twice.
                 if text.isEmpty { Text(prompt).foregroundStyle(Role.ink.opacity(0.3)).accessibilityHidden(true) }
