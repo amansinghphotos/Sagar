@@ -35,7 +35,7 @@ public struct CheteScene: Scene {
         started = true
         Task {
             do {
-                let copies = try await Task.detached { try Copies.onThisMac() }.value
+                let copies = try await Task.detached { try Copies.atOpen() }.value
                 shelf.clips = try await copies.all()
                 watcher = Watcher(copies: copies)
                 watcher?.kept = { shelf.add($0) }
