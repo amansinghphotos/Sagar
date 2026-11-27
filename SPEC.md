@@ -83,10 +83,10 @@ screen is pictured narrow, default and wide.
 5. **Review.** A reviewer agent that can only read files checks the diff against the spec and
    `CONSTRAINTS.md`.
 6. **Merge** with green checks, squashed, branch deleted.
-7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` makes one signed and
-   notarised build, holds that file as a draft release, and opens the release pull request. His Mac
-   is offered the build as an update (section 5). He is told what to try in three lines. The app is
-   now locked.
+7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` installs one signed and
+   notarised build on his Mac, holds the same file as a draft release, and opens the release pull
+   request. The first time he opens it, the app shows what is new (section 5). He is told what to try
+   in three lines. The app is now locked.
 8. **Ship.** He approves the release pull request, and that is all. GitHub merges it, makes that same
    file public, and on a clean Mac installs the previous release and watches it take the update. If he
    reports a fault instead, the release is withdrawn, the fault is fixed, and step 7 repeats under the
@@ -111,13 +111,12 @@ first of them, and a release will not start while its own has a box unticked.
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
 - An update is always offered and never forced or silent: the app shows what is new and the person
   chooses to install it, to be reminded later, or to skip that version.
-- A build to try reaches him the way an update reaches anyone. When he chooses Check for Updates,
-  the app's own window says what is new, and he chooses to install it. The build waits on his Mac,
-  where a small program, started with his Mac, offers it to his Mac alone. It is signed with the
-  update key, like every update. Until he approves, only he and the agents can get the build: the
-  draft release is not shown to anyone else, and the public feed is unchanged. Once he approves, his
-  copy looks for updates where everyone's does.
-- An app's first build has no earlier copy to update, so it is put in his Applications folder.
+- The first time an app's window opens on a new build, it shows Look's card for what is new, once,
+  with that release's three lines. On his Mac this is the try: it tells him the build is in place and
+  what to look for. For everyone else it follows the update. It is the same card for both, because
+  the build he tries is the file that ships. The build carries its own three lines. The app keeps,
+  on that Mac, the date stamp of the last build it showed, so a mended build under the same number
+  shows again. An app opened for the first time shows its welcome instead.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
   good code is released again, under the next number.
 - Before a release an agent confirms it opens the files the previous release wrote, and ticks that
@@ -207,10 +206,6 @@ request that changes a check runs its own new version, and is read by the review
 Launch is judged by the fastest of three launches on GitHub's Mac. That shows what the code costs,
 not how an app feels on its very first open after an install, which he judges when he tries a build.
 
-A try proves the update window and the install on his Mac, from a feed on his Mac. That the public
-feed and GitHub's download work is proved after he approves, on GitHub's Mac. Any copy of an app can
-be told to read a feed from its own Mac, and still installs nothing the update key did not sign.
-
 The guards catch honest mistakes, not deliberate ones. The agents' app may push workflow files, so a
 branch could carry a workflow that reports a pass it did not earn. The network rule reads for the
 usual calls and cannot see every way to fetch a file.
@@ -218,8 +213,7 @@ usual calls and cannot see every way to fetch a file.
 ## 11. Written When the First App Needs It
 
 Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The three lines of
-notes shown once inside an app after it updates.
+window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
