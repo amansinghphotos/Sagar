@@ -23,6 +23,7 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Rule | Number | Held by |
 |---|--:|---|
 | Changed lines, added plus deleted | 400 | `Scripts/check` size |
+| Lines a mend changes without a new reading, unless it changes the working rules or a plan | 40 | `Scripts/check` template |
 | Issues named, exactly (a release names every one it ships) | 1 | `Scripts/check` template |
 | Unticked boxes in the description | 0 | `Scripts/check` template |
 | Compiler warnings | 0 | `Scripts/check` build |
