@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | findings | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | findings < tests | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | asked | since | title | launch | findings | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | asked <owner> < state | since <owner> < state | title <title> | launch <limit> < record | findings < tests | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -189,10 +189,19 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             map(select(. != null)) | max')
     passed words "$shown"
     unjudged=""
-    # If the owner answered before, he is asked again: GitHub does not do that by itself.
-    if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
-        gh pr edit "$request" --add-reviewer "$owner" >/dev/null
-    fi
+    # If the owner answered before, he is asked again: GitHub does not do that by itself. That he is asked is read
+    # back from GitHub, never assumed, as on #216 he was not.
+    asking=0
+    while :; do
+        case $(gh pr view "$request" --json reviews,reviewRequests 2>"$said" | Scripts/check asked "$owner") in
+            yes) break ;;
+            no) asking=$((asking + 1))
+                [ "$asking" -le 3 ] || { echo "#$request is shown, but GitHub did not keep the owner asked. Ask him on its page."; exit 1; }
+                gh api -X POST "repos/$repository/pulls/$request/requested_reviewers" -f "reviewers[]=$owner" \
+                    >/dev/null 2>"$said" || unanswered ;;
+            *) unanswered ;;
+        esac
+    done
     if ! gh pr merge "$request" --auto --squash >/dev/null 2>&1; then
         # GitHub lets nobody pass the owner's review, and this merges only what has nothing left to wait for.
         state=$(gh pr view "$request" --json mergeStateStatus,reviewDecision,latestReviews)
@@ -345,6 +354,17 @@ said_since() { # said_since <owner>: reads GitHub's state of a pull request. Tru
     esac
     jq -r '.body // ""' <<<"$state" | owner_part | answers 'What Changed Since Your Review:'
 }
+asked() { # asked <owner>: reads GitHub's reviews and requested reviewers of a pull request. yes if the owner never
+    # answered it, or is asked again; no if he answered and is not asked; unanswered if GitHub's answer is not there.
+    local answer
+    answer=$(jq -r --arg owner "$1" '
+        if (.reviews | type) != "array" or (.reviewRequests | type) != "array" then "unanswered"
+        elif (any(.reviews[]; .author.login == $owner) | not) then "yes"
+        elif any(.reviewRequests[]; .login? == $owner) then "yes"
+        else "no" end' 2>/dev/null)
+    printf '%s\n' "${answer:-unanswered}"
+}
+[ "${1:-}" != asked ] || { asked "${2:?Scripts/check asked <owner> < state}"; exit; }
 [ "${1:-}" != since ] || { said_since "${2:?Scripts/check since <owner> < state}" && echo yes || echo no; exit; }
 title_case() { # Apple's title style: the first word, and every word of four letters or more, has a capital
     printf '%s\n' "$1" | tr -- '-' ' ' | awk '{
