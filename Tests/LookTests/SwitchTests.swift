@@ -35,4 +35,5 @@ func theSwitchesLookAsSearchsDo(dark: Bool) throws {
     let search = try #require(approvedPicture(at: file))
     let ours = try picture(of: Showcase(), width: 340, height: 220, dark: dark)
     #expect(differingPixels(ours, search) <= tolerance)
+    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
 }

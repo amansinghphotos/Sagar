@@ -66,9 +66,10 @@ pictures. The download page is built with `design-taste-frontend`.
    names the commit it read, folded inside `<details>`. Mend what it says must be mended, in one
    commit; a nit is yours to take or leave. Only a change to the change itself needs a new reading.
    Mend the description's words on GitHub, which costs no commit.
-6. **Ready, then merge,** always and only by `Scripts/check ready <number>`. It waits for both
-   checks, the code's and the words', and only if they passed does it show the pull request to
-   whoever must answer, and set it to merge. Never push after he has approved: it undoes his approval.
+6. **Ready, then merge,** always and only by `Scripts/check ready <number>`. It judges the words
+   here first, by GitHub's own rules, and refuses with the lines to mend. Only once the code's check
+   has passed does it show the pull request to whoever must answer; GitHub then judges the words, which
+   it never does on a draft, and the pull request is set to merge or becomes a draft again. Never push after he has approved: it undoes his approval.
 7. **Try.** When the milestone is complete: open a Release issue, run `Scripts/release`, and tell the
    owner what to try in three lines. The app is locked until he answers.
 8. **Ship.** His approval merges the release pull request, and GitHub publishes it and proves the
@@ -100,7 +101,8 @@ Never, whatever the reason:
 - Write a rule as prose. A rule is a check in `Scripts/check`, or it is not written.
 - Weaken a check, skip a test, or silence a warning to get to green.
 - Mark anything approved. Only his GitHub approval approves.
-- Run a tour (`Tour.swift`) on his Mac: it takes the screen. Tours run on GitHub's runner.
+- Run a tour (`Tour.swift`) on his Mac itself: it takes the screen. Tours run on GitHub's runner, or
+  hidden in the virtual Mac by `Scripts/tour <App>`.
 
 ## How the Code Is Laid Out
 

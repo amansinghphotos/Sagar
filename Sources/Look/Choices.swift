@@ -86,6 +86,7 @@ package struct Swatches: View {
                 HStack(spacing: Space.near.rawValue) {
                     Text(well)
                         .foregroundStyle(Role.ink)
+                        .accessibilityHidden(true)
                     ColorPicker(well, selection: $selection, supportsOpacity: false)
                         .labelsHidden()
                 }
@@ -119,7 +120,7 @@ package struct Writing: View {
             .autocorrectionDisabled()
             .padding(Space.near.rawValue)
             .frame(height: height)
-            .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
+            .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

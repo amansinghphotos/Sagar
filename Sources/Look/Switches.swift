@@ -18,7 +18,7 @@ package struct Switch: View {
                 Circle()
                     .fill(Role.ground)
                     .frame(width: 14, height: 14)
-                    .shadow(color: .black.opacity(0.2), radius: 1.5, y: 1)
+                    .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
                     .padding(2)
             }
             .contentShape(Capsule())
@@ -72,14 +72,14 @@ package struct Segmented<Option: Hashable>: View {
                     .fontWeight(chosen ? .medium : .regular)
                     .foregroundStyle(chosen ? Role.ink : Role.muted)
                     .lineLimit(1)
-                    .padding(.horizontal, Space.gap.rawValue)
+                    .padding(.horizontal, wide ? Space.tight.rawValue : Space.gap.rawValue)
                     .frame(maxWidth: wide ? .infinity : nil)
                     .frame(height: 24)
                     .background {
                         if chosen {
                             RoundedRectangle(cornerRadius: Radius.control.rawValue, style: .continuous)
                                 .fill(Role.ground)
-                                .shadow(color: .black.opacity(0.1), radius: 3, y: 1)
+                                .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
                                 .matchedGeometryEffect(id: "tile", in: tile)
                         }
                     }

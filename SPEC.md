@@ -125,6 +125,23 @@ first of them, and a release will not start while its own has a box unticked.
   in the Release issue. After his approval GitHub's Mac installs the previous release and watches it
   take the update.
 
+### When an App Stops Unexpectedly
+
+macOS records why on that Mac, and tells no one else. Send Report, in Shell, lets the person pass it on.
+
+- The next time the app opens, a card says it stopped, and offers a short report. Not Now
+  closes it, and that stop's report is never offered again.
+- The report is plain text, shown in full on the card before it goes. It holds only the app, its
+  version and build date, the Mac's model, the macOS version, and where in the app's own code it
+  stopped, as Apple's MetricKit hands it over.
+- It never holds a clip, a password, a name, an address, a file path or any words from the app. A
+  test builds a report from a recorded real stop and fails on anything outside that list.
+- Send hands the text to the Mac's own Share menu, where the person chooses Messages or Mail and
+  whom to send it to. The app itself sends nothing, so it needs no account, key or network. With no
+  network, Messages or Mail sends it later.
+- Each release's symbol file turns a report's numbers into the line that stopped. It holds paths
+  from the Mac that built it, so it stays out of the repository and is never published.
+
 ### Mending a Shipped App
 
 A fault in a shipped app is mended beside the app in work, and `NOW` stays as it is. (`Scripts/check`
@@ -189,6 +206,18 @@ sentence an app shows runs past 12 words, and none uses a listed stock word, suc
 Until that check is built, the reviewer holds both. Whether words are warm and easy to read is judged
 by the reviewer on every change, and by him on each picture.
 
+Every app's first open is a welcome that a person new to computers can finish alone, and is glad to
+have seen. It greets them, says what the app is for in two lines, and names the quickest way to use
+it. Then it sets the app up, one step to a page. Any step can be skipped, and waits in Settings.
+Where a step needs System Settings, the welcome opens it and steps aside as a small card that stays
+in front. The card names the place and shows the switch to look for, and the welcome goes on by
+itself once the switch is on. Where
+the app has a keyboard shortcut, the person chooses it there: suggestions, a keyboard that lights
+the keys pressed, and a warning when macOS or the app already uses them. The welcome moves with
+Look's motion, and each app gives it one touch of its own, as Chete does with Gurmukhi. Its parts
+are made once and shared, so the next app's welcome starts at this level. The reviewer holds this
+on every change, and he holds it on each picture.
+
 ## 9. Boundaries
 
 - **Always:** a test first; `Scripts/check` green before a commit; one issue per pull request.
@@ -207,6 +236,20 @@ request that changes a check runs its own new version, and is read by the review
 
 Launch is judged by the fastest of three launches on GitHub's Mac. That shows what the code costs,
 not how an app feels on its very first open after an install, which he judges when he tries a build.
+
+Apple documents no way for an app to turn on a permission's switch, or to see another app's
+shortcuts. So a welcome shows the switch but cannot press it, and warns only of macOS's shortcuts
+and the app's own. Apple documents no address that opens System Settings at one place, and none that
+tells an app a switch was turned on. So the card names the place, and the welcome keeps checking.
+No test turns the switch either: those steps he tries with a build. Motion cannot be judged from a
+still. He sees each movement as a row of pictures through time, and judges its feel with a build.
+A welcome he gives no reference pictures for follows Apple's guidelines for a first open, and uses
+only Look's parts and motion, which stay held to their own measure. His yes is then the standard:
+on its pictures, and on its feel with a build. References he sends later are used from then on.
+
+Everything in the repository can be read by anyone. That keeps GitHub's Mac and its rules free.
+Before a spec needs something in the code that cannot be public, privacy is decided again
+(decision 3).
 
 The guards catch honest mistakes, not deliberate ones. The agents' app may push workflow files, so a
 branch could carry a workflow that reports a pass it did not earn. The network rule reads for the
