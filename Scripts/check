@@ -241,11 +241,14 @@ words_only() { # true when the branch changes only words: documents, specs, feed
     [ -n "$base" ] && [ -n "$(changed)" ] && ! changed | grep -qx 'CONSTRAINTS.md' &&
         ! changed | grep -qvE '^(docs|spec|Checklists|Decisions)/|^[^/]+\.md$|^\.github/(ISSUE_TEMPLATE/|rulesets/|CODEOWNERS$|pull_request_template\.md$)'
 }
-if [ "${1:-}" = words ]; then # Scripts/check words <file>…: says whether a change to these files is words only
+if [ "${1:-}" = words ]; then # Scripts/check words [<file>…]: says whether a change to these files, or with none
+    # named this branch's own change, is words only. GitHub asks it first, to choose the machine the check runs on.
     shift
-    base=given
-    files=("$@")
-    changed() { printf '%s\n' "${files[@]}"; }
+    if [ $# -gt 0 ]; then
+        base=given
+        files=("$@")
+        changed() { printf '%s\n' "${files[@]}"; }
+    fi
     words_only && echo yes || echo no
     exit
 fi
@@ -585,6 +588,7 @@ secrets() {
 }
 
 format() {
+    ! words_only || return $nothing # no Swift file differs from main, where it passed
     local folders=()
     for folder in Apps Sources Tests; do [ -d "$folder" ] && folders+=("$folder"); done
     swift format lint --strict --recursive ${folders[@]+"${folders[@]}"} Package.swift
