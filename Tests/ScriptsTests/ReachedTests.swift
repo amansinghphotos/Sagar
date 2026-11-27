@@ -36,7 +36,8 @@ func aChangeReachesTheTestsThatDependOnIt(files: [String], tests: String) throws
 /// Anything the package's own dependencies do not account for reaches every test.
 @Test(arguments: [
     ["Package.swift"], ["Package.resolved"], ["Config/Info.plist"], ["CONSTRAINTS.md"], [".swift-format"],
-    ["Sources/CheteKit/Clips.swift", "docs/New Mac.md"], ["Sources/Taps/Taps.swift"], ["NOW"],
+    ["Sources/CheteKit/Clips.swift", "docs/New Mac.md"], ["Sources/Taps/Taps.swift"],
+    ["Tests/UpdateTour/UpdateTour.swift"], ["NOW"],
 ])
 func anythingElseReachesEveryTest(files: [String]) throws {
     #expect(try reached(files) == "all\n")

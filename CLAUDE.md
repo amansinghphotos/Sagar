@@ -8,7 +8,8 @@ this folder, in `Sagar Private`.
 ## Commands
 
 ```
-Scripts/check                          every rule, and all the testing a change gets; git runs it before a commit
+Scripts/check                          every rule; git runs it before a commit, with the tests a change can reach,
+                                       and GitHub with every test
 Scripts/check ready <number>           the one way a pull request is shown to the owner and set to merge
 Scripts/build <App>                    a signed build of one app
 printf 'New: …\nBetter: …\nFixed: …\n' | Scripts/release <App> <version>

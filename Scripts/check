@@ -611,8 +611,8 @@ tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those th
     [ -n "${CI:-}" ] || reach=$(reached)
     case $reach in
         all) swift test --quiet 2>&1 ;;
-        "") echo "note: no test can reach this change here; GitHub's Mac runs them all" ;;
-        *) echo "note: $reach here; GitHub's Mac runs every test"
+        "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
+        *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test"
             swift test --quiet --filter "^($reach)\." 2>&1 ;;
     esac
 }
