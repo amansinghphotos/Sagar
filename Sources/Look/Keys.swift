@@ -155,7 +155,7 @@ package struct KeyBox: View {
 
     private var label: String {
         if let taking, let other = owner(taking) {
-            return "Used by \(other). Press again to take it."
+            return "Used by \(other) — press again"
         }
         if let note { return note }
         if listening { return "Type a shortcut" }
