@@ -13,7 +13,8 @@ this Mac unless you carry it.
 ## Must-Haves
 
 1. **It keeps what you copy.** Text, links, pictures, and files copied in Finder, newest first.
-   For a file it keeps where the file is, not a second copy. Everything is encrypted on this Mac.
+   For a file it keeps where the file is, not a second copy. Everything is encrypted on this Mac, with
+   a key that is made by itself, kept only on this Mac and never asks anything of you.
    Passwords are kept too, even when the app they come from marks them private, so that you can paste
    one again later. What you copy on your own iPhone or another of your Macs, which macOS hands over
    by itself, is kept too, unless you turn that off.
@@ -25,8 +26,9 @@ this Mac unless you carry it.
    *Asks for:* Accessibility, once, in System Settings, to paste for you.
 5. **It keeps things as long as you choose:** a week, a month, a year or forever, a year at first.
    You can delete one thing, or everything.
-6. **Your history goes with you in one file.** Export saves everything, still encrypted, in a file you
-   choose. Bring Back reads such a file on any Mac and replaces what is there.
+6. **Your history goes with you in one file.** Export saves everything in a plain file you choose,
+   which opens on any Mac with no key or password, so keep it somewhere safe: it holds every clip,
+   passwords included. Bring Back reads such a file on any Mac and replaces what is there.
 7. **The first open on a new Mac** says what Chete does in two lines, asks once to paste for you, offers
    to bring back an exported file, and offers to open at login. It never asks for a Claude key.
    *Asks for:* Login Items, if you choose to open it at login.
