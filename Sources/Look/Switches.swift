@@ -83,7 +83,7 @@ package struct Segmented<Option: Hashable>: View {
                                 .matchedGeometryEffect(id: "tile", in: tile)
                         }
                     }
-                    .contentShape(Rectangle())
+                    .contentShape(RoundedRectangle(cornerRadius: Radius.row.rawValue - 2, style: .continuous))
                     .onTapGesture {
                         withAnimation(motion.settle) { selection = option }
                     }
