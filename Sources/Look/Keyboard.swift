@@ -46,38 +46,36 @@ package struct Keyboard: View {
 
     private var light: Light { warning != nil ? .warning : held != nil ? .held : .rest }
 
-    /// The keys a shortcut lights: its key and its modifiers, which are drawn on the left alone.
+    /// The keys a shortcut lights: its key and its modifiers, on both sides where the keyboard has two.
     package static func lit(by shortcut: KeyCombo) -> Set<String> {
         var lit: Set<String> = []
         if !shortcut.key.isEmpty { lit.insert(shortcut.key == "+" ? "=" : shortcut.key) }
-        if shortcut.command { lit.insert("command") }
-        if shortcut.shift { lit.insert("shift") }
-        if shortcut.option { lit.insert("option") }
+        if shortcut.command { lit.formUnion(["command", "right command"]) }
+        if shortcut.shift { lit.formUnion(["shift", "right shift"]) }
+        if shortcut.option { lit.formUnion(["option", "right option"]) }
         if shortcut.control { lit.insert("control") }
         return lit
     }
 
     /// The name of every key drawn.
     package static var drawn: Set<String> {
-        Set(rows.joined().map(\.id)).subtracting(["arrows", "blank"]).union(["left", "up", "down", "right"])
+        Set(rows.joined().map(\.id)).subtracting(["arrows"]).union(["left", "up", "down", "right"])
     }
 
     /// The width of a key one unit wide, and the gap between keys.
     private static let unit: CGFloat = 26
     private static let gap: CGFloat = Space.hair.rawValue + 1
 
-    /// A Mac's keys in their rows, each named as `KeyCombo` names it, each row 14½ units wide. The modifiers are drawn
-    /// on the left alone, so a shortcut reads at a glance: the space bar takes the place of the right ones, and the
-    /// right Shift's place is left empty.
+    /// A Mac's keys in their rows, each named as `KeyCombo` names it, each row 14½ units wide.
     private static let rows: [[Cap]] = [
         [Cap("escape", "esc", 1.5)] + (1...12).map { Cap("f\($0)", "F\($0)", 13 / 12) },
         "`1234567890-=".map { Cap(String($0)) } + [Cap("delete", "⌫", 1.5)],
         [Cap("tab", "⇥", 1.5)] + "qwertyuiop[]\\".map { Cap(String($0)) },
         [Cap("caps lock", "⇪", 1.75)] + "asdfghjkl;'".map { Cap(String($0)) } + [Cap("return", "↩", 1.75)],
-        [Cap("shift", "⇧", 2.25)] + "zxcvbnm,./".map { Cap(String($0)) } + [Cap("blank", "", 2.25)],
+        [Cap("shift", "⇧", 2.25)] + "zxcvbnm,./".map { Cap(String($0)) } + [Cap("right shift", "⇧", 2.25)],
         [
             Cap("fn", "fn"), Cap("control", "⌃"), Cap("option", "⌥"), Cap("command", "⌘", 1.25),
-            Cap("space", "", 7.25),
+            Cap("space", "", 5), Cap("right command", "⌘", 1.25), Cap("right option", "⌥"),
             Cap("arrows", "", 3, arrows: true),
         ],
     ]
@@ -110,9 +108,7 @@ package struct Keyboard: View {
         let short: Bool
 
         var body: some View {
-            if key.id == "blank" {
-                Color.clear.frame(width: key.width, height: Keyboard.unit - Keyboard.gap)
-            } else if key.arrows {
+            if key.arrows {
                 HStack(alignment: .bottom, spacing: Keyboard.gap) {
                     half("left", "←")
                     VStack(spacing: Keyboard.gap) {

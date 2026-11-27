@@ -145,15 +145,15 @@ func theSettingsMatchTheirPicture(dark: Bool) throws {
     #expect(told == 1)
 }
 
-@Test func aShortcutThatWontDoIsShownOnTheKeyboard() throws {
+@Test func aShortcutInUseIsShownSo() throws {
     let mac = Mac()
     defer { mac.removed() }
     let general = General(
         choices: mac.choices(), opensAtLogin: .constant(false), shortcut: Shortcut(),
-        refused: (KeyCombo("3", shift: true), "Your Mac already uses these keys.")
+        taken: { $0 == Shortcut.suggestions[1] }
     )
     .padding(Space.page.rawValue)
     .background(Role.ground)
     let height = NSHostingView(rootView: general.frame(width: SettingsScreen.width)).fittingSize.height
-    try expectPicture(of: general, width: SettingsScreen.width, height: height, named: "settings-shortcut-warning")
+    try expectPicture(of: general, width: SettingsScreen.width, height: height, named: "settings-shortcut-in-use")
 }

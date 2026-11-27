@@ -127,47 +127,37 @@ package struct SettingsScreen: View {
     }
 }
 
-/// The shortcut that opens Chete, with a keyboard that lights it, and opening at login. A shortcut that won't do is
-/// refused, and the keyboard says why until another is chosen.
+/// The shortcut that opens Chete, one of three, and opening at login. One that macOS or another app holds is
+/// shown as in use, and cannot be chosen.
 package struct General: View {
     @Bindable var choices: Choices
     @Binding var opensAtLogin: Bool
     let shortcut: Shortcut
-    /// The keys last tried that won't do, and why, until another shortcut is chosen.
-    @State private var refused: (keys: KeyCombo, why: String)?
+    /// Whether keys are held by something else; by default, as macOS and Chete's own holder say.
+    let taken: ((KeyCombo) -> Bool)?
 
     package init(
-        choices: Choices, opensAtLogin: Binding<Bool>, shortcut: Shortcut,
-        refused: (keys: KeyCombo, why: String)? = nil
+        choices: Choices, opensAtLogin: Binding<Bool>, shortcut: Shortcut, taken: ((KeyCombo) -> Bool)? = nil
     ) {
         self.choices = choices
         _opensAtLogin = opensAtLogin
         self.shortcut = shortcut
-        _refused = State(initialValue: refused)
+        self.taken = taken
     }
 
     package var body: some View {
+        let offered = Shortcut.choices(taken: taken ?? { shortcut.warning(for: $0) != nil })
         let keys = Binding {
-            choices.settings.shortcut
+            choices.settings.shortcut ?? Shortcut.suggestions[0]
         } set: { new in
-            if let why = shortcut.change(to: new), let new {
-                refused = (new, why)
-            } else {
-                refused = nil
-                choices.settings.shortcut = new
-            }
+            guard offered.contains(where: { $0.keys == new && $0.free }), shortcut.change(to: new) == nil
+            else { return }
+            choices.settings.shortcut = new
         }
         GroupBlock(title: "General", icon: "gearshape") {
-            SettingRow(icon: "command", title: "Shortcut", detail: "Opens Chete from any app.") {
-                KeyBox(key: keys) { combo in
-                    let why = shortcut.warning(for: combo)
-                    refused = why.map { (combo, $0) }
-                    return why
-                }
+            SettingRow(icon: "command", title: "Shortcut", detail: "Opens Chete from any app.", wide: true) {
+                Segmented(options: offered.map { ($0.keys, $0.words) }, selection: keys, wide: true)
             }
-            Keyboard(shortcut: refused?.keys ?? choices.settings.shortcut, warning: refused?.why)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Space.near.rawValue)
             SettingRow(icon: "power", title: "Open at login", detail: "Chete’s ready as soon as you log in.") {
                 Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
             }

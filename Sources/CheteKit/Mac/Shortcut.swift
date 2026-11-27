@@ -6,6 +6,26 @@ import Shell
 package final class Shortcut {
     /// The one Chete holds while it runs.
     package static let chete = Shortcut()
+    /// The three shortcuts Chete offers, in the welcome and in Settings. Picking any keys comes in 1.1.
+    package static let suggestions = [
+        KeyCombo("c", shift: true), KeyCombo("v", control: true), KeyCombo("c", control: true),
+    ]
+
+    /// One of the three as it is offered: in words, and whether it can be chosen.
+    package struct Choice: Hashable {
+        package let keys: KeyCombo
+        package let words: String
+        package let free: Bool
+    }
+
+    /// The three as they are offered. One that is `taken` says it is in use, and cannot be chosen.
+    package static func choices(taken: (KeyCombo) -> Bool) -> [Choice] {
+        suggestions.map { keys in
+            let free = !taken(keys)
+            return Choice(keys: keys, words: free ? keys.inWords : "\(keys.inWords), in use", free: free)
+        }
+    }
+
     /// What Chete does when the keys are pressed.
     package var pressed: () -> Void = {}
     private var held: HotKey?
@@ -75,4 +95,13 @@ package final class Shortcut {
         "f5": kVK_F5, "f6": kVK_F6, "f7": kVK_F7, "f8": kVK_F8, "f9": kVK_F9, "f10": kVK_F10, "f11": kVK_F11,
         "f12": kVK_F12,
     ]
+}
+
+extension KeyCombo {
+    /// The shortcut in words, as Apple writes one: Shift-Command-C.
+    package var inWords: String {
+        let held = [(control, "Control"), (option, "Option"), (shift, "Shift"), (command, "Command")]
+        return (held.filter(\.0).map(\.1) + [key.count == 1 ? key.uppercased() : key.capitalized])
+            .joined(separator: "-")
+    }
 }

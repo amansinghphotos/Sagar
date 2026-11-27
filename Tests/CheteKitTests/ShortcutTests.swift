@@ -48,3 +48,14 @@ private let other = KeyCombo("f12", command: true, shift: true, option: true, co
     #expect(shortcut.change(to: foreign) == "Chete can’t use that key. Try another.")
     #expect(shortcut.keys == nil)
 }
+
+@Test func chetesThreeShortcutsReadInWords() {
+    #expect(Shortcut.suggestions.map(\.inWords) == ["Shift-Command-C", "Control-Command-V", "Control-Command-C"])
+}
+
+@Test func aShortcutAlreadyInUseIsShownSoAndCannotBeChosen() {
+    let taken = Shortcut.suggestions[1]
+    let choices = Shortcut.choices { $0 == taken }
+    #expect(choices.map(\.words) == ["Shift-Command-C", "Control-Command-V, in use", "Control-Command-C"])
+    #expect(choices.map(\.free) == [true, false, true])
+}
