@@ -10,7 +10,7 @@ The first app is on its way. When it's ready, you'll find it here:
 ## What to Expect
 
 - **Made for the Mac.** Every app looks and works the way a Mac app should. You'll need macOS 27.
-- **Yours to keep.** Your settings and your work stay on your Mac, in plain files.
+- **Yours to keep.** Your settings and your work stay on your own Mac.
 - **Updates when you want them.** Each app tells you when there's an update and what's new. You
   choose when to take it.
 - **Happy offline.** No internet needed, unless an app tells you otherwise.
