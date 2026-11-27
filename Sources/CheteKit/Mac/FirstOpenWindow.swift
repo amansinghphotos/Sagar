@@ -63,10 +63,10 @@ extension FirstOpenActs {
             bringBack: {
                 let panel = NSOpenPanel()
                 panel.allowedContentTypes = [.json]
-                panel.message = "Choose a history you exported from Chete."
+                panel.message = "Choose a file you exported from Chete."
                 guard panel.runModal() == .OK, let file = panel.url else { return nil }
                 return (try? FirstOpen.bringBack(from: file, into: folder, keyName: keyName))
-                    ?? "That file is not a history from Chete."
+                    ?? "That file isn’t one Chete exported."
             },
             openAtLogin: { on in try? LoginItem.set(on) })
     }

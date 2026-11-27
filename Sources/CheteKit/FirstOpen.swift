@@ -97,7 +97,7 @@ package struct FirstOpenPages: View {
                         "Two quick permissions.", "Your Mac asks once for each.")
                     card {
                         Look.Choice(
-                            "Keep what you copy", "Your Mac stops asking before each copy.",
+                            "Keep what you copy", "Your Mac stops asking each time Chete reads a copy.",
                             on: asking(now.keepingCopies, act.allowKeeping), plain: true)
                         Rule(inset: 0)
                         Look.Choice(
