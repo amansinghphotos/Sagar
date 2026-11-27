@@ -16,32 +16,7 @@ nonisolated package enum Keeping: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Chete's settings, kept as a plain file in its folder.
-nonisolated package struct Settings: Codable, Equatable, Sendable {
-    /// A year at first.
-    package var keeping: Keeping = .year
-
-    package init(keeping: Keeping = .year) {
-        self.keeping = keeping
-    }
-
-    /// A setting missing from the file, as one added in a later version, takes its first value.
-    package init(from decoder: any Decoder) throws {
-        let values = try decoder.container(keyedBy: CodingKeys.self)
-        keeping = try values.decodeIfPresent(Keeping.self, forKey: .keeping) ?? .year
-    }
-
-    /// The settings saved in a store, or the first ones if none were saved.
-    package static func read(from store: Store) throws -> Settings {
-        try store.read(Settings.self, named: "Settings") ?? Settings()
-    }
-
-    package func write(to store: Store) throws {
-        try store.write(self, named: "Settings")
-    }
-}
-
-extension Clips {
+nonisolated extension Clips {
     /// Deletes every clip copied longer ago than you chose to keep things.
     package func trim(_ keeping: Keeping, now: Date = .now, calendar: Calendar = .current) throws {
         guard let oldest = keeping.oldestKept(now: now, calendar: calendar) else { return }

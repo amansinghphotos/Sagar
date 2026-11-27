@@ -6,6 +6,11 @@ nonisolated package struct Clip: Codable, Equatable, Identifiable, Sendable {
     /// One kind of data a copy can hold. A copy may hold several, as a link is also text.
     package enum Kind: Codable, Equatable, Sendable {
         case text(String)
+        case link(URL)
+        /// A picture's bytes, and the kind of picture they are, such as public.png.
+        case picture(Data, type: String)
+        /// Where a file copied in Finder is. The file itself is never copied.
+        case file(URL)
     }
 
     package let id: UUID
@@ -34,11 +39,6 @@ nonisolated package struct Clips: Sendable {
     package init(folder: URL, keyName: String) throws {
         store = Store(folder: folder)
         seal = try Seal(named: keyName)
-    }
-
-    /// The history on this Mac, in Chete's own folder and sealed by its own key.
-    package static func onThisMac() throws -> Clips {
-        try Clips(folder: .applicationSupportDirectory.appending(path: "Chete/Clips"), keyName: keyName)
     }
 
     /// Keeps a clip.

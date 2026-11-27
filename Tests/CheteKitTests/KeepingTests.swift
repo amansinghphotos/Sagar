@@ -1,5 +1,4 @@
 import Foundation
-import Keep
 import Testing
 
 @testable import CheteKit
@@ -60,10 +59,9 @@ func eachChoiceKeepsExactlyTheClipsItShould(keeping: Keeping, kept count: Int) t
 @Test func theChoiceIsKeptAndReadBack() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }
-    let store = Store(folder: folder)
-    #expect(try Settings.read(from: store) == Settings())
-    try Settings(keeping: .month).write(to: store)
-    #expect(try Settings.read(from: store) == Settings(keeping: .month))
+    #expect(try Settings.read(in: folder) == Settings())
+    try Settings(keeping: .month).write(in: folder)
+    #expect(try Settings.read(in: folder) == Settings(keeping: .month))
 }
 
 @Test func settingsFromALaterVersionWithMoreInThemStillRead() throws {
@@ -71,5 +69,5 @@ func eachChoiceKeepsExactlyTheClipsItShould(keeping: Keeping, kept count: Int) t
     defer { try? FileManager.default.removeItem(at: folder) }
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     try Data(#"{"keeping": "week", "added later": true}"#.utf8).write(to: folder.appending(path: "Settings.json"))
-    #expect(try Settings.read(from: Store(folder: folder)) == Settings(keeping: .week))
+    #expect(try Settings.read(in: folder) == Settings(keeping: .week))
 }
