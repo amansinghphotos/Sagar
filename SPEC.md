@@ -128,7 +128,7 @@ his GitHub sign-in stays in his browser and phone, never in a terminal an agent 
 |---|---|---|---|
 | Sagar · Update Key | Proves each update comes from him: every installed copy checks it | No installed copy can update again | He pastes it once |
 | Sagar · Developer ID | Apple's signature on each app, without which a Mac will not open it | He makes a new one in Xcode | He pastes it once |
-| Sagar · Apple Notary | Lets Apple check each build before anyone downloads it; on a Mac it is the notary profile named Theatre | He makes a new one on his Apple Account | iCloud Keychain |
+| Sagar · Apple Notary | Lets Apple check each build before anyone downloads it; on a Mac it is the notary profile named Sagar | He makes a new one on his Apple Account | iCloud Keychain |
 | Sagar · Agents' GitHub Key | The agents' own GitHub identity, never his | He generates a new one on the app's page | He pastes it once |
 | Sagar · Claude API Key | Lets an app talk to Claude; made when the first such app asks for it | He makes a new one on Claude's site | iCloud Keychain |
 

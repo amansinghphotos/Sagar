@@ -94,7 +94,7 @@ publish) # On GitHub's clean Mac: make the tried file public, then be the person
     ;;
 esac
 
-profile=${NOTARY_PROFILE:-Theatre}
+profile=${NOTARY_PROFILE:-Sagar}
 tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
 notes=$(cat)
 [ "$(sed 's/: ..*//' <<<"$notes" | tr '\n' ' ')" = "New Better Fixed " ] && ! grep -q '[#`]' <<<"$notes" ||
