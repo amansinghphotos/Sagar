@@ -86,9 +86,9 @@ screen is pictured narrow, default and wide.
 7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` installs one signed and
    notarised build on his Mac, holds the same file as a draft release, and opens the release pull
    request. If the app was open, it is quit and opened again, and shows what is new (section 5)
-   without taking his keyboard. If it was closed, it shows that when he next opens it. That reopening
-   is the one window a release puts on his screen, by his choice. He is told what to try in three
-   lines. The app is now locked.
+   without taking his keyboard. If it was closed, or will not quit, it shows that when he next opens
+   it. That reopening is the one window a release puts on his screen, by his choice. He is told what
+   to try in three lines. The app is now locked.
 8. **Ship.** He approves the release pull request, and that is all. GitHub merges it, makes that same
    file public, and on a clean Mac installs the previous release and watches it take the update. If he
    reports a fault instead, the release is withdrawn, the fault is fixed, and step 7 repeats under the
