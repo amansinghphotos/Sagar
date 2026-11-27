@@ -12,18 +12,14 @@ final class OpeningShortcut {
     var open: () -> Void = {}
     private var holding: HotKey?
 
-    /// Holds these keys in place of any held before, or says why it cannot.
+    /// Holds these keys in place of any held before, and says whether it could.
     @discardableResult
-    func hold(_ shortcut: KeyCombo) -> HotKey.Refusal? {
+    func hold(_ shortcut: KeyCombo) -> Bool {
         holding?.letGo()
         holding = nil
-        guard let keys = shortcut.held else { return .macOSRefused(0) }
-        do {
-            holding = try HotKey(keys) { [weak self] in self?.open() }
-            return nil
-        } catch {
-            return error
-        }
+        guard let keys = shortcut.held else { return false }
+        holding = try? HotKey(keys) { [weak self] in self?.open() }
+        return holding != nil
     }
 }
 

@@ -40,6 +40,10 @@ public struct CheteScene: Scene {
     private static func startWatching() {
         guard !started else { return }
         started = true
+        let shortcut = ((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut
+        if !OpeningShortcut.shared.hold(shortcut) {
+            Logger(subsystem: "com.amansingh.chete", category: "Shortcut").error("Chete holds no shortcut")
+        }
         Task {
             do {
                 let copies = try await Task.detached { try Copies.atOpen() }.value
@@ -49,7 +53,6 @@ public struct CheteScene: Scene {
                 watcher?.kept = { shelf.add($0) }
                 watcher?.start()
                 copies.trimDaily { shelf.remove($0) }
-                OpeningShortcut.shared.hold(((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut)
             } catch {
                 Logger(subsystem: "com.amansingh.chete", category: "Copies").error("Chete keeps no copies: \(error)")
             }
