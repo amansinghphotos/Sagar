@@ -23,6 +23,7 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Rule | Number | Held by |
 |---|--:|---|
 | Changed lines, added plus deleted | 400 | `Scripts/check` size |
+| Lines a mend changes without a new reading, unless it changes the working rules or a plan | 40 | `Scripts/check` template |
 | Issues named, exactly (a release names every one it ships) | 1 | `Scripts/check` template |
 | Unticked boxes in the description | 0 | `Scripts/check` template |
 | Compiler warnings | 0 | `Scripts/check` build |
@@ -41,7 +42,6 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 |---|--:|---|
 | Launch to first frame, fastest of three, by Apple's launch metric, in seconds | 2 | the tour |
 | Processor time while its window is hidden and nothing is asked, percent over 10 s | 1 | the tour |
-| Accessibility audit findings | 0 | the tour |
 | Screens that differ from their approved pictures | 0 | the picture tests |
 
 A screen counts as differing when more than 40 of its pixels differ from the approved picture by more

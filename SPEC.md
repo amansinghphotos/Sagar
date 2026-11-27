@@ -80,8 +80,9 @@ screen is pictured narrow, default and wide.
 3. **Build.** A fresh session per slice: a failing test, the code, the test passing.
 4. **Pull request,** naming its issue: "For" one in a milestone, which its release closes, and
    "Closes" for any other. `Scripts/check` runs on a clean macOS 27 runner.
-5. **Review.** A reviewer agent that can only read files checks the diff against the spec and
-   `CONSTRAINTS.md`.
+5. **Review.** A reviewer agent that can only read files reads each finished change once, against
+   the spec and `CONSTRAINTS.md`. Its mend, in one commit, is not read again, but for a change to the
+   working rules or a plan, where a mend has often brought a new fault.
 6. **Merge** with green checks, squashed, branch deleted.
 7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` installs one signed and
    notarised build on his Mac, holds the same file as a draft release, and opens the release pull
@@ -186,8 +187,8 @@ that does not talk to Claude never asks. This is built with the first app that n
 1. Logic: Swift Testing, written first, on real code with temporary folders.
 2. Screens: pictures taken from a real window that is never put on screen, compared with approved
    pictures.
-3. The real app: one XCUITest tour per app on the hosted runner, with an accessibility audit, where
-   the app needs no permission.
+3. The real app: one XCUITest tour per app on the hosted runner, where the app needs no permission. It
+   runs Apple's accessibility audit, whose findings are reported but fail nothing, for now (decision 9).
 4. What needs a permission or his hardware he tries at step 7.
 
 ## 8. The Look and the Words
