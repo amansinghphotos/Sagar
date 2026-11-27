@@ -85,7 +85,10 @@ screen is pictured narrow, default and wide.
 6. **Merge** with green checks, squashed, branch deleted.
 7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` installs one signed and
    notarised build on his Mac, holds the same file as a draft release, and opens the release pull
-   request. He is told what to try in three lines. The app is now locked.
+   request. If the app was open, it is quit and opened again, and shows what is new (section 5)
+   without taking his keyboard. If it was closed, or will not quit, it shows that when he next opens
+   it. That reopening is the one window a release puts on his screen, by his choice. He is told what
+   to try in three lines. The app is now locked.
 8. **Ship.** He approves the release pull request, and that is all. GitHub merges it, makes that same
    file public, and on a clean Mac installs the previous release and watches it take the update. If he
    reports a fault instead, the release is withdrawn, the fault is fixed, and step 7 repeats under the
@@ -105,11 +108,17 @@ first of them, and a release will not start while its own has a box unticked.
 - There is no third number: every copy is offered each update, so no old version is ever mended. Under the
   version each build carries its commit's date and time, which always rises and is what Sparkle compares.
 - One build waiting for him at a time, and one app in work.
-- Each GitHub release carries three plain lines: New, Better, Fixed.
+- Each GitHub release carries up to three plain lines: New, Better, Fixed. A line with nothing to say is
+  left out, never filled. A release has at least one. The request that asks him to try it gives its reason
+  from the first line that is there: what is new, else what is better, else what is mended.
 - A fault he describes becomes an issue, and the release that mends it says so in plain words. An
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
 - An update is always offered and never forced or silent: the app shows what is new and the person
   chooses to install it, to be reminded later, or to skip that version.
+- The first time an app's window opens on a new build, it shows Look's card for what is new, once,
+  with that release's lines. On his Mac it tells him a build to try is in place and what to
+  look for. For everyone else it follows the update. A mended build under the same number shows it
+  again. An app's very first open shows its welcome instead.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
   good code is released again, under the next number.
 - Before a release an agent confirms it opens the files the previous release wrote, and ticks that
@@ -206,8 +215,7 @@ usual calls and cannot see every way to fetch a file.
 ## 11. Written When the First App Needs It
 
 Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The three lines of
-notes shown once inside an app after it updates.
+window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
