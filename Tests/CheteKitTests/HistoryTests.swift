@@ -106,3 +106,33 @@ private func exportFile() -> URL {
     #expect(throws: DecodingError.self) { try History.bringBack(from: file) }
     #expect(try new.history() == before)
 }
+
+// What a tour opens Chete on.
+
+@Test func aTourOpensCheteOnAnExportedHistoryInAFolderOfItsOwn() async throws {
+    let tour = Mac()
+    let file = exportFile()
+    defer {
+        tour.removed()
+        try? FileManager.default.removeItem(at: file)
+    }
+    // A plain file written by hand, as a tour writes it: no app, and no settings chosen.
+    let madeUp = """
+        {"settings": {}, "clips": [
+            {"id": "00000000-0000-4000-8000-000000000001", "copied": 815000300,
+             "kinds": [{"text": {"_0": "Dinner at eight on Friday"}}]},
+            {"id": "00000000-0000-4000-8000-000000000002", "copied": 815000200,
+             "kinds": [{"link": {"_0": "https://example.com/tickets"}}]}
+        ]}
+        """
+    try Data(madeUp.utf8).write(to: file)
+    let copies = try Copies.atOpen(
+        environment: [Copies.tourHistory: file.path], temporary: tour.folder, keyName: tour.keyName)
+    let link = try #require(URL(string: "https://example.com/tickets"))
+    #expect(try await copies.all().map(\.kinds) == [[.text("Dinner at eight on Friday")], [.link(link)]])
+    #expect(try tour.history().settings == Settings())
+    // From there it is Chete as ever: a new copy is kept in that folder, on top.
+    try await copies.take([.text("copied on the tour")], fromOtherDevice: false, copied: .now, app: nil)
+    #expect(try tour.history().clips.map(\.kinds).first == [.text("copied on the tour")])
+    #expect(try tour.history().clips.count == 3)
+}

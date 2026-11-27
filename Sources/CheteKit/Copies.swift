@@ -61,3 +61,21 @@ package actor Copies {
         SHA256.hash(data: try PropertyListEncoder().encode(kinds))
     }
 }
+
+extension Copies {
+    /// The name, in the environment Chete is opened with, of an exported history for a tour to open it on.
+    package static let tourHistory = "CHETE_TOUR_HISTORY"
+
+    /// The copies Chete opens on: those kept on this Mac. A tour names an exported history of made-up clips in
+    /// the environment instead, and Chete then opens on a copy of it, kept in a temporary folder of its own.
+    /// The history kept on this Mac is then neither read nor changed. The key's name is for that copy alone.
+    package static func atOpen(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        temporary: URL = .temporaryDirectory.appending(path: "Chete Tour \(UUID().uuidString)"),
+        keyName: String = Clips.keyName
+    ) throws -> Copies {
+        guard let file = environment[tourHistory] else { return try onThisMac() }
+        try History.bringBack(from: URL(filePath: file)).replace(in: temporary, keyName: keyName)
+        return try Copies(folder: temporary, keyName: keyName)
+    }
+}
