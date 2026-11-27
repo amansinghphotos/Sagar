@@ -1,28 +1,17 @@
-// Taken from Search, Sources/Search/Design.swift at commit c92ea7c (github.com/driceroland/Search).
-// Copyright (c) 2026 Office Commun. Used under the MIT licence, whose notice is in ACKNOWLEDGEMENTS.md.
-// Changed only where this repository's rules require: Reduce Motion is read from SwiftUI rather than AppKit,
-// so the motion is a value a screen reads from its environment; the lighter motion when power is short and
-// the test switches are not carried over; and Reduce animations and sliding the column are values given
-// here instead of read from Search's settings.
+// How Look moves: a few springs and curves that every part shares, and what Reduce Motion makes of them.
 import SwiftUI
 
-// One set of springs for the whole app, so every panel, tab and page moves
-// like a single piece of software rather than a pile of views.
-// When macOS Reduce Motion is on in System Settings, or Reduce animations in
-// the app's own, transitions become immediate so the interface does not jump
-// or slide.
+/// The motion a screen reads from its environment. Springs are given as Apple gives them, by how long
+/// they take and how much they bounce; curves by their two control points.
 nonisolated package struct Motion: Equatable, Sendable {
-    /// The Mac's own Reduce Motion.
+    /// The Mac's Reduce Motion, from System Settings.
     package var reduceMotion: Bool
 
-    /// Reduce animations, for the app alone: every transition is immediate,
-    /// as under Reduce Motion, and so are the fades Reduce Motion keeps.
-    package var instant = false
-
-    /// Slide the column in and out: the column comes out on an ease-out and
-    /// goes back on an ease-in, as Arc's does, rather than on the short
-    /// springs below.
+    /// The column slides out and back on curves, rather than on its springs.
     package var slides = false
+
+    /// The app's own Reduce animations: nothing moves at all, not even the fades Reduce Motion keeps.
+    package var instant = false
 
     package init(reduceMotion: Bool, slides: Bool = false, instant: Bool = false) {
         self.reduceMotion = reduceMotion
@@ -30,89 +19,60 @@ nonisolated package struct Motion: Equatable, Sendable {
         self.instant = instant
     }
 
-    /// Whether interface transitions should be immediate, following the
-    /// Mac's own accessibility setting or the app's Reduce animations.
-    package var reduced: Bool {
-        instant || reduceMotion
-    }
+    /// True when every movement happens at once.
+    package var reduced: Bool { reduceMotion || instant }
 
-    /// `seconds`, or none with Reduce animations on: for the fades that run
-    /// on a length of their own rather than on the animations below.
-    package func seconds(_ seconds: TimeInterval) -> TimeInterval {
-        instant ? 0 : seconds
-    }
+    /// The long, soft spring a panel or page arrives on.
+    package var glide: Animation? { moving(.spring(Self.glideSpring)) }
 
-    /// `animation`, or none with Reduce animations on, the same way.
-    package func timed(_ animation: Animation) -> Animation? {
-        instant ? nil : animation
-    }
+    /// The firmer spring a control comes to rest on.
+    package var settle: Animation? { moving(.spring(Self.settleSpring)) }
 
-    package var glide: Animation? {
-        reduced ? nil : .spring(response: 0.34, dampingFraction: 0.82)
-    }
+    /// A short ease for what answers the pointer: a hover, a press going down.
+    package var quick: Animation? { moving(.timingCurve(Self.easingOut, duration: 0.14)) }
 
-    package var settle: Animation? {
-        reduced ? nil : .spring(response: 0.30, dampingFraction: 0.86)
-    }
-
-    package var quick: Animation? {
-        reduced ? nil : .easeOut(duration: 0.14)
-    }
-
-    /// How far a tab gives while it is pressed (see Give): enough to feel
-    /// under the pointer, about 3 points on a pill and 7 on a column row.
+    /// How small a thing grows while it is held down.
     package static let give: CGFloat = 0.97
 
-    /// The folded column or strip coming out over the page, and going back.
-    /// On glide it was slow both ways, next to Arc and Dia timed frame by
-    /// frame on the same Mac: each slides its sidebar 90% of the way out in
-    /// about 95ms and back in about 70ms, where glide took over 200ms. These
-    /// match them. Going in is damped all the way, since nothing is arriving
-    /// to settle.
-    package static func fold(out: Bool) -> (response: Double, damping: Double) {
-        out ? (0.14, 0.86) : (0.13, 1)
-    }
-
-    /// How long the folded column takes to slide back in, or fade, and
-    /// is still over the page: the spring's response (Motion.fold) runs a
-    /// little past it.
-    package var columnAway: TimeInterval {
-        if reduced { return 0 }
-        if fadesColumn { return Self.fade }
-        return slide(out: false) ?? 0.2
-    }
-
+    /// The folded column coming out over the page, or going back.
     package func folding(out: Bool) -> Animation? {
-        if reduced { return nil }
-        if let slide = slide(out: out) {
-            return out ? .easeOut(duration: slide) : .easeIn(duration: slide)
-        }
-        let spring = Self.fold(out: out)
-        return .spring(response: spring.response, dampingFraction: spring.damping)
+        guard !reduced else { return nil }
+        guard slides else { return .spring(out ? Self.foldOut : Self.foldIn) }
+        return out ? .timingCurve(Self.easingOut, duration: 0.26) : .timingCurve(Self.easingIn, duration: 0.22)
     }
 
-    /// The column comes out on an ease-out and goes back on an ease-in, over
-    /// this long, as Arc's does, rather than on the short springs above. Nil
-    /// when off.
-    package func slide(out: Bool) -> TimeInterval? {
-        guard slides else { return nil }
-        return out ? 0.26 : 0.22
+    /// How long the folded column is still over the page once it starts back.
+    package var columnAway: TimeInterval {
+        guard !reduced else { return 0 }
+        return slides ? 0.22 : 0.2
     }
 
-    /// Slide the column in and out with the Mac's Reduce Motion on: the
-    /// column fades in place where it would slide, as Apple's own sidebars
-    /// do under Reduce Motion, rather than doing nothing at all, which read
-    /// as a switch that does nothing. The app's own Reduce animations still
-    /// means at once (see `instant`).
-    package var fadesColumn: Bool {
-        !instant && slide(out: true) != nil && reduceMotion
-    }
+    /// Under the Mac's Reduce Motion, a column set to slide fades where it stands instead, as Apple's own
+    /// sidebars do, so the switch still visibly does something. Reduce animations stops even that.
+    package var fadesColumn: Bool { slides && reduceMotion && !instant }
 
-    /// That fade's length.
+    /// How long that fade lasts.
     package static let fade: TimeInterval = 0.2
+
+    /// A length of time for a fade that runs by the clock, or none under Reduce animations.
+    package func seconds(_ seconds: TimeInterval) -> TimeInterval { instant ? 0 : seconds }
+
+    /// An animation for such a fade, or none under Reduce animations.
+    package func timed(_ animation: Animation) -> Animation? { instant ? nil : animation }
+
+    private func moving(_ animation: Animation) -> Animation? { reduced ? nil : animation }
+
+    private static let glideSpring = Spring(duration: 0.35, bounce: 0.2)
+    private static let settleSpring = Spring(duration: 0.3, bounce: 0.15)
+    private static let foldOut = Spring(duration: 0.14, bounce: 0.15)
+    private static let foldIn = Spring(duration: 0.13, bounce: 0.02)
+    private static let easingOut = UnitCurve.bezier(
+        startControlPoint: UnitPoint(x: 0, y: 0), endControlPoint: UnitPoint(x: 0.6, y: 1))
+    private static let easingIn = UnitCurve.bezier(
+        startControlPoint: UnitPoint(x: 0.4, y: 0), endControlPoint: UnitPoint(x: 1, y: 1))
 }
 
 extension EnvironmentValues {
-    /// The motion for where a screen sits: Search's, at once under the Mac's Reduce Motion.
+    /// The motion where a screen sits, following the Mac's Reduce Motion.
     package var motion: Motion { Motion(reduceMotion: accessibilityReduceMotion) }
 }

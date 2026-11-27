@@ -6,6 +6,8 @@
 	<string>$(SAGAR_SITE)/$(PRODUCT_NAME:lower)/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>JXPs7WUnX51U6VAYatd2DxmMPXdvoSbdpVGKp/H20hs=</string>
+	<key>SUAllowsAutomaticUpdates</key>
+	<false/>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SURequireSignedFeed</key>
