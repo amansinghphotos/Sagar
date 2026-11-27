@@ -14,9 +14,9 @@ this Mac unless you carry it.
 
 1. **It keeps what you copy.** Text, links, pictures, and files copied in Finder, newest first.
    For a file it keeps where the file is, not a second copy. Everything is encrypted on this Mac.
-   Passwords, and anything an app marks as private or only passing through, are never kept. What you
-   copy on your own iPhone or another of your Macs, which macOS hands over by itself, is kept too,
-   unless you turn that off.
+   Passwords are kept too, even when the app they come from marks them private, so that you can paste
+   one again later. What you copy on your own iPhone or another of your Macs, which macOS hands over
+   by itself, is kept too, unless you turn that off.
 2. **It opens from any app,** with the same keyboard shortcut the Chete before it used, and from its item in
    the menu bar. It lives in the menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
