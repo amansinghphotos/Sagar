@@ -35,6 +35,11 @@ func theSameReplyDoesNotCoverAnotherCommit(commit: String) throws {
     #expect(try reviewed("A Reply That Names Its Commit", newest: commit) == "no\n")
 }
 
+/// The environment without git's own settings, which would send git to another repository than the small one.
+private func withoutGitsOwnSettings(_ environment: [String: String]) -> [String: String] {
+    environment.filter { !$0.key.hasPrefix("GIT_") }
+}
+
 /// A small real repository with the real rules script in it: `main`, a branch whose change the reviewer read,
 /// then `main` moving on and the branch brought up to date with it.
 private struct Branch {
@@ -95,6 +100,7 @@ private struct Branch {
         process.executableURL = URL(filePath: tool)
         process.arguments = arguments
         process.currentDirectoryURL = folder
+        process.environment = withoutGitsOwnSettings(ProcessInfo.processInfo.environment)
         process.standardOutput = answer
         process.standardInput = given
         try process.run()
@@ -119,4 +125,10 @@ private struct Branch {
     try branch.write("the change, and more", to: "changed.txt")
     try branch.commit("More, after the reading")
     #expect(try branch.countsAsRead() == "no")
+}
+
+/// Inside a commit hook, git names its own folder: in a second working copy it reaches the test as `GIT_DIR`.
+@Test func gitsOwnSettingsAreLeftOutOfTheSmallRepository() {
+    let hook = ["GIT_DIR": "/a/real/.git/worktrees/one", "GIT_INDEX_FILE": "index", "PATH": "/usr/bin"]
+    #expect(withoutGitsOwnSettings(hook) == ["PATH": "/usr/bin"])
 }
