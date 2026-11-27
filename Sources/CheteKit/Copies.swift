@@ -13,7 +13,7 @@ package actor Copies {
     /// Copies kept in Chete's folder: clips in Clips, sealed by the key under a name, and the settings beside them.
     package init(folder: URL, keyName: String) throws {
         self.folder = folder
-        clips = try Clips(folder: folder.appending(path: "Clips"), keyName: keyName)
+        clips = try Clips(cheteFolder: folder, keyName: keyName)
     }
 
     /// Copies kept in Chete's own folder on this Mac, sealed by its own key.
