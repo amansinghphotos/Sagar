@@ -20,56 +20,43 @@ private func pages(at page: WelcomePage, _ given: WelcomeGiven = WelcomeGiven())
 @Test(arguments: WelcomePage.allCases, [false, true])
 func eachPageLooksAsApproved(page: WelcomePage, dark: Bool) throws {
     try expectPicture(
-        of: pages(at: page), width: WelcomePages.size.width, height: WelcomePages.size.height,
+        of: pages(at: page), width: WelcomeSize.window.width, height: WelcomeSize.window.height,
         named: "welcome-\(page.rawValue)-\(dark ? "dark" : "light")", dark: dark)
 }
 
 @Test func aPermissionGivenIsSaidInsteadOfAsked() throws {
     try expectPicture(
         of: pages(at: .pasting, WelcomeGiven(keeping: true, pasting: true)),
-        width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-pasting-given")
+        width: WelcomeSize.window.width, height: WelcomeSize.window.height, named: "welcome-pasting-given")
 }
 
-@Test func keysHeldLightTheKeyboard() throws {
+@Test func aPresetMacOSAlreadyUsesIsShownAsTaken() throws {
+    var given = WelcomeGiven()
+    given.taken = [WelcomeGiven.suggestions[0]]
+    given.choose(WelcomeGiven.suggestions[1])
     try expectPicture(
-        of: pages(at: .shortcut, WelcomeGiven(held: KeyCombo("v", control: true))),
-        width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-shortcut-held")
+        of: pages(at: .shortcut, given), width: WelcomeSize.window.width, height: WelcomeSize.window.height,
+        named: "welcome-shortcut-taken")
 }
 
-@Test func keysThatWillNotDoAreWarnedOf() throws {
-    try expectPicture(
-        of: pages(
-            at: .shortcut,
-            WelcomeGiven(
-                held: KeyCombo("3", shift: true),
-                warning: "macOS already uses \(KeyCombo("3", shift: true).inWords). Try others.")),
-        width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-shortcut-warning")
+@Test func aTakenPresetCannotBeChosen() {
+    var given = WelcomeGiven()
+    given.taken = [WelcomeGiven.suggestions[1]]
+    given.choose(WelcomeGiven.suggestions[1])
+    #expect(given.shortcut == WelcomeGiven.suggestions[0])
+    given.choose(WelcomeGiven.suggestions[2])
+    #expect(given.shortcut == WelcomeGiven.suggestions[2])
 }
 
 @Test(arguments: ["keeping", "pasting"], [false, true])
 func eachCardLooksAsApproved(name: String, dark: Bool) throws {
     try expectPicture(
-        of: name == "keeping" ? WelcomeCard.keeping : .pasting, width: WelcomeCard.size.width,
-        height: WelcomeCard.size.height, named: "welcome-card-\(name)-\(dark ? "dark" : "light")", dark: dark)
-}
-
-@Test func theWelcomeAMacGetsOpensOnItsGreetingAndEndsOnItsLastPage() {
-    var withOldClips = WelcomeGiven()
-    withOldClips.hasOldClips = true
-    for given in [WelcomeGiven(), withOldClips] {
-        #expect(WelcomePages.pages(for: given).first == .greeting)
-        #expect(WelcomePages.pages(for: given).last == .last)
-    }
-}
-
-@Test func aShortcutIsSaidInWordsAsAppleWritesOne() {
-    #expect(KeyCombo("c", shift: true).inWords == "Shift-Command-C")
-    #expect(KeyCombo("v", control: true).inWords == "Control-Command-V")
-    #expect(KeyCombo("space", command: false, option: true).inWords == "Option-Space")
+        of: name == "keeping" ? WelcomeCard.keeping : .pasting, width: WelcomeSize.card.width,
+        height: WelcomeSize.card.height, named: "welcome-card-\(name)-\(dark ? "dark" : "light")", dark: dark)
 }
 
 @Test func thePageForOldClipsIsShownOnlyWhereThereAreSome() {
-    #expect(!WelcomePages.pages(for: WelcomeGiven()).contains(.oldClips))
+    #expect(WelcomePages.pages(for: WelcomeGiven()) == [.greeting, .shortcut, .keeping, .pasting, .last])
     var given = WelcomeGiven()
     given.hasOldClips = true
     #expect(WelcomePages.pages(for: given) == [.greeting, .shortcut, .keeping, .pasting, .oldClips, .last])
@@ -79,6 +66,6 @@ func eachCardLooksAsApproved(name: String, dark: Bool) throws {
     var given = WelcomeGiven()
     given.broughtIn = "312 clips are here."
     try expectPicture(
-        of: pages(at: .oldClips, given), width: WelcomePages.size.width, height: WelcomePages.size.height,
+        of: pages(at: .oldClips, given), width: WelcomeSize.window.width, height: WelcomeSize.window.height,
         named: "welcome-oldClips-given")
 }

@@ -8,16 +8,23 @@ package enum WelcomePage: String, CaseIterable, Sendable {
 
 /// What the Mac already gives Chete, and what the person has chosen, when the welcome opens.
 package struct WelcomeGiven: Equatable, Sendable {
-    /// The shortcuts the welcome suggests. The first is the one the earlier Chete used.
-    package static let suggestions = [
-        KeyCombo("c", shift: true), KeyCombo("v", control: true), KeyCombo("c", control: true),
+    /// The shortcuts the welcome suggests, the earlier Chete's first, each in words, with how it sits under the hand.
+    package static let presets = [
+        (KeyCombo("c", shift: true), "Shift-Command-C", "Like Copy, with Shift held as well."),
+        (KeyCombo("v", control: true), "Control-Command-V", "Like Paste, with Control held as well."),
+        (KeyCombo("c", control: true), "Control-Command-C", "Like Copy, with Control held as well."),
     ]
+    package static var suggestions: [KeyCombo] { presets.map(\.0) }
 
     package var shortcut = suggestions[0]
-    /// The keys held down right now, which the keyboard lights, or nothing.
-    package var held: KeyCombo?
-    /// Why the keys held will not do, in words, or nothing if they will.
-    package var warning: String?
+    /// The suggestions macOS already uses on this Mac, which are shown as taken and cannot be chosen.
+    package var taken: Set<KeyCombo> = []
+
+    /// Chooses a suggestion, unless it is taken.
+    package mutating func choose(_ keys: KeyCombo) {
+        if !taken.contains(keys) { shortcut = keys }
+    }
+
     package var keeping = false
     package var pasting = false
     /// Whether this Mac has clips the earlier Chete kept, which the welcome offers to bring in.
@@ -40,17 +47,12 @@ package struct WelcomeActs {
     package var bringBack: () -> String?
 }
 
-/// Chete's welcome: a greeting, the shortcut, one page for each thing macOS asks about, and a last page of
-/// offers. Everything Chete will ever ask is asked here, so nothing asks once the welcome is done.
+/// Chete's welcome. Everything Chete will ever ask is asked here, so nothing asks once it is done.
 package struct WelcomePages: View {
-    /// The window's size, which does not change.
-    package static let size = WelcomeSize.window
-
     private let startPage: WelcomePage
     private let act: WelcomeActs
     private let finish: () -> Void
-    /// Held by whoever shows the welcome, so that what the Mac allows shows here as it changes, and the
-    /// shortcut chosen here is theirs to keep.
+    /// Held by whoever shows the welcome: what the Mac allows shows here live, and the shortcut is theirs to keep.
     @Binding private var given: WelcomeGiven
     @State private var broughtBack: String?
 
@@ -123,17 +125,29 @@ package struct WelcomePages: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The three suggestions, and the keyboard that lights the one chosen or the keys held.
+    /// The three suggestions, one to a row: its keys in words, how it sits under the hand, and a tick on the
+    /// one chosen. One that macOS already uses is shown as taken and takes no click.
     private var shortcut: some View {
         VStack(alignment: .leading, spacing: Space.wide.rawValue + Space.near.rawValue) {
-            WelcomeHeading(
-                "Choose your shortcut.", "Pick one, or press the keys you'd like. They open Chete from any app.")
-            VStack(spacing: Space.page.rawValue) {
-                Segmented(
-                    options: WelcomeGiven.suggestions.map { ($0, $0.inWords) }, selection: $given.shortcut, wide: true)
-                Keyboard(shortcut: given.shortcut, held: given.held, warning: given.warning)
+            WelcomeHeading("Choose your shortcut.", "Press it in any app, and Chete opens.")
+            rows {
+                ForEach(Array(WelcomeGiven.presets.enumerated()), id: \.offset) { place, preset in
+                    let (keys, name, hint) = preset
+                    let taken = given.taken.contains(keys)
+                    if place > 0 { Rule(inset: 0) }
+                    Button {
+                        given.choose(keys)
+                    } label: {
+                        offer(name, taken ? "macOS already uses this one." : hint) {
+                            Image(systemName: given.shortcut == keys ? "checkmark.circle.fill" : "circle")
+                                .type(.title).foregroundStyle(given.shortcut == keys ? Role.ink : Role.faint)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).disabled(taken).opacity(taken ? 0.5 : 1)
+                    .accessibilityAddTraits(given.shortcut == keys ? .isSelected : [])
+                }
             }
-            .frame(maxWidth: .infinity)
         }
     }
 
@@ -188,15 +202,6 @@ package struct WelcomePages: View {
     }
 }
 
-extension KeyCombo {
-    /// The shortcut in words, as Apple writes one: Shift-Command-C.
-    var inWords: String {
-        let held = [(control, "Control"), (option, "Option"), (shift, "Shift"), (command, "Command")]
-        return (held.filter(\.0).map(\.1) + [key.count == 1 ? key.uppercased() : key.capitalized])
-            .joined(separator: "-")
-    }
-}
-
 /// Rows on a soft filled ground, as the welcome and its card both lay them.
 @MainActor private func rows(@ViewBuilder _ content: () -> some View) -> some View {
     VStack(alignment: .leading, spacing: Space.wide.rawValue, content: content)
@@ -207,7 +212,6 @@ extension KeyCombo {
 
 /// The small card that stays in front of System Settings: where to go there, and what to look for.
 package struct WelcomeCard: View, Sendable {
-    package static let size = WelcomeSize.card
     /// For keeping what is copied. macOS gives each app a menu there: Ask, Allow or Deny.
     package static let keeping = WelcomeCard(
         place: "Paste from Other Apps", menu: "Allow",
@@ -258,7 +262,7 @@ package struct WelcomeCard: View, Sendable {
             Text(how).type(.detail).foregroundStyle(Role.muted)
         }
         .padding(Space.page.rawValue)
-        .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
+        .frame(width: WelcomeSize.card.width, height: WelcomeSize.card.height, alignment: .topLeading)
         .background(Role.ground)
     }
 }

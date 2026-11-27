@@ -23,11 +23,11 @@ this Mac unless you carry it.
    Chete keeps nothing, so that macOS never asks you later. Its card in the menu bar says so, with a
    button back to that step.
 2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
-   You choose the shortcut in the welcome, and can change it in Settings. Chete suggests three. The
-   first is Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. A
-   keyboard lights each key you press. It warns you when macOS or Chete already uses those keys. It
-   asks for Command or Control, as macOS may refuse a shortcut without one. It cannot warn of another
-   app's shortcut. It lives in the menu bar and has no Dock icon.
+   You choose one of three in the welcome, and can change it in Settings. The first is
+   Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. One that macOS
+   already uses is shown as taken, and cannot be chosen. Chete cannot know of another app's
+   shortcut. Choosing any keys you like, on a keyboard that lights them, comes in 1.1. It lives in the
+   menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
 4. **It pastes for you** into the app you were in, or pastes as plain text if you hold Shift. If you
    have not allowed it to paste, it copies, and says to press Command-V.

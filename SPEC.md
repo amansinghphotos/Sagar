@@ -213,8 +213,9 @@ it. Then it sets the app up, one step to a page. Any step can be skipped, and wa
 Where a step needs System Settings, the welcome opens it and steps aside as a small card that stays
 in front. The card names the place and shows the switch to look for, and the welcome goes on by
 itself once the switch is on. Where
-the app has a keyboard shortcut, the person chooses it there: suggestions, a keyboard that lights
-the keys pressed, and a warning when macOS or the app already uses them. The welcome moves with
+the app has a keyboard shortcut, the person chooses it there from a few suggestions, and one that
+macOS already uses is shown as taken. A keyboard that lights the keys pressed, to choose any, is to
+come. The welcome moves with
 Look's motion, and each app gives it one touch of its own, as Chete does with Gurmukhi. Its parts
 are made once and shared, so the next app's welcome starts at this level. An app asks for everything it needs during its welcome, and
 says in a line what macOS will show before macOS shows it. Nothing asks a person, and no password is
