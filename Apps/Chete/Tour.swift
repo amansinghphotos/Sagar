@@ -85,4 +85,29 @@ final class CheteTour: XCTestCase {
         open.click()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "The card did not open Chete.")
     }
+
+    /// Each address Chete opens System Settings at lands on the place it names: Paste from Other Apps, and
+    /// Accessibility, which macOS 27 may call Device Control and Data Access. A screenshot of each is kept.
+    @MainActor
+    func testSystemSettingsOpensWhereCheteSendsYou() throws {
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
+        let places = [
+            ("Privacy_Pasteboard", ["Paste from Other Apps"]),
+            ("Privacy_Accessibility", ["Accessibility", "Device Control and Data Access"]),
+        ]
+        for (pane, names) in places {
+            settings.open(
+                try XCTUnwrap(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")))
+            XCTAssert(settings.wait(for: .runningForeground, timeout: 15), "System Settings did not open.")
+            let found = names.first {
+                settings.descendants(matching: .any)[$0].firstMatch.waitForExistence(timeout: 10)
+            }
+            let shot = XCTAttachment(screenshot: settings.screenshot())
+            shot.name = "\(pane): \(found ?? "none of \(names)")"
+            shot.lifetime = .keepAlways
+            add(shot)
+            XCTAssertNotNil(found, "\(pane) did not land on \(names.joined(separator: " or ")).")
+        }
+        settings.terminate()
+    }
 }
