@@ -83,7 +83,8 @@ screen is pictured narrow, default and wide.
 3. **Build.** A fresh session per slice: a failing test, the code, the test passing.
 4. **Pull request,** naming its issue: "For" one in a milestone, which its release closes, and
    "Closes" for any other. `Scripts/check` runs on a clean macOS 27 runner, or on Linux, without
-   waiting for a Mac, when the change touches nothing a Mac builds or runs.
+   waiting for a Mac, when the change is words alone, for which it builds, tests and tours nothing:
+   documents, plans, checklists and GitHub's templates.
 5. **Review.** A reviewer agent that can only read files checks the diff against the spec and
    `CONSTRAINTS.md`.
 6. **Merge** with green checks, squashed, branch deleted.
