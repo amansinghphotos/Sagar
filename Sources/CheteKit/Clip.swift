@@ -41,6 +41,11 @@ nonisolated package struct Clips: Sendable {
         seal = try Seal(named: keyName)
     }
 
+    /// The history in Chete's folder, where the clips are kept in Clips, beside the settings.
+    package init(cheteFolder: URL, keyName: String) throws {
+        try self.init(folder: cheteFolder.appending(path: "Clips"), keyName: keyName)
+    }
+
     /// Keeps a clip.
     package func keep(_ clip: Clip) throws {
         try store.write(clip, named: clip.id.uuidString, sealedBy: seal)
