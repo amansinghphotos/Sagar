@@ -9,12 +9,12 @@ import Testing
 private let one = KeyCombo("f11", command: true, shift: true, option: true, control: true)
 private let other = KeyCombo("f12", command: true, shift: true, option: true, control: true)
 
-@Test func aChangedShortcutIsHeldAndTheOldOneLetGo() throws {
+@Test func aChangedShortcutIsHeldAndTheOldOneLetGo() {
     let shortcut = Shortcut()
-    defer { try? shortcut.hold(nil) }
-    try shortcut.hold(one)
+    defer { _ = shortcut.change(to: nil) }
+    #expect(shortcut.change(to: one) == nil)
     #expect(Shortcut().warning(for: one) == "Chete already uses these keys.")
-    try shortcut.hold(other)
+    #expect(shortcut.change(to: other) == nil)
     #expect(Shortcut().warning(for: one) == nil)
     #expect(Shortcut().warning(for: other) == "Chete already uses these keys.")
     #expect(shortcut.warning(for: other) == nil, "The keys it holds are not a clash with itself.")
@@ -38,4 +38,13 @@ private let other = KeyCombo("f12", command: true, shift: true, option: true, co
         Shortcut().warning(for: KeyCombo("c", command: false, option: true)) == "Add ⌘ or ⌃, so typing still works.")
     #expect(Shortcut.words(.macOSHasIt) == "Your Mac already uses these keys.")
     #expect(Shortcut.words(.macOSRefused(-9878)) == "Your Mac won’t let Chete use these keys.")
+}
+
+@Test func aKeyChetesTableLacksIsRefusedRatherThanTakenForAnother() {
+    let shortcut = Shortcut()
+    defer { _ = shortcut.change(to: nil) }
+    let foreign = KeyCombo("é", control: true)
+    #expect(shortcut.warning(for: foreign) == "Chete can’t use that key. Try another.")
+    #expect(shortcut.change(to: foreign) == "Chete can’t use that key. Try another.")
+    #expect(shortcut.keys == nil)
 }

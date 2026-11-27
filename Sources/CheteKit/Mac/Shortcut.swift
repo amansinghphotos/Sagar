@@ -14,30 +14,33 @@ package final class Shortcut {
 
     package init() {}
 
-    /// Holds these keys, or none, in place of the ones held before. If they can't be held, the old ones stay.
-    package func hold(_ combo: KeyCombo?) throws(HotKey.Refusal) {
-        guard combo != keys else { return }
+    /// Holds these keys, or none, in place of the ones held before, and says why in words if they can't be held.
+    /// If they can't, the old ones stay held.
+    package func change(to combo: KeyCombo?) -> String? {
+        guard combo != keys else { return nil }
         var new: HotKey?
-        if let combo { new = try HotKey(Self.keys(of: combo)) { [weak self] in self?.pressed() } }
+        if let combo {
+            guard let found = Self.keys(of: combo) else { return Self.unknown }
+            do {
+                new = try HotKey(found) { [weak self] in self?.pressed() }
+            } catch {
+                return Self.words(error)
+            }
+        }
         held?.letGo()
         (held, keys) = (new, combo)
-    }
-
-    /// Holds these keys, or none, as `hold` does, and says why in words if they can't be held.
-    package func change(to combo: KeyCombo?) -> String? {
-        do {
-            try hold(combo)
-            return nil
-        } catch {
-            return Self.words(error)
-        }
+        return nil
     }
 
     /// Why these keys can't be Chete's shortcut, in words, or nothing if they can. The keys held now can.
     package func warning(for combo: KeyCombo) -> String? {
-        guard combo != keys, let refusal = HotKey.refusal(of: Self.keys(of: combo)) else { return nil }
-        return Self.words(refusal)
+        guard combo != keys else { return nil }
+        guard let found = Self.keys(of: combo) else { return Self.unknown }
+        return HotKey.refusal(of: found).map(Self.words)
     }
+
+    /// A key Chete doesn't know where to find on the keyboard, as on one not set out as in the US.
+    private static let unknown = "Chete can’t use that key. Try another."
 
     /// A refusal as the person reads it.
     package static func words(_ refusal: HotKey.Refusal) -> String {
@@ -49,11 +52,12 @@ package final class Shortcut {
         }
     }
 
-    /// The keys as macOS numbers them, by their place on a US keyboard.
-    static func keys(of combo: KeyCombo) -> HotKey.Keys {
-        HotKey.Keys(
-            key: codes[combo.key == "+" ? "=" : combo.key] ?? kVK_ANSI_C, command: combo.command, shift: combo.shift,
-            option: combo.option, control: combo.control)
+    /// The keys as macOS numbers them, by their place on a US keyboard, or nothing for a key not on one.
+    static func keys(of combo: KeyCombo) -> HotKey.Keys? {
+        codes[combo.key == "+" ? "=" : combo.key].map {
+            HotKey.Keys(
+                key: $0, command: combo.command, shift: combo.shift, option: combo.option, control: combo.control)
+        }
     }
 
     private static let codes: [String: Int] = [
