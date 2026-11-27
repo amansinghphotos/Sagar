@@ -1,7 +1,10 @@
 // Taken from Search at commit c92ea7c: KeyCombo (Shortcuts.swift, its value and how a menu shows it), and FixedKey and
-// KeyBox (ShortcutsPage.swift). Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where
-// this repository's rules require: Search's colours are read from Look; a key is heard through SwiftUI, as Look may not
-// use AppKit's events; and given values replace Search's store of shortcuts.
+// KeyBox (ShortcutsPage.swift). Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed where
+// this repository's rules require: Search's colours are read from Look; a key is heard through SwiftUI's key presses
+// while the box has focus, as Look may not use AppKit's events, so the box stops listening when focus leaves it; given
+// values replace Search's store of shortcuts, its browser's own refusals and its announcement, so `changed`, `refusal`
+// and `owner` are given, as is FixedKey's help line; and the access and isolation are the ones Swift 6 and this
+// repository ask for. Added: `listening`, to start a box waiting for a key, which the pictures need.
 import SwiftUI
 
 /// A key and the modifiers held with it.
@@ -26,9 +29,12 @@ nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
         self.control = control
     }
 
-    /// The key SwiftUI heard, with the modifiers held.
-    package init?(key equivalent: KeyEquivalent, characters: String, modifiers: EventModifiers) {
-        let key = KeyCombo.names[equivalent] ?? (characters.isEmpty ? String(equivalent.character) : characters)
+    /// The key SwiftUI heard, read as the key itself rather than what it typed, so ⇧⌘] is "]" with shift, not
+    /// "}"; the function keys by their names.
+    package init?(key equivalent: KeyEquivalent, modifiers: EventModifiers) {
+        let scalar = equivalent.character.unicodeScalars.first.map { Int($0.value) } ?? 0
+        let function = (0xF704...0xF70F).contains(scalar) ? "f\(scalar - 0xF704 + 1)" : nil
+        let key = KeyCombo.names[equivalent] ?? function ?? String(equivalent.character)
         guard !key.isEmpty else { return nil }
         self.init(
             key, command: modifiers.contains(.command), shift: modifiers.contains(.shift),
@@ -60,8 +66,13 @@ nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
 /// Keys that are listed but not moved here, drawn as a KeyBox at rest.
 package struct FixedKey: View {
     let text: String
+    /// Where the key is set, said when the pointer rests on it.
+    var help = ""
 
-    package init(_ text: String) { self.text = text }
+    package init(_ text: String, help: String = "") {
+        self.text = text
+        self.help = help
+    }
 
     package var body: some View {
         Text(text)
@@ -74,6 +85,7 @@ package struct FixedKey: View {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .strokeBorder(Role.hairline, lineWidth: 1)
             )
+            .help(help)
     }
 }
 
@@ -134,9 +146,10 @@ package struct KeyBox: View {
         .focused($heard)
         .onKeyPress(phases: .down) { press in
             guard listening else { return .ignored }
-            take(KeyCombo(key: press.key, characters: press.characters, modifiers: press.modifiers))
+            take(KeyCombo(key: press.key, modifiers: press.modifiers))
             return .handled
         }
+        .onChange(of: heard) { _, now in if !now, listening { stop() } }
         .onDisappear(perform: stop)
     }
 
