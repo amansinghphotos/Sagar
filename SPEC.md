@@ -130,7 +130,7 @@ first of them, and a release will not start while its own has a box unticked.
 macOS records why on that Mac, and tells no one else. Send Report, in Shell, lets the person pass it on.
 
 - The next time the app opens, a card says it stopped, and offers a short report. Not Now
-  closes it, and that report is never offered again.
+  closes it, and that stop's report is never offered again.
 - The report is plain text, shown in full on the card before it goes. It holds only the app, its
   version and build date, the Mac's model, the macOS version, and where in the app's own code it
   stopped, as Apple's MetricKit hands it over.
