@@ -26,7 +26,7 @@ package struct Pill: View {
                 .frame(height: Self.height)
                 .background {
                     if filled {
-                        Capsule().fill(tint)
+                        Capsule().fill(Role.ink)
                     } else {
                         Capsule().fill(hovering ? Role.hover : Role.ground)
                         Capsule().strokeBorder(Role.hairline, lineWidth: 1)
@@ -66,7 +66,6 @@ package struct Quick: View {
                 .padding(.horizontal, Space.near.rawValue)
                 .frame(height: Self.height)
                 .background(Capsule().fill(Role.wash))
-                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }
