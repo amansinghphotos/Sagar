@@ -659,11 +659,22 @@ tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those th
     local reach=all
     [ -n "${CI:-}" ] || reach=$(reached)
     case $reach in
-        all) swift test --quiet 2>&1 ;;
+        all) testing ;;
         "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
         *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test"
-            swift test --quiet --filter "^($reach)\." 2>&1 ;;
+            testing --filter "^($reach)\." ;;
     esac
+}
+
+testing() { # swift test [<argument>…]: if a test fails, each failing test and its message come first, then the end
+    # of the run, so that the forty lines a failed rule shows always say which tests failed and why
+    local log status=0
+    log=$(swift test --quiet "$@" 2>&1) || status=$?
+    [ "$status" -ne 0 ] || return 0
+    printf '%s\n' "$log" | awk '/✘ Test .* recorded an issue|: error: / { named = 1; print; next }
+        named && /^↳ / { print; next } { named = 0 }' | cut -c 1-300 | awk '!seen[$0]++' | head -n 30
+    printf '%s\n' "$log" | tail -n 8
+    return "$status"
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
