@@ -27,8 +27,8 @@ nonisolated package struct Clips: Sendable {
     /// The name of Chete's key in the login keychain. Tests use names of their own.
     package static let keyName = "Chete · Clip Key"
 
-    private let store: Store
-    private let seal: Seal
+    let store: Store
+    let seal: Seal
 
     /// The history in a folder, sealed by the key kept under a name.
     package init(folder: URL, keyName: String) throws {

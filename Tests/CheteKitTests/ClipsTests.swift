@@ -6,7 +6,7 @@ import Testing
 
 /// Clips kept in a fresh folder, sealed by a key under a name the real Chete never uses.
 /// Each test removes both when it ends.
-private struct Kept {
+struct Kept {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     let keyName = "Sagar Tests · \(UUID().uuidString)"
 
