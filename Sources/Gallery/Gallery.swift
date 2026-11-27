@@ -43,9 +43,17 @@ struct Gallery: View {
         VStack(spacing: 0) {
             bar
             Divider()
-            ContentUnavailableView(page.rawValue, systemImage: "square.dashed")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Group {
+                switch page {
+                case .tokens: Tokens()
+                default: ContentUnavailableView(page.rawValue, systemImage: "square.dashed")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .foregroundStyle(Role.ink)
+        .background(Role.ground)
+        .environment(\.theme, theme)
         .frame(width: size.width, height: size.height)
         .preferredColorScheme(appearance.scheme)
     }

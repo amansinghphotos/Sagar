@@ -21,9 +21,11 @@ let package = Package(
         .testTarget(name: "KeepTests", dependencies: ["Keep"], swiftSettings: strict),
         .target(name: "Shell", dependencies: [.product(name: "Sparkle", package: "Sparkle")], swiftSettings: strict),
         .testTarget(name: "ShellTests", dependencies: ["Shell"], swiftSettings: strict),
-        .target(name: "CheteKit", dependencies: ["Shell"], swiftSettings: strict),
+        .target(name: "CheteKit", dependencies: ["Keep", "Shell"], swiftSettings: strict),
+        .testTarget(name: "CheteKitTests", dependencies: ["CheteKit", "Keep"], swiftSettings: strict),
         .target(name: "Look", swiftSettings: strict),
-        .testTarget(name: "LookTests", dependencies: ["Look"], swiftSettings: strict),
+        .testTarget(
+            name: "LookTests", dependencies: ["Look", "Pictures"], exclude: ["Fixtures"], swiftSettings: strict),
         // The test window where each part of the look is checked against Search. Never shipped.
         .executableTarget(name: "Gallery", dependencies: ["Look"], swiftSettings: strict),
         .testTarget(

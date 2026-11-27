@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | request | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [request | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | request | size | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [request | size | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -201,9 +201,13 @@ search() { # search <pattern> <allowed folders pattern>: lines in Apps and Sourc
 
 size() {
     [ -n "$base" ] || return $nothing
-    local most total
+    local most total from=$base
     most=$(number 'Changed lines')
-    total=$(git diff --numstat "$base" | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
+    # While main is being merged in, the branch is measured from that main, whose own changes are not the branch's.
+    if git rev-parse -q --verify MERGE_HEAD >/dev/null && git merge-base --is-ancestor MERGE_HEAD origin/main; then
+        from=MERGE_HEAD
+    fi
+    total=$(git diff --numstat "$from" | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
     [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
 }
 
@@ -441,6 +445,7 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
 # A request's words and label are judged by themselves, in seconds, whenever they change. Everything
 # else is judged once for each change to the code.
 [ "${1:-}" = request ] && rules="template" || rules="size scope lock template budget imports look network secrets format build tests tour"
+[ "${1:-}" != size ] || rules="size"
 for name in $rules; do
     rule "$name"
 done
