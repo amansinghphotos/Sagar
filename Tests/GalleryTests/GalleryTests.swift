@@ -1,5 +1,6 @@
 import Look
 import Pictures
+import SwiftUI
 import Testing
 
 @testable import Gallery
@@ -24,6 +25,14 @@ func theControlsPageMatchesItsPicture(dark: Bool) throws {
 }
 
 @Test(arguments: [false, true])
+func theChoicesPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: Gallery(page: .choices, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        named: "gallery-choices-\(dark ? "dark" : "light")", dark: dark)
+}
+
+@Test(arguments: [false, true])
 func theListsPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
@@ -45,4 +54,17 @@ func theStatesPageMatchesItsPicture(dark: Bool) throws {
     try expectPicture(
         of: Gallery(page: .states, appearance: dark ? .dark : .light), width: size.width, height: size.height,
         named: "gallery-states-\(dark ? "dark" : "light")", dark: dark)
+}
+
+/// Search's column keeps its width beside its page as a card, and the page takes the rest of a narrow, a default
+/// and a wide window.
+@Test(arguments: WindowSize.allCases)
+func theSplitFollowsTheWindow(size: WindowSize) throws {
+    let split = SideSplit {
+        SideItem(title: "Meeting notes", letter: "M", live: true)
+        SideItem(title: "Quarterly report", letter: "Q")
+    } page: {
+        Text(verbatim: "The page")
+    }
+    try expectPicture(of: split, width: size.width, height: size.height, named: "split-\(size.rawValue.lowercased())")
 }
