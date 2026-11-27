@@ -1,5 +1,6 @@
 import Foundation
 import Keep
+import os
 
 /// How long Chete keeps what you copy.
 nonisolated package enum Keeping: String, Codable, CaseIterable, Sendable {
@@ -17,12 +18,13 @@ nonisolated package enum Keeping: String, Codable, CaseIterable, Sendable {
 }
 
 nonisolated extension Clips {
-    /// Deletes every clip copied longer ago than you chose to keep things.
-    package func trim(_ keeping: Keeping, now: Date = .now, calendar: Calendar = .current) throws {
-        guard let oldest = keeping.oldestKept(now: now, calendar: calendar) else { return }
-        for clip in try all() where clip.copied < oldest {
-            try delete(clip)
-        }
+    /// Deletes every clip copied longer ago than you chose to keep things, and says which went.
+    @discardableResult
+    package func trim(_ keeping: Keeping, now: Date = .now, calendar: Calendar = .current) throws -> [Clip] {
+        guard let oldest = keeping.oldestKept(now: now, calendar: calendar) else { return [] }
+        let old = try all().filter { $0.copied < oldest }
+        for clip in old { try delete(clip) }
+        return old
     }
 
     /// Deletes one clip.
@@ -34,6 +36,30 @@ nonisolated extension Clips {
     package func deleteAll() throws {
         for name in try store.sealedNames() {
             try store.removeSealed(named: name)
+        }
+    }
+}
+
+extension Copies {
+    /// Deletes what is older than you chose as Chete opens, and again each day it stays open. The day is
+    /// counted through the Mac's sleep, and macOS may move the wake by up to an hour to group it with others.
+    /// Each time clips go, `deleted` is told which, so the list can drop them.
+    @discardableResult
+    nonisolated package func trimDaily(
+        every day: Duration = .seconds(86_400), now: @escaping @MainActor () -> Date = { .now },
+        calendar: Calendar = .current, deleted: @escaping @MainActor ([Clip]) -> Void
+    ) -> Task<Void, Never> {
+        Task { @MainActor in
+            while !Task.isCancelled {
+                do {
+                    let old = try await trim(now: now(), calendar: calendar)
+                    if !old.isEmpty { deleted(old) }
+                } catch {
+                    Logger(subsystem: "com.amansingh.chete", category: "Copies")
+                        .error("Old clips were not deleted: \(error)")
+                }
+                try? await Task.sleep(for: day, tolerance: day / 24)
+            }
         }
     }
 }
