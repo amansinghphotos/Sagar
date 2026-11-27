@@ -14,7 +14,9 @@ final class UpdateTour: XCTestCase {
             let item = app.statusItems[name]
             if !item.waitForExistence(timeout: 10) { add(XCTAttachment(string: app.debugDescription)) }
             item.click()
-            app.buttons["Check for Updates"].click()
+            let check = app.buttons["Check for Updates"]
+            if !check.waitForExistence(timeout: 5) { add(XCTAttachment(string: app.debugDescription)) }
+            check.click()
         } else {
             app.menuBars.menuBarItems[name].click()
             app.menuBars.menuItems["Check for Updates…"].click()
