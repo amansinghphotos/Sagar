@@ -74,19 +74,27 @@ package struct WelcomePages: View {
         .onChange(of: given.opensAtLogin) { _, on in act.openAtLogin(on) }
     }
 
-    /// The greeting in Gurmukhi, which leads, over the same in English, then what Chete is and how to open it.
+    /// The greeting in Gurmukhi leads as the hero, with the same in English under it. Then Chete's name on a
+    /// soft chip, like its card in the menu bar, with its Gurmukhi and what it means, and how to open it.
     private var greeting: some View {
-        VStack(alignment: .leading, spacing: Space.page.rawValue) {
-            Image(systemName: "list.clipboard").type(.display).foregroundStyle(Role.ink).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: Space.gap.rawValue) {
+        VStack(alignment: .leading, spacing: Space.page.rawValue + Space.near.rawValue) {
+            VStack(alignment: .leading, spacing: Space.tight.rawValue) {
                 // VoiceOver reads the English under it, which says the same.
-                Text("ਜੀ ਆਇਆਂ ਨੂੰ").type(.display).foregroundStyle(Role.ink).accessibilityHidden(true)
-                Text("Welcome to Chete.").type(.title).foregroundStyle(Role.ink)
+                Text("ਜੀ ਆਇਆਂ ਨੂੰ").type(.hero).foregroundStyle(Role.ink).accessibilityHidden(true)
+                Text("Welcome to Chete.").type(.display).foregroundStyle(Role.muted)
             }
-            Text(
-                "Chete, ਚੇਤੇ, means remembered. It keeps what you copy.\nFind it in the menu bar, or open it quicker with a shortcut."
-            )
-            .type(.body).lineSpacing(Space.tight.rawValue).foregroundStyle(Role.muted)
+            HStack(spacing: Space.near.rawValue) {
+                Image(systemName: "list.clipboard").type(.title).foregroundStyle(Role.ink).accessibilityHidden(true)
+                Text("Chete").type(.title).foregroundStyle(Role.ink)
+                Text("ਚੇਤੇ").type(.title).foregroundStyle(Role.muted)
+                Text("remembered").type(.detail).foregroundStyle(Role.muted)
+            }
+            .padding(.horizontal, Space.wide.rawValue).padding(.vertical, Space.near.rawValue)
+            .background(Role.wash, in: Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Chete means remembered")
+            Text("It keeps what you copy.\nFind it in the menu bar, or open it quicker with a shortcut.")
+                .type(.body).lineSpacing(Space.tight.rawValue).foregroundStyle(Role.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

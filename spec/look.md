@@ -22,7 +22,8 @@ a colour, a font or a size, so a change to the look reaches every app at once.
    follows once Modern's pictures are approved. An app chooses its theme once. No seasons, no variants.
 2. **Roles, not values.** Colour, type, spacing, corner radius, shadow and motion are each a short list
    of names. Each colour pair carries its contrast as a number. Modern keeps Search's colours even
-   where words fall below 4.5 to 1.
+   where words fall below 4.5 to 1. One size of type is not Search's: the hero, larger than any of
+   its, for the greeting that leads a welcome.
 3. **Every part an app could need, built now,** not one at a time as apps ask:
    - *Actions:* buttons in four kinds (main, plain, quiet, destructive), icon button, button with a
      held menu, pull-down menu, link, small text action, toolbar, context menu.
