@@ -42,7 +42,7 @@ His pending approvals are the only list of things waiting on him.
    they need from the network.
 7. Checklists, as in aviation: every repeated procedure is a short list that is read every time.
 
-Until Look's first set of parts is approved, decision 7 sets principles 4 and 5 aside for Look alone.
+Until Look's first set of parts is approved, decision 7 sets principle 5 aside for Look alone.
 
 ## 3. The Repository
 

@@ -91,8 +91,7 @@ Never, whatever the reason:
 - Commit anything personal: his data, a workplace detail, a key, an e-mail address, a path under his
   home folder. This repository is public.
 - Paste code from an older project or from someone else's. Read it for ideas and write fresh. Until
-  Look's first set of parts is approved, decision 7 sets this aside for Look's motion alone, and lets
-  Look be built ahead of need.
+  Look's first set of parts is approved, decision 7 lets Look be built ahead of need.
 - Force push, reset hard, rewrite pushed history, or commit past the gate.
 - Stash, restore, clean or otherwise clear work you did not make in this session. Stop and say so.
 - Write a rule as prose. A rule is a check in `Scripts/check`, or it is not written.
