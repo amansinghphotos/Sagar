@@ -90,7 +90,10 @@ struct Machine {
         if FileManager.default.fileExists(atPath: file("Clean").path) {
             try FileManager.default.moveItem(at: file("Clean"), to: file("Clean.old"))
         }
-        try FileManager.default.moveItem(at: file("Kept"), to: file("Clean"))
+        do { try FileManager.default.moveItem(at: file("Kept"), to: file("Clean")) } catch {
+            try? FileManager.default.moveItem(at: file("Clean.old"), to: file("Clean"))  // the old one stays clean
+            throw error
+        }
         try? FileManager.default.removeItem(at: file("Clean.old"))
     }
 }
@@ -238,7 +241,10 @@ final class Host: NSObject, VZVirtualMachineDelegate {
                 try machine.keepAsClean()
                 print("kept as the clean guest")
                 exit(0)
-            } catch { fail("Could not keep the guest: \(error)") }
+            } catch {
+                try? FileManager.default.removeItem(at: machine.file("Kept"))  // no half-kept guest left on the drive
+                fail("Could not keep the guest: \(error)")
+            }
         }
     }
 }
@@ -258,11 +264,16 @@ func serve(_ folder: URL) async throws {
     }
     host.listenForSignals()
     let listener = listenUnix(folder.appending(path: "guest.sock").path)
-    if machine.frozen {
-        try await host.vm.restoreMachineStateFrom(url: machine.file("Clean/State.vzvmsave"))
-        try await host.vm.resume()
-    } else {
-        try await host.vm.start()
+    do {
+        if machine.frozen {
+            try await host.vm.restoreMachineStateFrom(url: machine.file("Clean/State.vzvmsave"))
+            try await host.vm.resume()
+        } else {
+            try await host.vm.start()
+        }
+    } catch {
+        if machine.frozen { machine.discard() }  // a guest that cannot start leaves no copy behind
+        throw error
     }
     print("started")
     Thread.detachNewThread {
