@@ -70,7 +70,6 @@ esac
 # With no agents' token, gh must fail, never fall back to a person's own sign-in.
 # The commit gate, Scripts/check, is git's own hook. Every chat shares one settings file, so it is written only when it differs.
 [ "$(git config core.hooksPath)" = .githooks ] || git config core.hooksPath .githooks
-git worktree prune # copies whose folders are gone, such as one kept in a temporary folder before a restart
 git fetch -q --prune origin 2>/dev/null # then drop local branches whose pull request has merged
 for gone in $(git branch --format='%(refname:short) %(upstream:track)' | awk '$2 == "[gone]" { print $1 }'); do
     # Only if GitHub merged exactly the commit this branch ends on: nothing unpushed can be lost.
