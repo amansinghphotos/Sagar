@@ -1,23 +1,19 @@
-// Taken from Search at commit c92ea7c: its sidebar row's look (SideRow, Side.swift) and its title at rest
-// (TitleAtRest, AtRestLine.swift). Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md).
-// Changed only where this repository's rules require: Search's colours and motion are read from Look; what is a
-// browser's own (loading, sound, pins, peeks, groups, editing, the address at rest) is left out; and the row's
-// title, mark, and whether it is in front or chosen, are given.
+// A row of the sidebar: a letter or an icon in a small tile, a title, and a close button under the pointer.
 import SwiftUI
 
-/// A row of a sidebar: its mark, its title, and a cross under the pointer. The
-/// one in front sits on the wash; a chosen one has a ring.
+/// One thing in the sidebar. The one in front is washed and written in ink; a chosen one is ringed; the rest
+/// are quiet. Under the pointer it lightens, and a close button shows if it can be closed.
 package struct SideItem: View {
     @Environment(\.greys) private var greys
     @Environment(\.motion) private var motion
-    let title: String
-    let letter: String
-    var icon: Image? = nil
-    var live = false
-    var selected = false
-    var close: (() -> Void)? = nil
-
     @State private var hovering = false
+
+    private let title: String
+    private let letter: String
+    private let icon: Image?
+    private let live: Bool
+    private let selected: Bool
+    private let close: (() -> Void)?
 
     package init(
         title: String, letter: String, icon: Image? = nil, live: Bool = false, selected: Bool = false,
@@ -31,93 +27,54 @@ package struct SideItem: View {
         self.close = close
     }
 
-    private var closable: Bool { close != nil }
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: Radius.row.rawValue, style: .continuous) }
 
     package var body: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 8) {
-                Mark(icon: icon, letter: letter, size: 15)
-                Text(title)
-                    .font(.system(size: 12.5))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .foregroundStyle(colour)
+        HStack(spacing: Space.near.rawValue) {
+            mark
+            Text(title)
+                .font(.system(size: 12.5))
+                .foregroundStyle(live ? AnyShapeStyle(Role.ink) : AnyShapeStyle(greys.muted))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if hovering, let close {
+                Button(action: close) {
+                    Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
+                        .frame(width: 16, height: 16)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(greys.muted)
+                .transition(.opacity)
             }
-            // Pushed to the leading edge by its frame, not a Spacer: the
-            // row's spacing before a Spacer kept the title 8 points further
-            // from the right edge than the icon is from the left.
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 10)
-            .padding(.trailing, 10)
-            .frame(height: 28)
-            .contentShape(Rectangle())
         }
+        .padding(.horizontal, Space.gap.rawValue)
         .frame(height: 28)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // The title keeps its length under the pointer and fades out
-        // beneath the cross, rather than being cut shorter, so its end
-        // doesn't jump on each row the pointer passes.
-        .mask {
-            ZStack {
-                Rectangle().opacity(hovering && closable ? 0 : 1)
-                HStack(spacing: 0) {
-                    Rectangle()
-                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
-                        .frame(width: 16)
-                    Color.clear.frame(width: 26)
-                }
-            }
-        }
-        .overlay(alignment: .trailing) {
-            ZStack {
-                if hovering && closable {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(Role.muted)
-                        .frame(width: 15, height: 15)
-                        .background(Role.ink.opacity(0.07), in: Circle())
-                        .transition(.opacity)
-                }
-            }
-            .frame(width: 15, height: 15)
-            .overlay {
-                Color.clear
-                    .frame(width: 30, height: 28)
-                    .contentShape(Rectangle())
-                    .onTapGesture { if hovering, let close { close() } }
-            }
-            .padding(.trailing, 7)
-        }
+        .contentShape(shape)
         .background { ground.animation(motion.quick, value: live) }
         .overlay {
-            if selected {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(Role.ink.opacity(0.35), lineWidth: 1)
-                    .allowsHitTesting(false)
-            }
+            if selected { shape.strokeBorder(Role.ink.opacity(0.35), lineWidth: 1) }
         }
-        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-        .onHover { hovering = $0 }
         .animation(nil, value: hovering)
+        .onHover { hovering = $0 }
         .transition(.scale(scale: 0.94, anchor: .leading).combined(with: .opacity))
     }
 
-    @ViewBuilder
+    /// The row's fill: washed when in front or chosen, a lighter grey under the pointer, else clear.
     private var ground: some View {
-        if live {
-            Rectangle().fill(greys.wash)
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-        } else if selected {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(greys.wash)
-        } else if hovering {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(greys.hover)
-        }
+        shape.fill(live || selected ? greys.wash : greys.hover.opacity(hovering ? 1 : 0))
     }
 
-    private var colour: AnyShapeStyle {
-        if live { return AnyShapeStyle(Role.ink) }
-        return hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.muted)
+    /// The icon if there is one, else the letter, in a small tile.
+    @ViewBuilder private var mark: some View {
+        if let icon {
+            icon.resizable().scaledToFit().frame(width: 15, height: 15)
+        } else {
+            Text(letter)
+                .font(.system(size: 8.5, weight: .medium))
+                .foregroundStyle(greys.muted)
+                .frame(width: 15, height: 15)
+                .background(Role.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+        }
     }
 }
