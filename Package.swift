@@ -18,8 +18,10 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.1")
     ],
     targets: [
-        .target(name: "CheteKit", dependencies: ["Keep", "Shell"], swiftSettings: strict),
-        .testTarget(name: "CheteKitTests", dependencies: ["CheteKit", "Keep"], swiftSettings: strict),
+        .target(name: "CheteKit", dependencies: ["Keep", "Look", "Shell"], swiftSettings: strict),
+        .testTarget(
+            name: "CheteKitTests", dependencies: ["CheteKit", "Keep", "Look", "Pictures"], exclude: ["Pictures"],
+            swiftSettings: strict),
 
         // The test window where each part of the look is checked against Search. Never shipped.
         .executableTarget(name: "Gallery", dependencies: ["Look"], swiftSettings: strict),
