@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | request | words | apps | plain | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [request | ready <number> | words <file>… | apps <file>… | plain < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | request | words | apps | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [request | ready <number> | words <file>… | apps <file>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -100,13 +100,18 @@ key='-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-ant-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Z
 mail='[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[a-z]{2,}'
 home='/Users/[a-z]'
 allowed='@users\.noreply\.github\.com$|@example\.(com|org)$|@[0-9]x\.[a-z]+$'
+owner_part() { # the owner's part of the description on standard input: what he reads, without hidden notes
+    tr -d '\r' | awk '/^## For the Owner/ { on = 1; next } /^## |^<details/ { on = 0 } on' |
+        awk '/<!--/ { hidden = 1 } !hidden; /-->/ { hidden = 0 }' | grep -v '^[[:space:]]*$'
+}
+pictures='!\[[^]]*\]\([^)]+\)|<img [^>]*>'
 plain_words() { # reads a pull request's description: true if it opens with the four answers for the owner,
     # and holds no key, e-mail address or home folder path anywhere
     local whole part label
     whole=$(tr -d '\r')
     ! printf '%s\n' "$whole" | grep -oE -- "$key|$mail|$home" | grep -qvE "$allowed" || return 1
-    part=$(printf '%s\n' "$whole" | awk '/^## For the Owner/ { on = 1; next } /^## |^<details/ { on = 0 } on' |
-        awk '/<!--/ { hidden = 1 } !hidden; /-->/ { hidden = 0 }' | grep -v '^[[:space:]]*$')
+    # Where a picture shown to him is kept is no business of his part; its own words, which he reads, are.
+    part=$(printf '%s\n' "$whole" | owner_part | sed -E 's/!\[([^]]*)\]\([^)]+\)/\1/g; s/<img [^>]*>//g')
     for label in 'What This Does:' 'Why:' 'Does It Change Your Apps?' 'What to Do:'; do # each asked, each answered
         printf '%s\n' "$part" | awk -v label="**$label**" 'at = index($0, label) {
             if (substr($0, at + length(label)) ~ /[^[:space:]]/) answered = 1 } END { exit !answered }' || return 1
@@ -115,6 +120,24 @@ plain_words() { # reads a pull request's description: true if it opens with the 
         grep -qE '`|(Sources|Scripts|Tests|Apps|docs|Config|spec|Checklists|Decisions|\.github|\.claude)/|\.(swift|md|yml|xml|json|xcconfig|plist)\b'
 }
 [ "${1:-}" != plain ] || { plain_words && echo yes || echo no; exit; }
+shows_all() { # shows_all <file>…: true if the owner's part of the description on standard input shows him, in
+    # that one place, every must-have of each spec named and every picture named. He judges them there.
+    local part file count musts=0 shown=0
+    part=$(owner_part)
+    for file in "$@"; do
+        [ -f "$file" ] || continue
+        case $file in
+            *.md) # a spec with no must-haves to count would ask for nothing to be shown, so it fails
+                count=$(awk '/^## / { on = tolower($0) ~ /must.?haves/; next } on && /^[0-9]+\. /' "$file" | wc -l)
+                [ "$count" -gt 0 ] || return 1
+                musts=$((musts + count)) ;;
+            *.png) shown=$((shown + 1)) ;;
+        esac
+    done
+    [ "$(printf '%s\n' "$part" | grep -cE '^[0-9]+\. ')" -ge "$musts" ] &&
+        [ "$(printf '%s\n' "$part" | grep -oE "$pictures" | wc -l)" -ge "$shown" ]
+}
+[ "${1:-}" != shown ] || { shift; shows_all "$@" && echo yes || echo no; exit; }
 title_case() { # Apple's title style: the first word, and every word of four letters or more, has a capital
     printf '%s\n' "$1" | tr -- '-' ' ' | awk '{
         for (word = 1; word <= NF; word++) {
@@ -226,6 +249,14 @@ template() {
     printf '%s\n' "$PR_BODY" | plain_words ||
         { echo "The description must open with '## For the Owner' and its four answers, with no code or file names,"
           echo "and hold no key, e-mail address or home folder path anywhere."; bad=1; }
+    # What he is asked to judge, he judges in one place: never by clicking through the files.
+    local judged
+    judged=$(changed | grep -E '^spec/.*\.md$|/Pictures/.*\.png$|\.xcassets/.*\.png$' || true)
+    if [ -n "$judged" ] && ! (IFS=$'\n' && set -f && printf '%s\n' "$PR_BODY" | shows_all $judged); then
+        echo "The owner's part must show him what he is asked to judge: every must-have of a changed spec, as a"
+        echo "numbered list, and every changed picture, as an image. He never goes looking in the files."
+        bad=1
+    fi
     issue=$(printf '%s\n' "$PR_BODY" | grep -oiE '\b(for|close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' | grep -oE '[0-9]+$' | head -1)
     # A to-do in a milestone stays open until the owner approves the release that holds its fix.
     if [[ $branch != release/* ]]; then
