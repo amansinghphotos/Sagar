@@ -117,7 +117,6 @@ private struct RecentRow: View {
         .accessibilityLabel(row.title)
         .accessibilityValue(row.detail)
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: "Copy", copy)
         .accessibilityAction { copy() }
     }
 }
