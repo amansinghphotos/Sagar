@@ -68,3 +68,11 @@ func theSplitFollowsTheWindow(size: WindowSize) throws {
     }
     try expectPicture(of: split, width: size.width, height: size.height, named: "split-\(size.rawValue.lowercased())")
 }
+
+@Test(arguments: [false, true])
+func theKeyboardPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: Gallery(page: .keyboard, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        named: "gallery-keyboard-\(dark ? "dark" : "light")", dark: dark)
+}
