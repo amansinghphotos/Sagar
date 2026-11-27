@@ -9,6 +9,7 @@ public struct CheteScene: Scene {
     public init() {
         Self.startWatching()
         Swap.listen()
+        NewBuildCard.showIfNew()
     }
 
     /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
