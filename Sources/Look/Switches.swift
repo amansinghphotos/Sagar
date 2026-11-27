@@ -24,10 +24,7 @@ package struct Switch: View {
             .contentShape(Capsule())
             .onTapGesture { withAnimation(motion.settle) { on.toggle() } }
             .animation(motion.settle, value: on)
-            .accessibilityElement()
-            .accessibilityAddTraits(.isToggle)
-            .accessibilityValue(on ? Text(verbatim: "On") : Text(verbatim: "Off"))
-            .accessibilityAction { on.toggle() }
+            .accessibilityRepresentation { Toggle("", isOn: $on) }
     }
 }
 
@@ -93,6 +90,7 @@ package struct Segmented<Option: Hashable>: View {
                     .accessibilityElement()
                     .accessibilityLabel(Text(name))
                     .accessibilityAddTraits(chosen ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { withAnimation(motion.settle) { selection = option } }
             }
         }
         .padding(2)

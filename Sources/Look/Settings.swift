@@ -1,6 +1,7 @@
 // Taken from Search at commit c92ea7c: GroupBlock, SettingRow and Steps (Settings.swift). Copyright (c) 2026
 // Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require:
-// Search's colours and motion are read from Look; the stepper's nearest stops are one function a test reads.
+// Search's colours and motion are read from Look; the stepper's nearest stops are one function a test reads; icons
+// beside words are hidden from VoiceOver, which reads the words.
 import SwiftUI
 
 /// A group of a section: its small heading with an icon, then its card.
@@ -21,6 +22,7 @@ package struct GroupBlock<Content: View>: View {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 10.5, weight: .semibold))
+                    .accessibilityHidden(true)
                 Text(title.uppercased())
                     .font(.system(size: 10.5, weight: .semibold))
                     .tracking(0.5)
@@ -68,6 +70,7 @@ package struct SettingRow<Control: View>: View {
                     .foregroundStyle(Role.ink.opacity(0.78))
                     .frame(width: 26, height: 26)
                     .background(Role.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 5) {
                         Text(title)

@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | iphone | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -443,6 +443,23 @@ compile() { # run a build; any warning or error fails it, and only those lines a
     [ "$status" -eq 0 ] || { printf '%s\n' "$log" | tail -n 15 | cut -c 1-300; return 1; }
 }
 
+phone="Keep" # the shared modules that build for iPhone today. Look joins them when issue 153 is mended.
+iphone() { # The shared parts still build for iPhone. Compiled for its SDK alone: no Simulator, nothing on screen.
+    # The first build in a folder takes some 10 s and each one after about 3, so it runs before every commit.
+    ! words_only || return $nothing
+    local module version sdk targets=()
+    for module in $phone; do
+        [ -d "Sources/$module" ] || { echo "$module is listed for iPhone, and is no module in Sources."; return 1; }
+        targets+=(--target "$module")
+    done
+    [ ${#targets[@]} -gt 0 ] || { echo "No module is listed for iPhone, so nothing would be built."; return 1; }
+    # Apple gives iPhone's system the Mac's number, so the package's one number serves both.
+    version=$(sed -n 's/.*\.macOS(\.v\([0-9]*\)).*/\1/p' Package.swift)
+    sdk=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null)
+    [ -n "$version" ] && [ -n "$sdk" ] || { echo "No system number in Package.swift, or no iPhone SDK in this Xcode."; return 1; }
+    compile swift build "${targets[@]}" --triple "arm64-apple-ios$version.0" --sdk "$sdk"
+}
+
 tests() {
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
@@ -503,9 +520,13 @@ order() { # The two lists every new part adds to are alphabetical, so two pieces
 
 # A request's words and label are judged by themselves, in seconds, whenever they change. Everything
 # else is judged once for each change to the code.
-[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look network secrets format build tests tour"
+[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look network secrets format build iphone tests tour"
 [ "${1:-}" != size ] || rules="size"
 [ "${1:-}" != order ] || rules="order"
+if [ "${1:-}" = iphone ]; then # Scripts/check iphone [<module>…]: that rule alone, of the modules named or its own
+    rules="iphone"
+    [ $# -lt 2 ] || phone="${*:2}"
+fi
 for name in $rules; do
     rule "$name"
 done
