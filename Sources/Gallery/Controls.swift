@@ -41,7 +41,7 @@ struct Controls: View {
                     Switch(on: $off)
                     Switch(on: $on)
                 }
-                Ticks(items: [("Show the page's colour", $shown), ("Close tabs after a day", $closes)])
+                Ticks(items: [("Show the page’s colour", $shown), ("Close tabs after a day", $closes)])
                 Segmented(options: [(0, "Light"), (1, "Dark"), (2, "System")], selection: $look)
                 HStack(spacing: Space.near.rawValue) {
                     KeyBox(key: $shortcut, changed: true)
@@ -50,7 +50,7 @@ struct Controls: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Nothing("No clips yet.")
-                Trouble(message: "This could not be read.\nTry again in a moment.") {}.frame(height: 110)
+                Trouble(message: "Couldn’t read your clips.\nGive it a moment.") {}.frame(height: 110)
                 ProgressCard(
                     filename: "Clips from the old Chete", message: "Bringing them in", completed: 1200, total: 3400,
                     cancel: {})
