@@ -1,5 +1,6 @@
 import Foundation
 import Keep
+import Look
 
 /// What you chose in Chete's settings, kept as a plain file in Chete's folder.
 /// A choice you never made is the one Chete starts with.
@@ -8,6 +9,8 @@ nonisolated package struct Settings: Codable, Equatable, Sendable {
     package var keepsCopiesFromOtherDevices = true
     /// How long what you copy is kept: a year at first.
     package var keeping = Keeping.year
+    /// The keys that open Chete from any app: Shift-Command-C at first, which the earlier Chete used.
+    package var shortcut = KeyCombo("c", command: true, shift: true)
 
     /// The settings kept in a folder, or the first ones if none were ever kept there.
     package static func read(in folder: URL) throws -> Settings {
@@ -29,5 +32,6 @@ nonisolated extension Settings {
             try values.decodeIfPresent(Bool.self, forKey: .keepsCopiesFromOtherDevices)
             ?? first.keepsCopiesFromOtherDevices
         keeping = try values.decodeIfPresent(Keeping.self, forKey: .keeping) ?? first.keeping
+        shortcut = try values.decodeIfPresent(KeyCombo.self, forKey: .shortcut) ?? first.shortcut
     }
 }

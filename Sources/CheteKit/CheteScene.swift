@@ -19,6 +19,7 @@ public struct CheteScene: Scene {
             }
             .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
             .windowName("Your clips")
+            .openedByShortcut()
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
@@ -45,6 +46,7 @@ public struct CheteScene: Scene {
                 watcher?.kept = { shelf.add($0) }
                 watcher?.start()
                 copies.trimDaily { shelf.remove($0) }
+                OpeningShortcut.shared.hold(((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut)
             } catch {
                 Logger(subsystem: "com.amansingh.chete", category: "Copies").error("Chete keeps no copies: \(error)")
             }

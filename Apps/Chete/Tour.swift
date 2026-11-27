@@ -94,4 +94,19 @@ extension CheteTour {
             return true
         }
     }
+
+    /// Its shortcut, Shift-Command-C at first, opens Chete from another app after its window was closed.
+    @MainActor
+    func testItsShortcutOpensItFromAnotherApp() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let window = app.windows["Chete"]
+        XCTAssert(window.waitForExistence(timeout: 10), "Chete opened no window.")
+        window.buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssert(window.waitForNonExistence(timeout: 5), "Chete's window did not close.")
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
+        finder.activate()
+        finder.typeKey("c", modifierFlags: [.command, .shift])
+        XCTAssert(window.waitForExistence(timeout: 10), "Shift-Command-C did not open Chete.")
+    }
 }
