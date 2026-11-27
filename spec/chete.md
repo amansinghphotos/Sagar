@@ -18,8 +18,9 @@ this Mac unless you carry it.
    Passwords are kept too, even when the app they come from marks them private, so that you can paste
    one again later. What you copy on your own iPhone or another of your Macs, which macOS hands over
    by itself, is kept too, unless you turn that off.
-   *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. Until you choose
-   Allow there, macOS asks before each copy is kept.
+   *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. macOS lists
+   Chete there only once Chete has asked, so the welcome has it ask. Until you choose Allow there,
+   Chete keeps nothing, so that macOS never asks you later.
 2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
    You choose the shortcut in the welcome, and can change it in Settings. Chete suggests three. The
    first is Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. A
@@ -45,12 +46,15 @@ this Mac unless you carry it.
    to look for. Only you can turn it on. The welcome keeps checking, and goes on by itself once it
    is on. Pages arrive and leave with Look's motion. Any step can be skipped, and waits in Settings.
    It never asks for a Claude key.
+   On a Mac that has the earlier Chete's clips, one more page brings them in. Everything Chete will
+   ever ask is asked in the welcome, each with a line on what your Mac will show. Nothing asks you,
+   and no password is wanted, once the welcome is done.
    The Gurmukhi shows where Chete's name comes from, in two places, each with its English beside
    it. The greeting is ਜੀ ਆਇਆਂ ਨੂੰ ("welcome"), and the name is ਚੇਤੇ. Nothing you need is said in
    Gurmukhi alone.
    *Asks for:* Login Items, if you choose to open it at login. The Gurmukhi is set in a typeface macOS
    carries, so no font is added.
-8. **It takes over the Chete before it.** On its first open on a Mac where the earlier Chete kept a
+8. **It takes over the Chete before it.** In its welcome, on a Mac where the earlier Chete kept a
    history, it brings in every clip and both settings, how long to keep things and whether copies from
    other devices arrive. macOS asks you once, and you choose Always Allow. The earlier history is read
    and never changed or deleted.

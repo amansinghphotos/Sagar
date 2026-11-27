@@ -215,7 +215,9 @@ itself once the switch is on. Where
 the app has a keyboard shortcut, the person chooses it there: suggestions, a keyboard that lights
 the keys pressed, and a warning when macOS or the app already uses them. The welcome moves with
 Look's motion, and each app gives it one touch of its own, as Chete does with Gurmukhi. Its parts
-are made once and shared, so the next app's welcome starts at this level. The reviewer holds this
+are made once and shared, so the next app's welcome starts at this level. An app asks for everything it needs during its welcome, and
+says in a line what macOS will show before macOS shows it. Nothing asks a person, and no password is
+wanted, once the welcome is done. The reviewer holds this
 on every change, and he holds it on each picture.
 
 ## 9. Boundaries

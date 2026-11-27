@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The pages of Chete's welcome, in the order a person meets them.
 package enum WelcomePage: String, CaseIterable, Sendable {
-    case greeting, shortcut, keeping, pasting, last
+    case greeting, shortcut, keeping, pasting, oldClips, last
 }
 
 /// What the Mac already gives Chete, and what the person has chosen, when the welcome opens.
@@ -20,6 +20,10 @@ package struct WelcomeGiven: Equatable, Sendable {
     package var warning: String?
     package var keeping = false
     package var pasting = false
+    /// Whether this Mac has clips the earlier Chete kept, which the welcome offers to bring in.
+    package var hasOldClips = false
+    /// What came in from the earlier Chete, in words, once it has.
+    package var broughtIn: String?
     package var opensAtLogin = false
 }
 
@@ -29,12 +33,15 @@ package struct WelcomeActs {
     package var allowKeeping: () -> Void
     /// Opens System Settings where Chete is allowed to paste.
     package var allowPasting: () -> Void
+    /// Brings in the earlier Chete's clips, for which macOS asks for the password once, and says what came in.
+    package var bringInOldClips: () -> String?
     package var openAtLogin: (Bool) -> Void
     /// Lets the person choose an exported file, and says what came back, or nothing if they chose none.
     package var bringBack: () -> String?
 }
 
-/// Chete's welcome: a greeting, one page for each thing the Mac must allow, and a last page of offers.
+/// Chete's welcome: a greeting, the shortcut, one page for each thing macOS asks about, and a last page of
+/// offers. Everything Chete will ever ask is asked here, so nothing asks once the welcome is done.
 package struct WelcomePages: View {
     /// The window's size, which does not change.
     package static let size = CGSize(width: WindowSize.narrow.width, height: 480)
@@ -52,8 +59,13 @@ package struct WelcomePages: View {
         _given = State(initialValue: given)
     }
 
+    /// The pages a person meets. The one for old clips is there only on a Mac that has some.
+    package static func pages(for given: WelcomeGiven) -> [WelcomePage] {
+        WelcomePage.allCases.filter { $0 != .oldClips || given.hasOldClips }
+    }
+
     package var body: some View {
-        let pages = WelcomePage.allCases
+        let pages = Self.pages(for: given)
         Welcome(pages: pages.count, last: "Start", startPage: pages.firstIndex(of: startPage) ?? 0, finish: finish) {
             switch pages[$0] {
             case .greeting: greeting
@@ -62,12 +74,21 @@ package struct WelcomePages: View {
                 step(
                     "Let Chete keep what you copy.",
                     "Chete saves each thing you copy. You allow that once, in System Settings.",
-                    done: "Chete keeps what you copy.", on: given.keeping, ask: act.allowKeeping)
+                    ask: allow, done: given.keeping ? ("Allowed", "Chete keeps what you copy.") : nil,
+                    act: act.allowKeeping)
             case .pasting:
                 step(
                     "Let Chete paste for you.",
                     "Pick a clip, and Chete pastes it for you. You allow that once, in System Settings.",
-                    done: "Chete pastes it where you were.", on: given.pasting, ask: act.allowPasting)
+                    ask: allow, done: given.pasting ? ("Allowed", "Chete pastes it where you were.") : nil,
+                    act: act.allowPasting)
+            case .oldClips:
+                step(
+                    "Bring in your old clips.",
+                    "Chete found your older clips. Your Mac asks for your password once.",
+                    ask: ("Bring them in", "Choose Always Allow when your Mac asks.", "Bring In Clips"),
+                    done: given.broughtIn.map { ("Brought in", $0) },
+                    act: { given.broughtIn = act.bringInOldClips() ?? given.broughtIn })
             case .last: last
             }
         }
@@ -113,23 +134,29 @@ package struct WelcomePages: View {
         }
     }
 
-    /// A page for one thing the Mac must allow: why, and a button that opens System Settings at its place.
-    /// Once macOS allows it, the row says so in the button's place.
+    /// A page for one thing macOS asks about: why, what the Mac will show, and the button that starts it.
+    /// Once it is done, the row says so in the button's place.
     private func step(
-        _ title: String, _ line: String, done: String, on: Bool, ask: @escaping () -> Void
+        _ title: String, _ line: String, ask: (row: String, detail: String, button: String),
+        done: (row: String, detail: String)?, act: @escaping () -> Void
     ) -> some View {
         VStack(alignment: .leading, spacing: Space.wide.rawValue + Space.near.rawValue) {
             WelcomeHeading(title, line)
             rows {
-                if on {
-                    offer("Allowed", done) { Image(systemName: "checkmark").type(.title).foregroundStyle(Role.ink) }
-                } else {
-                    offer("Allow Chete", "A small card shows you where to click.") {
-                        Pill("Open System Settings", filled: true, action: ask)
+                if let done {
+                    offer(done.row, done.detail) {
+                        Image(systemName: "checkmark").type(.title).foregroundStyle(Role.ink)
                     }
+                } else {
+                    offer(ask.row, ask.detail) { Pill(ask.button, filled: true, action: act) }
                 }
             }
         }
+    }
+
+    /// What both pages that open System Settings say on their row, word for word alike.
+    private var allow: (row: String, detail: String, button: String) {
+        ("Allow Chete", "Your Mac may ask first. Then a small card shows where to click.", "Open System Settings")
     }
 
     private var last: some View {
