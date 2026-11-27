@@ -17,6 +17,7 @@ public struct CheteScene: Scene {
                 .windowName("Your clips")
         }
         .commands { UpdateCommands() }
+        MenuBarItem(app: "Chete", symbol: "list.clipboard", window: "chete")
     }
 
     /// Watches what you copy for as long as Chete is open.
