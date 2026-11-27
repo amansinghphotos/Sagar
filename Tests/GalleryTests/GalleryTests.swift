@@ -38,3 +38,11 @@ func theOverlaysPageMatchesItsPicture(dark: Bool) throws {
         of: Gallery(page: .overlays, appearance: dark ? .dark : .light), width: size.width, height: size.height,
         named: "gallery-overlays-\(dark ? "dark" : "light")", dark: dark)
 }
+
+@Test(arguments: [false, true])
+func theStatesPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: Gallery(page: .states, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        named: "gallery-states-\(dark ? "dark" : "light")", dark: dark)
+}

@@ -49,7 +49,7 @@ struct Gallery: View {
                 case .controls: Controls()
                 case .lists: Lists()
                 case .overlays: Overlays()
-                default: ContentUnavailableView(page.rawValue, systemImage: "square.dashed")
+                case .states: States()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
