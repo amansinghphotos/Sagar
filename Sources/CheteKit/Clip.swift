@@ -6,6 +6,8 @@ nonisolated package struct Clip: Codable, Equatable, Identifiable, Sendable {
     /// One kind of data a copy can hold. A copy may hold several, as a link is also text.
     package enum Kind: Codable, Equatable, Sendable {
         case text(String)
+        /// Formatted text, as RTF, beside the same words as text.
+        case richText(Data)
         case link(URL)
         /// A picture's bytes, and the kind of picture they are, such as public.png.
         case picture(Data, type: String)

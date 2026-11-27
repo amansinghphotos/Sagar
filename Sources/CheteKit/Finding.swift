@@ -13,13 +13,13 @@ extension [Clip] {
 }
 
 extension Clip.Kind {
-    /// The words a kind is found by: a link by where it goes, a file by its name. A picture has none.
+    /// The words a kind is found by: a link by where it goes, a file by its name. Formatting and pictures have none.
     fileprivate var words: String {
         switch self {
         case .text(let text): text
         case .link(let link): link.absoluteString
         case .file(let file): file.lastPathComponent
-        case .picture: ""
+        case .richText, .picture: ""
         }
     }
 }
