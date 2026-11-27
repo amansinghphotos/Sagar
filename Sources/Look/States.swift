@@ -1,29 +1,26 @@
-// Taken from Search at commit c92ea7c: Nothing (Plate.swift), Trouble (Stage.swift) and ImportProgress
-// (App.swift), the last as ProgressCard. Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md).
-// Changed only where this repository's rules require: Search's colours are read from Look, and the progress
-// card's file name, message, count and Cancel are given instead of read from Search's own import.
+// The states a page can be in besides full: nothing here yet, something went wrong, and work under way.
 import SwiftUI
 
-/// What a panel says when its list is empty.
+/// A quiet line where a list would be, when there is nothing in it yet.
 package struct Nothing: View {
-    let text: String
+    private let text: String
+
     package init(_ text: String) { self.text = text }
+
     package var body: some View {
         Text(text)
-            .font(.system(size: 13))
+            .type(.body)
             .foregroundStyle(Role.muted)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, Space.wide.rawValue)
             .padding(.vertical, 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// What there is to say when the page never came. One line, and the only thing
-/// worth offering — another go. A second line in the message is a hint,
-/// drawn smaller under it.
+/// What went wrong, centred: the first line in ink, the rest quieter, and a way to try again.
 package struct Trouble: View {
-    let message: String
-    let retry: () -> Void
+    private let message: String
+    private let retry: () -> Void
 
     package init(message: String, retry: @escaping () -> Void) {
         self.message = message
@@ -32,110 +29,81 @@ package struct Trouble: View {
 
     package var body: some View {
         let lines = message.split(separator: "\n", maxSplits: 1).map(String.init)
-        VStack(spacing: 10) {
-            VStack(spacing: 4) {
-                Text(lines.first ?? message)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Role.ink)
-                if lines.count > 1 {
-                    Text(lines[1])
-                        .font(.system(size: 12))
-                        .foregroundStyle(Role.muted)
-                }
+        VStack(spacing: Space.tight.rawValue) {
+            Text(lines.first ?? "").font(.system(size: 14)).foregroundStyle(Role.ink)
+            if lines.count > 1 {
+                Text(lines[1]).type(.row).foregroundStyle(Role.muted)
             }
-            Button("Try again", action: retry)
-                .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(Role.muted)
+            Button(action: retry) {
+                Text(verbatim: "Try again").type(.row).foregroundStyle(Role.muted)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, Space.snug.rawValue)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Role.ground)
     }
 }
 
-/// Something long being done in the background: its name, how far it
-/// has got, and Cancel — in the corner, in the quiet grey of everything
-/// else that floats over the page.
+/// A card for long work under way: what it is, what it is doing, a bar for how far it has come, the count, and
+/// a way to stop.
 package struct ProgressCard: View {
-    let filename: String
-    let message: String
-    let completed: Int
-    let total: Int?
-    var cancelling = false
-    let cancel: () -> Void
+    @Environment(\.greys) private var greys
+    private let filename: String
+    private let message: String
+    private let completed: Int
+    private let total: Int
+    private let cancel: () -> Void
 
     package init(
-        filename: String, message: String, completed: Int, total: Int?, cancelling: Bool = false,
-        cancel: @escaping () -> Void
+        filename: String, message: String, completed: Int, total: Int, cancel: @escaping () -> Void
     ) {
         self.filename = filename
         self.message = message
         self.completed = completed
         self.total = total
-        self.cancelling = cancelling
         self.cancel = cancel
     }
 
-    private var fraction: CGFloat? {
-        guard let total, total > 0 else { return nil }
-        return min(1, CGFloat(completed) / CGFloat(total))
-    }
+    private var done: Double { total > 0 ? min(1, max(0, Double(completed) / Double(total))) : 0 }
 
     package var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(filename)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Role.ink)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Text(message)
-                .font(.system(size: 12))
-                .foregroundStyle(Role.muted)
-                .lineLimit(1)
-            bar
-            footer
+        let shape = RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(filename).type(.body).fontWeight(.medium).foregroundStyle(Role.ink).lineLimit(1)
+            Text(message).type(.row).foregroundStyle(Role.muted).padding(.top, 7)
+            bar.padding(.top, 7)
+            HStack {
+                Text("\(completed.formatted()) of \(total.formatted())")
+                    .font(.system(size: 11)).foregroundStyle(Role.muted)
+                Spacer(minLength: 0)
+                Button(action: cancel) {
+                    Text(verbatim: "Cancel").type(.row).foregroundStyle(Role.ink)
+                        .padding(.horizontal, Space.gap.rawValue)
+                        .frame(height: 22)
+                        .background(greys.wash, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 7)
         }
-        .padding(14)
-        .frame(width: 250, alignment: .leading)
-        .background(Role.ground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Role.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.08), radius: 16, y: 5)
+        .padding(Space.wide.rawValue)
+        .frame(width: 250)
+        .background(Role.ground, in: shape)
+        .overlay(shape.strokeBorder(Role.hairline, lineWidth: 1))
+        .elevation(.status)
         .padding(20)
         .transition(.opacity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(filename), \(message)")
     }
 
+    /// How far the work has come, as a filled part of a thin track.
     private var bar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Role.hairline)
-                if let fraction {
-                    Capsule().fill(Role.ink.opacity(0.7)).frame(width: geo.size.width * fraction)
+        Capsule()
+            .fill(Role.hairline)
+            .overlay(alignment: .leading) {
+                GeometryReader { space in
+                    Capsule().fill(Role.ink.opacity(0.7)).frame(width: space.size.width * done)
                 }
             }
-        }
-        .frame(height: 3)
-    }
-
-    private var footer: some View {
-        HStack {
-            if let total, total > 0 {
-                Text("\(completed.formatted()) of \(total.formatted())")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Role.muted)
-            }
-            Spacer(minLength: 0)
-            Button(action: cancel) {
-                Text(cancelling ? "Cancelling…" : "Cancel")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Role.ink)
-                    .padding(.horizontal, 10)
-                    .frame(height: 22)
-                    .background(Role.ink.opacity(0.07), in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .disabled(cancelling)
-        }
+            .frame(height: 3)
     }
 }
