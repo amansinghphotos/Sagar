@@ -39,3 +39,24 @@ func aToastLooksAsSearchsCapsuleDoes(dark: Bool) throws {
     queue.next()
     #expect(queue.current == nil)
 }
+
+/// Each stays two and a half seconds.
+@Test func eachStaysTwoAndAHalfSeconds() {
+    #expect(ToastQueue.stays == 2.5)
+}
+
+/// A question over the page, as Search asks one: its icon and words, then its answers. Search's, from its code at
+/// commit c92ea7c with these words, was pictured by a scratch copy into `Fixtures/Search Banner Light.png` and
+/// `Dark.png`.
+@Test(arguments: [false, true])
+func aBannerLooksAsSearchsQuestionDoes(dark: Bool) throws {
+    let file = URL(filePath: #filePath).deletingLastPathComponent()
+        .appending(path: "Fixtures/Search Banner \(dark ? "Dark" : "Light").png")
+    let search = try #require(approvedPicture(at: file))
+    let banner = Banner(
+        icon: "bell", question: "Chete wants to paste for you", yes: ("Allow once", {}),
+        maybe: ("Always allow", {}), no: ("Don't allow", {})
+    )
+    .padding(30).frame(width: 600, height: 120).background(Role.wash)
+    #expect(differingPixels(try picture(of: banner, width: 600, height: 120, dark: dark), search) <= tolerance)
+}
