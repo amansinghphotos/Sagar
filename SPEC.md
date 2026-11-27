@@ -115,18 +115,22 @@ first of them, and a release will not start while its own has a box unticked.
 
 ## 6. Keys
 
-Six things, each also kept in the owner's password manager. Signing
-stays on his Mac, so GitHub holds no signing secret. His own GitHub sign-in stays in his browser and
-phone, never in a terminal an agent can reach.
+Five keys, each kept in the owner's Passwords under a name that begins with "Sagar", with a note that
+says what it is for. A new Mac gets each one in one of two ways: iCloud Keychain carries it, or he
+pastes it from Passwords once. A key is never made anew for a new Mac. Signing stays on his Mac, so
+GitHub holds no signing secret. His sign-ins to Apple, Claude and GitHub are passwords, not keys, and
+his GitHub sign-in stays in his browser and phone, never in a terminal an agent can reach.
 
-| Key | Reaches a new Mac by itself? | If not, his one step |
-|---|---|---|
-| Claude sign-in | Yes, he signs in | |
-| Notary profile | Yes, through iCloud Keychain | |
-| Claude API key | Yes, through iCloud Keychain, once it has been pasted into the first app that talks to Claude | |
-| Developer ID certificate | No: Apple keeps its private half on the Mac that made it | Add one in Xcode's Accounts |
-| Agents' GitHub key | No: GitHub shows a key only once | Generate a private key on the app's page |
-| Update key | No: it sits in the login keychain, which does not sync | Paste its text from Passwords once |
+| In Passwords | What it is for | If it is lost | A new Mac |
+|---|---|---|---|
+| Sagar · Update Key | Proves each update comes from him: every installed copy checks it | No installed copy can update again | He pastes it once |
+| Sagar · Developer ID | Apple's signature on each app: the certificate's file, as text, and its password | He makes a new one in Xcode | He pastes it once |
+| Sagar · Apple Notary | The notary profile's sign-in, which sends each build to Apple's notary | He makes a new one on his Apple Account | iCloud Keychain |
+| Sagar · Agents' GitHub Key | The agents' own GitHub identity, never his | He generates a new one on the app's page | He pastes it once |
+| Sagar · Claude API Key | Lets an app talk to Claude | He makes a new one on Claude's site | iCloud Keychain |
+
+Five is the fewest. The update key and the Developer ID live in the login keychain, which does not
+sync, and no other key can do their work.
 
 One Claude API key serves every app. The first app that talks to Claude asks for it once and keeps it
 in Apple's shared keychain group for his team, which iCloud Keychain carries to his other Macs. An app
