@@ -9,7 +9,7 @@ the rules below.
 
 | What It Prevents | The guard | Held by |
 |---|---|---|
-| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails. | A check, and his approval to change `NOW` |
+| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails. Look's shared parts are not an app. | A check, and his approval to change `NOW` |
 | More builds waiting than he can try | A release waiting for him locks its app: its other pull requests fail until he answers. | A check |
 | Home-made tools where standard ones exist | Standard tools only: Xcode, Swift Testing, XCUITest, GitHub issues, pull requests and Actions, Sparkle. | His approval of any dependency |
 | Work scattered, with no one record | Every change is a pull request of 400 changed lines at most that names one issue. Branches are deleted on merge. Status is the milestone page. | GitHub settings and a check |
@@ -42,6 +42,8 @@ His pending approvals are the only list of things waiting on him.
    they need from the network.
 7. Checklists, as in aviation: every repeated procedure is a short list that is read every time.
 
+Until Look's first set of parts is approved, decision 7 sets principles 4 and 5 aside for Look alone.
+
 ## 3. The Repository
 
 ```
@@ -58,6 +60,7 @@ Sources/Minds/         speech and language models behind one interface
 Sources/<App>Kit/      one app's feature; Mac-only files under Mac/
 Tests/<Module>Tests/   Swift Testing; approved pictures under Pictures/
 spec/<app>.md          what it is for, must-haves, network needs, out of scope
+spec/look.md           every part of the look, its two themes and its motion
 docs/                  what is served to people: the download page, each app's update feed, New Mac.md
 Checklists/            every repeated procedure, read every time
 Decisions/             why things are the way they are
@@ -143,10 +146,8 @@ that does not talk to Claude never asks. This is built with the first app that n
 
 ## 8. The Look
 
-Modern is the one library of components, with its colour and type roles, built from measured
-references and shown in a Gallery, where the owner approves it as pictures. Lexicon is a thin layer
-over Modern rather than a library of its own, with its own typeface and a paper feel, sharing Modern's
-components and spacing. Controls are Apple's own with styles, so keyboard and VoiceOver work.
+`spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
+Search's motion, shown in a Gallery where the owner approves it as pictures.
 
 ## 9. Boundaries
 
