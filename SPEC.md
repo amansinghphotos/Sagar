@@ -118,7 +118,8 @@ first of them, and a release will not start while its own has a box unticked.
 
 ### Mending a Shipped App
 
-A fault in a shipped app is mended beside the app in work, and `NOW` stays as it is.
+A fault in a shipped app is mended beside the app in work, and `NOW` stays as it is. (`Scripts/check`
+scope)
 
 - His report is enough to start. The fault becomes an issue marked `fault`, in the milestone for the
   app's next number. Only its branch may touch the shipped app. (`Scripts/check` scope)
