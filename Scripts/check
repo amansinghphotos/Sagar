@@ -4,19 +4,24 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | request | words | apps | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [request | ready <number> | words <file>… | apps <file>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | request | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [request | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
 # Inside a commit hook git names its own folder and index in the environment. Only this script's git keeps them:
 # any other tool that starts git, a package fetch or a test's own small repository, would be sent here instead.
 hook=()
-for name in $(git rev-parse --local-env-vars); do
+names=$(git rev-parse --local-env-vars) || exit 1
+for name in $names; do
     [ -z "${!name+set}" ] || hook+=("$name=${!name}")
     unset "$name"
 done
 git() { env ${hook[@]+"${hook[@]}"} git "$@"; }
+if [ "${1:-}" = tool ]; then # Scripts/check tool <command>…: runs a command as the rules run a build tool
+    shift
+    exec "$@"
+fi
 
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
     set -e
