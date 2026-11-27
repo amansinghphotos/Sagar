@@ -29,11 +29,29 @@ func theHandleAndArrowLookAsSearchsDo(dark: Bool) throws {
     #expect([Grip.width, Grip.rest, Grip.lit] == [4, 28, 40])
 }
 
-/// A scroll fades at its foot while more lies below, less as the end comes up, and not at all once it is in view:
-/// Search's `1 - min(1, max(0, over) / fade)`, over 24 points.
+/// A scroll fades at its foot while more lies below, less as the end comes up, and not at all once it is in view,
+/// over 24 points, as Search's does.
 @Test func aScrollFadesAsMoreLiesBeyond() {
     #expect(FadingScroll<EmptyView>.strength(over: 0) == 1)
     #expect(FadingScroll<EmptyView>.strength(over: 12) == 0.5)
     #expect(FadingScroll<EmptyView>.strength(over: 48) == 0)
     #expect(FadingScroll<EmptyView>.strength(over: -10) == 1)
+}
+
+/// Search's fading scroll over a list longer than it, on Search's ground. Search's, from its code at commit
+/// c92ea7c, was pictured by a scratch copy that uses this repository's picture harness into
+/// `Fixtures/Search Fading Light.png` and `Dark.png`.
+@Test(arguments: [false, true])
+func aLongListFadesAsSearchsDoes(dark: Bool) throws {
+    let file = URL(filePath: #filePath).deletingLastPathComponent()
+        .appending(path: "Fixtures/Search Fading \(dark ? "Dark" : "Light").png")
+    let search = try #require(approvedPicture(at: file))
+    let fading = FadingScroll {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(1...12, id: \.self) { Text(verbatim: "Line \($0)").font(.system(size: 13)).frame(height: 24) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .padding(12).frame(width: 220, height: 160).background(Role.ground)
+    #expect(differingPixels(try picture(of: fading, width: 220, height: 160, dark: dark), search) <= tolerance)
 }

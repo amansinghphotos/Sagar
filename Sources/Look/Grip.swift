@@ -1,5 +1,6 @@
 // Taken from Search at commit c92ea7c: Grip and EdgeGrip (Design.swift), and its bookmark rows' folder arrow
-// (Bookmarks.swift) as DisclosureArrow, and FadingScroll (Recall.swift). Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md).
+// (Bookmarks.swift) as DisclosureArrow, and FadingScroll (Recall.swift). Copyright (c) 2026 Office Commun, MIT
+// licence (ACKNOWLEDGEMENTS.md).
 // Changed only where this repository's rules require: Search's colours and motion are read from Look. The edge's
 // resizing cursor is AppKit's, and is Shell's to bring.
 import SwiftUI
