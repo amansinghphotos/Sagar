@@ -14,10 +14,25 @@ private func order(package: String, budget: String) throws -> String {
     try Data(package.utf8).write(to: folder.appending(path: "Package.swift"))
     try Data(budget.utf8).write(to: folder.appending(path: "CONSTRAINTS.md"))
     try Data("Chete\n".utf8).write(to: folder.appending(path: "NOW"))
+    // A real repository with main as GitHub has it: on GitHub's Mac the script judges nothing without one.
+    try run("/usr/bin/env", ["git", "init", "-q", "-b", "main"], in: folder)
+    try run("/usr/bin/env", ["git", "add", "-A"], in: folder)
+    try run(
+        "/usr/bin/env",
+        [
+            "git", "-c", "user.name=Test", "-c", "user.email=test@users.noreply.github.com", "commit", "-q", "-m",
+            "Lists",
+        ],
+        in: folder)
+    try run("/usr/bin/env", ["git", "update-ref", "refs/remotes/origin/main", "HEAD"], in: folder)
+    return try run(folder.appending(path: "Scripts/check").path, ["order"], in: folder)
+}
+
+@discardableResult private func run(_ tool: String, _ arguments: [String], in folder: URL) throws -> String {
     let process = Process()
     let answer = Pipe()
-    process.executableURL = folder.appending(path: "Scripts/check")
-    process.arguments = ["order"]
+    process.executableURL = URL(filePath: tool)
+    process.arguments = arguments
     process.currentDirectoryURL = folder
     process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
     process.standardOutput = answer
