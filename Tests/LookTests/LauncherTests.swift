@@ -43,7 +43,7 @@ func theLauncherLooksAsSearchsDoes(dark: Bool) throws {
 /// Motion.
 @Test func aRefusalShivers() {
     #expect(Shake(travel: 0).offset == 0)
-    #expect(abs(Shake(travel: 1.0 / 12).offset - 6.9 * (11.0 / 12)) < 0.0001)
+    #expect(abs(Shake(travel: 1.0 / 12).offset - 7 * (11.0 / 12)) < 0.0001)
     #expect(Shake(travel: 1).offset == 0)
     #expect(Shake(travel: 1.0 / 12, reduced: true).offset == 0)
 }

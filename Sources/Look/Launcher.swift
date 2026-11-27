@@ -98,6 +98,6 @@ package struct Shake: GeometryEffect {
     }
 
     /// The first swing's reach, in points, and how many there-and-backs the shiver makes.
-    private static let widest: CGFloat = 6.9
+    private static let widest: CGFloat = 7
     private static let swings: CGFloat = 3
 }
