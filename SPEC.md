@@ -105,7 +105,9 @@ first of them, and a release will not start while its own has a box unticked.
 - There is no third number: every copy is offered each update, so no old version is ever mended. Under the
   version each build carries its commit's date and time, which always rises and is what Sparkle compares.
 - One build waiting for him at a time, and one app in work.
-- Each GitHub release carries three plain lines: New, Better, Fixed.
+- Each GitHub release carries up to three plain lines: New, Better, Fixed. A line with nothing to say is
+  left out, never filled. A release has at least one. The request that asks him to try it gives its reason
+  from the first line that is there: what is new, else what is better, else what is mended.
 - A fault he describes becomes an issue, and the release that mends it says so in plain words. An
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
 - An update is always offered and never forced or silent: the app shows what is new and the person
@@ -206,7 +208,7 @@ usual calls and cannot see every way to fetch a file.
 ## 11. Written When the First App Needs It
 
 Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The three lines of
+window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The lines of
 notes shown once inside an app after it updates.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
