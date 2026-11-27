@@ -5,7 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's buttons at rest, as one showcase. The same showcase was pictured from Search's own code at commit
+/// Search's buttons at rest, as one showcase on Search's ground, so no Mac's own window colour shows through. The same showcase was pictured from Search's own code at commit
 /// c92ea7c, through this repository's picture harness, into `Fixtures/Search Buttons Light.png` and `Dark.png`.
 private var buttons: some View {
     VStack(alignment: .leading, spacing: 10) {
@@ -22,6 +22,8 @@ private var buttons: some View {
         }
     }
     .padding(12)
+    .frame(width: 320, height: 90)
+    .background(Role.ground)
 }
 
 @Test(arguments: [false, true])
