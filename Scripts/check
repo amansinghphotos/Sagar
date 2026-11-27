@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | iphone | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -81,9 +81,12 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     }
     passed check ""
     passed words "$edited"
+    # Given back after his review, it first tells him what changed since.
+    owner=${repository%/*}
+    [ "$(gh pr view "$request" --json body,latestReviews | Scripts/check since "$owner")" = yes ] ||
+        { echo "He reviewed #$request: his part must answer **What Changed Since Your Review:** first. Nobody was asked."; exit 1; }
     gh pr ready "$request" >/dev/null 2>&1
     # If the owner answered before, he is asked again: GitHub does not do that by itself.
-    owner=${repository%/*}
     if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
         gh pr edit "$request" --add-reviewer "$owner" >/dev/null
     fi
@@ -160,6 +163,10 @@ owner_part() { # the owner's part of the description on standard input: what he 
         awk '/<!--/ { hidden = 1 } !hidden; /-->/ { hidden = 0 }' | grep -v '^[[:space:]]*$'
 }
 pictures='!\[[^]]*\]\([^)]+\)|<img [^>]*>'
+answers() { # answers <label>: true if a line of standard input holds the label with words after it
+    awk -v label="**$1**" 'at = index($0, label) {
+        if (substr($0, at + length(label)) ~ /[^[:space:]]/) answered = 1 } END { exit !answered }'
+}
 plain_words() { # reads a pull request's description: true if it opens with the four answers for the owner,
     # and holds no key, e-mail address or home folder path anywhere
     local whole part label
@@ -168,8 +175,7 @@ plain_words() { # reads a pull request's description: true if it opens with the 
     # Where a picture shown to him is kept is no business of his part; its own words, which he reads, are.
     part=$(printf '%s\n' "$whole" | owner_part | sed -E 's/!\[([^]]*)\]\([^)]+\)/\1/g; s/<img [^>]*>//g')
     for label in 'What This Does:' 'Why:' 'Does It Change Your Apps?' 'What to Do:'; do # each asked, each answered
-        printf '%s\n' "$part" | awk -v label="**$label**" 'at = index($0, label) {
-            if (substr($0, at + length(label)) ~ /[^[:space:]]/) answered = 1 } END { exit !answered }' || return 1
+        printf '%s\n' "$part" | answers "$label" || return 1
     done
     # Whatever he answers is in front of him: no link sends him to another page, and no file name to the files.
     ! printf '%s\n' "$part" |
@@ -194,6 +200,16 @@ shows_all() { # shows_all <file>…: true if the owner's part of the description
         [ "$(printf '%s\n' "$part" | grep -oE "$pictures" | wc -l)" -ge "$shown" ]
 }
 [ "${1:-}" != shown ] || { shift; shows_all "$@" && echo yes || echo no; exit; }
+said_since() { # said_since <owner>: reads GitHub's state of a pull request. True if the owner has not reviewed it,
+    # or his newest review is an approval that stands, or his part of the description says what changed since.
+    local state
+    state=$(cat)
+    case $(jq -r --arg owner "$1" '[.latestReviews[]? | select(.author.login == $owner) | .state][0] // "NONE"' <<<"$state") in
+        NONE | APPROVED) return 0 ;;
+    esac
+    jq -r '.body // ""' <<<"$state" | owner_part | answers 'What Changed Since Your Review:'
+}
+[ "${1:-}" != since ] || { said_since "${2:?Scripts/check since <owner> < state}" && echo yes || echo no; exit; }
 title_case() { # Apple's title style: the first word, and every word of four letters or more, has a capital
     printf '%s\n' "$1" | tr -- '-' ' ' | awk '{
         for (word = 1; word <= NF; word++) {
