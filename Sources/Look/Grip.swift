@@ -25,11 +25,12 @@ package struct EdgeGrip: View {
     }
 
     package var body: some View {
-        Capsule()
+        Capsule(style: .continuous)
             .fill(lit ? Role.muted : Role.faint)
             .frame(width: Grip.width, height: lit ? Grip.lit : Grip.rest)
             .opacity(lit || resting ? 1 : 0)
             .animation(motion.quick, value: lit)
+            .allowsHitTesting(false)
     }
 }
 

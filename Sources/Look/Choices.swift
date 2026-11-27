@@ -119,7 +119,7 @@ package struct Writing: View {
             .autocorrectionDisabled()
             .padding(Space.near.rawValue)
             .frame(height: height)
-            .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
+            .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
