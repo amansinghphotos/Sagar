@@ -1,6 +1,6 @@
 # Acknowledgements
 
-How things move in these apps is taken from Search, a web browser for the Mac by Office Commun
+Parts of how these apps look and move are taken from Search, a web browser for the Mac by Office Commun
 (github.com/driceroland/Search), under its licence:
 
 > MIT License

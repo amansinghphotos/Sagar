@@ -3,8 +3,6 @@ import SwiftUI
 
 /// The Controls page: every button, as Search has them.
 struct Controls: View {
-    @State private var on = false
-
     var body: some View {
         VStack(alignment: .leading, spacing: Space.page.rawValue) {
             HStack(spacing: Space.near.rawValue) {
