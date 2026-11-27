@@ -1,23 +1,18 @@
-// Taken from Search at commit c92ea7c: Plate, Card, Rule and Caption (Plate.swift), the environment's asTab
-// (InternalPages.swift) and ruleInset (Plate.swift), and popoverGround (Design.swift). Copyright (c) 2026
-// Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require:
-// Search's colours are read from Look.
+// The surfaces things are laid on: a panel with a title and a foot, a card, a dividing rule and a small caption.
 import SwiftUI
 
-/// The plate: a rounded card with a title, a cross, whatever the panel is
-/// about, and — when there is one — a foot below a hairline.
+/// A panel that floats over the page: its title and a close button, what it holds, and a foot below a rule. Shown as
+/// a tab of its own, it lies flat on the page instead.
 package struct Plate<Content: View, Foot: View>: View {
-    let title: String
-    var width: CGFloat = 560
-    let close: () -> Void
-    @ViewBuilder let content: () -> Content
-    @ViewBuilder let foot: () -> Foot
+    private let title: String
+    private let width: CGFloat
+    private let close: (() -> Void)?
+    private let content: () -> Content
+    private let foot: () -> Foot
+    @Environment(\.asTab) private var asTab
 
     package init(
-        _ title: String,
-        width: CGFloat = 560,
-        close: @escaping () -> Void,
-        @ViewBuilder content: @escaping () -> Content,
+        _ title: String, width: CGFloat, close: (() -> Void)? = nil, @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder foot: @escaping () -> Foot
     ) {
         self.title = title
@@ -27,108 +22,78 @@ package struct Plate<Content: View, Foot: View>: View {
         self.foot = foot
     }
 
-    @Environment(\.asTab) private var asTab
-
     package var body: some View {
-        if asTab { page } else { card }
-    }
-
-    /// In a tab of its own: the same title and
-    /// content, as wide as the card was, down the middle of the page. No
-    /// card, no shadow, no cross — the tab is what closes.
-    private var page: some View {
+        let shape = RoundedRectangle(cornerRadius: Radius.panel.rawValue, style: .continuous)
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(.system(size: 22, weight: .semibold))
+                .type(.title)
                 .foregroundStyle(Role.ink)
-                .padding(.top, 44)
-                .padding(.bottom, 20)
-
-            content()
-
-            if Foot.self != EmptyView.self {
-                Rectangle().fill(Role.hairline).frame(height: 1)
-                    .padding(.top, 18)
-                foot()
-                    .padding(.vertical, 14)
-            }
-            Color.clear.frame(height: 12)
-        }
-        .padding(.horizontal, 22)
-        .frame(maxWidth: width, maxHeight: .infinity, alignment: .topLeading)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private var card: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Text(title)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Role.ink)
-                Spacer(minLength: 0)
-                Door(icon: "xmark", help: "Done   esc", act: close)
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 14)
-
-            content()
+                .accessibilityAddTraits(.isHeader)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .trailing) {
+                    if let close {
+                        Button(action: close) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(Role.muted)
+                                .frame(width: 26, height: 26)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .keyboardShortcut(.cancelAction)
+                        .accessibilityLabel("Close")
+                    }
+                }
                 .padding(.horizontal, 22)
-
+                .padding(.top, 21)
+                .padding(.bottom, 17)
+            VStack(alignment: .leading, spacing: 0, content: content)
+                .padding(.horizontal, 22)
+                .padding(.bottom, 18)
             if Foot.self != EmptyView.self {
-                Rectangle().fill(Role.hairline).frame(height: 1)
-                    .padding(.top, 18)
-                foot()
+                Rule(inset: 0)
+                HStack(spacing: 10) { foot() }
                     .padding(.horizontal, 22)
                     .padding(.vertical, 14)
-            } else {
-                Color.clear.frame(height: 20)
             }
         }
-        .frame(width: width, alignment: .leading)
-        .background(Role.ground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Role.hairline, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.16), radius: 34, y: 12)
+        .frame(width: asTab ? nil : width, alignment: .leading)
+        .frame(maxWidth: asTab ? .infinity : nil, alignment: .leading)
+        .background(Role.ground)
+        .clipShape(asTab ? AnyShape(Rectangle()) : AnyShape(shape))
+        .overlay { if !asTab { shape.strokeBorder(Role.hairline) } }
+        .background { if !asTab { shape.fill(Role.ground).elevation(.panel) } }
     }
 }
 
 extension Plate where Foot == EmptyView {
-    /// A plate with no foot.
+    /// A panel with nothing at its foot.
     package init(
-        _ title: String, width: CGFloat = 560, close: @escaping () -> Void,
-        @ViewBuilder content: @escaping () -> Content
+        _ title: String, width: CGFloat, close: (() -> Void)? = nil, @ViewBuilder content: @escaping () -> Content
     ) {
-        self.init(title, width: width, close: close, content: content, foot: { EmptyView() })
+        self.init(title, width: width, close: close, content: content) { EmptyView() }
     }
 }
 
-/// A group of lines in one hairline box.
+/// Rows grouped on the page inside a thin rounded edge.
 package struct Card<Content: View>: View {
-    @ViewBuilder let content: () -> Content
+    private let content: () -> Content
 
     package init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content
     }
 
     package var body: some View {
-        VStack(spacing: 0) { content() }
-            .background(Role.ground)
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .strokeBorder(Role.hairline, lineWidth: 1)
-            )
+        let shape = RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous)
+        VStack(alignment: .leading, spacing: 0, content: content)
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(Role.hairline))
     }
 }
 
-/// The hairline between two lines of a card, inset like the text unless
-/// the card says otherwise (see EnvironmentValues.ruleInset).
+/// A thin line between rows, set in from the leading edge by `inset`, or by the inset where it lies.
 package struct Rule: View {
-    var inset: CGFloat? = nil
+    private let inset: CGFloat?
     @Environment(\.ruleInset) private var standard
 
     package init(inset: CGFloat? = nil) {
@@ -136,19 +101,26 @@ package struct Rule: View {
     }
 
     package var body: some View {
-        Rectangle().fill(Role.hairline).frame(height: 1).padding(.leading, inset ?? standard)
+        Rectangle()
+            .fill(Role.hairline)
+            .frame(height: 1)
+            .padding(.leading, inset ?? standard)
+            .accessibilityHidden(true)
     }
 }
 
-/// A small heading over a card, for when a panel has more than one.
+/// A small quiet heading over a group of things.
 package struct Caption: View {
-    let text: String
+    private let text: String
+
     package init(_ text: String) { self.text = text }
+
     package var body: some View {
         Text(text)
-            .font(.system(size: 11.5, weight: .medium))
+            .type(.caption)
             .foregroundStyle(Role.muted)
             .padding(.leading, 2)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -161,18 +133,13 @@ nonisolated private struct RuleInsetKey: EnvironmentKey {
 }
 
 extension EnvironmentValues {
-    /// True when a panel is drawn as a page in a tab of its own rather than
-    /// as a card over the page: the plate gives up its card, its shadow and
-    /// its cross, and its lists take the height the window gives them.
+    /// Whether a panel is shown as a tab of its own, flat on the page, rather than floating over it.
     nonisolated package var asTab: Bool {
         get { self[AsTabKey.self] }
         set { self[AsTabKey.self] = newValue }
     }
 
-    /// Where a Rule without an inset of its own starts. Settings sets 0, so
-    /// every hairline in its cards runs from edge to edge, those drawn by
-    /// the lists it borrows from other panels too. A list drawn further in
-    /// sets minus its own indent, so its hairlines still reach the edge.
+    /// How far a rule is set in from the leading edge where no inset is given.
     nonisolated package var ruleInset: CGFloat {
         get { self[RuleInsetKey.self] }
         set { self[RuleInsetKey.self] = newValue }
@@ -180,20 +147,8 @@ extension EnvironmentValues {
 }
 
 extension View {
-    /// The ground a popover's content lies on. Since macOS 26 a popover
-    /// fills its arrow too, so the content is handed the ground; before,
-    /// the popover was handed it to fill its own shape with.
+    /// Lays a popover's contents on the page's own ground, out to its edges.
     package func popoverGround() -> some View {
-        modifier(PopoverGround())
-    }
-}
-
-private struct PopoverGround: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(macOS 26, *) {
-            content.background(Role.ground)
-        } else {
-            content.presentationBackground(Role.ground)
-        }
+        background(Role.ground)
     }
 }
