@@ -10,7 +10,7 @@ nonisolated package struct PaletteItem: Identifiable, Sendable, Equatable {
     package let title: String
     /// A letter on a small tile before it.
     package var letter: String? = nil
-    /// Or a symbol before it, by its system name.
+    /// Or a symbol before it, by its system name. With neither, a magnifying glass.
     package var symbol: String? = nil
     /// The keys that take it, shown at the end.
     package var keyLabel: String? = nil
@@ -87,8 +87,8 @@ package struct PaletteRow: View {
                 .foregroundStyle(Greys.white.muted)
                 .frame(width: Self.mark, height: Self.mark)
                 .background(Role.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 3, style: .continuous))
-        } else if let symbol = item.symbol {
-            Image(systemName: symbol)
+        } else {
+            Image(systemName: item.symbol ?? "magnifyingglass")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(Role.muted)
         }
@@ -99,12 +99,11 @@ package struct PaletteRow: View {
 }
 
 /// A launcher field over the items it offers: typing narrows them, the arrows move the pick, Return takes it and
-/// Escape lets the palette go. Return with nothing offered makes the field shiver.
+/// Escape lets the palette go. Return with nothing offered is left to whatever holds the palette.
 package struct CommandPalette: View {
     @Environment(\.motion) private var motion
     @Binding private var text: String
     @State private var pick = 0
-    @State private var refusals = 0
     private let prompt: String
     private let items: [PaletteItem]
     private let take: (PaletteItem) -> Void
@@ -124,7 +123,7 @@ package struct CommandPalette: View {
     package var body: some View {
         let offers = Palette.rank(items, for: text)
         VStack(spacing: Space.near.rawValue) {
-            LaunchField(text: $text, prompt: prompt, refusals: refusals)
+            LaunchField(text: $text, prompt: prompt, refusals: 0)
             if !offers.isEmpty {
                 LaunchList {
                     ForEach(Array(offers.enumerated()), id: \.element.id) { index, item in
@@ -145,7 +144,8 @@ package struct CommandPalette: View {
             return .handled
         }
         .onKeyPress(.return) {
-            if offers.indices.contains(pick) { take(offers[pick]) } else { refusals += 1 }
+            guard offers.indices.contains(pick) else { return .ignored }
+            take(offers[pick])
             return .handled
         }
         .onKeyPress(.escape) {
