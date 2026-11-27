@@ -176,7 +176,7 @@ private func printed(_ tool: String, _ arguments: [String], in place: URL, home:
 
 /// A drive made of a real disk image, with a small repository on it holding the real start hook and numbers, and a
 /// home folder on the Mac's own disk. The image is detached and removed after `body`.
-private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws {
+private func withADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws {
     let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
     let drive = top.appending(path: "Drive")
     let home = top.appending(path: "Home")
@@ -261,7 +261,7 @@ private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws 
     /// With the project on its drive, a build or a project left on the Mac's own disk is named at each chat's start; a
     /// home folder with neither is told nothing.
     @Test func aStrayBuildOrProjectOnTheMacsOwnDiskIsNamed() throws {
-        try onADrive { work, home in
+        try withADrive { work, home in
             let hook = work.appending(path: ".claude/hooks/start").path
             #expect(try printed(hook, ["lean"], in: work, home: home) == "")
             let stray = home.appending(path: "Library/Developer/Xcode/DerivedData/Stray")
@@ -275,9 +275,9 @@ private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws 
     }
 
     /// On the drive, a finished chat's copy untouched for a day is removed. These stay: one touched today, one holding
-    /// changes, one busy deep inside, one holding ignored files that are not builds, and one whose work has not merged.
+    /// changes, one with a recent file deep inside, one holding ignored files that are not builds, and one whose work has not merged.
     @Test func aFinishedCopyUntouchedForADayIsRemoved() throws {
-        try onADrive { work, home in
+        try withADrive { work, home in
             let copies = work.deletingLastPathComponent().appending(path: "Copies")
             let run = { (tool: String, arguments: [String]) in try printed(tool, arguments, in: work, home: home) }
             let merged = try run("/usr/bin/env", ["git", "rev-parse", "HEAD"])
@@ -298,13 +298,15 @@ private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws 
                     "cd \"$0\" && git -c user.name=T -c user.email=t@users.noreply.github.com commit -q --allow-empty -m B",
                     copies.appending(path: "unmerged").path,
                 ])
+            try FileManager.default.createDirectory(at: place("deep", ".build/Deep"), withIntermediateDirectories: true)
+            try "building\n".write(to: place("deep", ".build/Deep/Now.o"), atomically: true, encoding: .utf8)
             for name in ["old", "busy", "deep", "local", "unmerged"] {
                 _ = try run(
                     "/bin/bash",
                     ["-c", "find \"$0\" -exec touch -h -t 202601010000 {} +", copies.appending(path: name).path])
             }
-            try FileManager.default.createDirectory(at: place("deep", ".build"), withIntermediateDirectories: true)
-            try "building\n".write(to: place("deep", ".build/Now.o"), atomically: true, encoding: .utf8)
+            // Only a file deep inside is recent: its folders, and everything at the top, stay old.
+            try "building again\n".write(to: place("deep", ".build/Deep/Now.o"), atomically: false, encoding: .utf8)
             let hook = work.appending(path: ".claude/hooks/start").path
             let removed = try run("/bin/bash", ["-c", "printf '%s' \"$1\" | \"$0\" tidy", hook, merged])
             #expect(removed == "old ")
