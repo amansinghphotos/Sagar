@@ -174,57 +174,6 @@ private func printed(_ tool: String, _ arguments: [String], in place: URL, home:
     return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
 }
 
-/// On a drive of its own, a real disk image here, the caches move beside the project, with what they hold, and a
-/// link left from an old drive is pointed at the new one.
-@Test func theCachesLiveOnTheDriveAndFollowANewOne() throws {
-    let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
-    let drive = top.appending(path: "Drive")
-    let home = top.appending(path: "Home")
-    let image = top.appending(path: "Drive.sparseimage").path
-    try FileManager.default.createDirectory(at: drive, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: top) }
-    _ = try printed(
-        "/usr/bin/hdiutil",
-        [
-            "create", "-quiet", "-size", "200m", "-type", "SPARSE", "-fs", "APFS", "-volname", "Drive",
-            image,
-        ], in: top, home: home)
-    _ = try printed(
-        "/usr/bin/hdiutil", ["attach", "-quiet", "-nobrowse", "-mountpoint", drive.path, image], in: top, home: home)
-    defer { _ = try? printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home) }
-
-    let work = drive.appending(path: "Developer/Work")
-    let hook = work.appending(path: ".claude/hooks/start")
-    try FileManager.default.createDirectory(at: hook.deletingLastPathComponent(), withIntermediateDirectories: true)
-    try FileManager.default.copyItem(
-        at: URL(filePath: #filePath).appending(path: "../../../.claude/hooks/start").standardizedFileURL, to: hook)
-    _ = try printed("/usr/bin/env", ["git", "init", "-q"], in: work, home: home)
-    let usual = home.appending(path: "Library/Caches/org.swift.swiftpm")
-    try FileManager.default.createDirectory(at: usual, withIntermediateDirectories: true)
-    try "kept\n".write(to: usual.appending(path: "Kept"), atomically: true, encoding: .utf8)
-    let caches = drive.appending(path: "Developer/Caches").resolvingSymlinksInPath().path
-    #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
-
-    _ = try printed(hook.path, ["caches"], in: work, home: home)
-    let link = { (name: String) in
-        URL(
-            filePath: try FileManager.default.destinationOfSymbolicLink(
-                atPath: home.appending(path: "Library/Caches/\(name)").path)
-        ).resolvingSymlinksInPath().path
-    }
-    #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
-    #expect(try link("com.apple.dt.xctest.tool") == caches + "/com.apple.dt.xctest.tool")
-    #expect(FileManager.default.fileExists(atPath: caches + "/org.swift.swiftpm/Kept"))
-    #expect(!(try printed(hook.path, ["ready"], in: work, home: home).contains("cache")))
-
-    try FileManager.default.removeItem(at: usual)
-    try FileManager.default.createSymbolicLink(
-        atPath: usual.path, withDestinationPath: "/nowhere/Caches/org.swift.swiftpm")
-    #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
-    _ = try printed(hook.path, ["caches"], in: work, home: home)
-    #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
-}
-
 /// A drive made of a real disk image, with a small repository on it holding the real start hook and numbers, and a
 /// home folder on the Mac's own disk. The image is detached and removed after `body`.
 private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws {
@@ -243,7 +192,7 @@ private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws 
     defer { _ = try? printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home) }
     let work = drive.appending(path: "Developer/Work")
     let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
-    for file in [".claude/hooks/start", "CONSTRAINTS.md"] {
+    for file in [".claude/hooks/start", "CONSTRAINTS.md", ".gitignore"] {
         try FileManager.default.createDirectory(
             at: work.appending(path: file).deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: project.appending(path: file), to: work.appending(path: file))
@@ -255,45 +204,114 @@ private func onADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws 
     try body(work, home)
 }
 
-/// With the project on its drive, a build or a project left on the Mac's own disk is named at each chat's start; a
-/// home folder with neither is told nothing.
-@Test func aStrayBuildOrProjectOnTheMacsOwnDiskIsNamed() throws {
-    try onADrive { work, home in
-        let hook = work.appending(path: ".claude/hooks/start").path
-        #expect(try printed(hook, ["lean"], in: work, home: home) == "")
-        let stray = home.appending(path: "Library/Developer/Xcode/DerivedData/Stray")
-        try FileManager.default.createDirectory(at: stray, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(
-            at: home.appending(path: "Code/Old/.git"), withIntermediateDirectories: true)
-        let told = try printed(hook, ["lean"], in: work, home: home)
-        #expect(told.contains("Builds on the Mac's own disk: ~/Library/Developer/Xcode/DerivedData\n"))
-        #expect(told.contains("A project or its build on the Mac's own disk: ~/Code/Old/.git\n"))
-    }
-}
+/// The tests that make a disk image run one at a time: images made at once can clash.
+@Suite(.serialized) struct OnADrive {
+    /// On a drive of its own, a real disk image here, the caches move beside the project, with what they hold, and a
+    /// link left from an old drive is pointed at the new one.
+    @Test func theCachesLiveOnTheDriveAndFollowANewOne() throws {
+        let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
+        let drive = top.appending(path: "Drive")
+        let home = top.appending(path: "Home")
+        let image = top.appending(path: "Drive.sparseimage").path
+        try FileManager.default.createDirectory(at: drive, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: top) }
+        _ = try printed(
+            "/usr/bin/hdiutil",
+            [
+                "create", "-quiet", "-size", "200m", "-type", "SPARSE", "-fs", "APFS", "-volname", "Drive",
+                image,
+            ], in: top, home: home)
+        _ = try printed(
+            "/usr/bin/hdiutil", ["attach", "-quiet", "-nobrowse", "-mountpoint", drive.path, image], in: top, home: home
+        )
+        defer { _ = try? printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home) }
 
-/// On the drive, a finished chat's copy untouched for a day is removed; one touched today, and one holding changes, stay.
-@Test func aFinishedCopyUntouchedForADayIsRemoved() throws {
-    try onADrive { work, home in
-        let copies = work.deletingLastPathComponent().appending(path: "Copies")
-        for name in ["old", "fresh", "busy"] {
-            _ = try printed(
-                "/usr/bin/env", ["git", "worktree", "add", "-q", "-b", name, copies.appending(path: name).path],
-                in: work, home: home)
+        let work = drive.appending(path: "Developer/Work")
+        let hook = work.appending(path: ".claude/hooks/start")
+        try FileManager.default.createDirectory(at: hook.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(
+            at: URL(filePath: #filePath).appending(path: "../../../.claude/hooks/start").standardizedFileURL, to: hook)
+        _ = try printed("/usr/bin/env", ["git", "init", "-q"], in: work, home: home)
+        let usual = home.appending(path: "Library/Caches/org.swift.swiftpm")
+        try FileManager.default.createDirectory(at: usual, withIntermediateDirectories: true)
+        try "kept\n".write(to: usual.appending(path: "Kept"), atomically: true, encoding: .utf8)
+        let caches = drive.appending(path: "Developer/Caches").resolvingSymlinksInPath().path
+        #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
+
+        _ = try printed(hook.path, ["caches"], in: work, home: home)
+        let link = { (name: String) in
+            URL(
+                filePath: try FileManager.default.destinationOfSymbolicLink(
+                    atPath: home.appending(path: "Library/Caches/\(name)").path)
+            ).resolvingSymlinksInPath().path
         }
-        try "half done\n".write(to: copies.appending(path: "busy/Slice.swift"), atomically: true, encoding: .utf8)
-        for name in ["old", "busy"] {
-            _ = try printed(
+        #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
+        #expect(try link("com.apple.dt.xctest.tool") == caches + "/com.apple.dt.xctest.tool")
+        #expect(FileManager.default.fileExists(atPath: caches + "/org.swift.swiftpm/Kept"))
+        #expect(!(try printed(hook.path, ["ready"], in: work, home: home).contains("cache")))
+
+        try FileManager.default.removeItem(at: usual)
+        try FileManager.default.createSymbolicLink(
+            atPath: usual.path, withDestinationPath: "/nowhere/Caches/org.swift.swiftpm")
+        #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
+        _ = try printed(hook.path, ["caches"], in: work, home: home)
+        #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
+    }
+
+    /// With the project on its drive, a build or a project left on the Mac's own disk is named at each chat's start; a
+    /// home folder with neither is told nothing.
+    @Test func aStrayBuildOrProjectOnTheMacsOwnDiskIsNamed() throws {
+        try onADrive { work, home in
+            let hook = work.appending(path: ".claude/hooks/start").path
+            #expect(try printed(hook, ["lean"], in: work, home: home) == "")
+            let stray = home.appending(path: "Library/Developer/Xcode/DerivedData/Stray")
+            try FileManager.default.createDirectory(at: stray, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: home.appending(path: "Code/Old/.git"), withIntermediateDirectories: true)
+            let told = try printed(hook, ["lean"], in: work, home: home)
+            #expect(told.contains("Builds on the Mac's own disk: ~/Library/Developer/Xcode/DerivedData\n"))
+            #expect(told.contains("A project or its build on the Mac's own disk: ~/Code/Old/.git\n"))
+        }
+    }
+
+    /// On the drive, a finished chat's copy untouched for a day is removed. These stay: one touched today, one holding
+    /// changes, one busy deep inside, one holding ignored files that are not builds, and one whose work has not merged.
+    @Test func aFinishedCopyUntouchedForADayIsRemoved() throws {
+        try onADrive { work, home in
+            let copies = work.deletingLastPathComponent().appending(path: "Copies")
+            let run = { (tool: String, arguments: [String]) in try printed(tool, arguments, in: work, home: home) }
+            let merged = try run("/usr/bin/env", ["git", "rev-parse", "HEAD"])
+            for name in ["old", "fresh", "busy", "deep", "local", "unmerged"] {
+                _ = try run(
+                    "/usr/bin/env", ["git", "worktree", "add", "-q", "-b", name, copies.appending(path: name).path])
+            }
+            let place = { (copy: String, file: String) in copies.appending(path: "\(copy)/\(file)") }
+            try "half done\n".write(to: place("busy", "Slice.swift"), atomically: true, encoding: .utf8)
+            try FileManager.default.createDirectory(at: place("local", ".claude"), withIntermediateDirectories: true)
+            try "{}\n".write(to: place("local", ".claude/settings.local.json"), atomically: true, encoding: .utf8)
+            try FileManager.default.createDirectory(at: place("old", ".build"), withIntermediateDirectories: true)
+            try "built\n".write(to: place("old", ".build/Old.o"), atomically: true, encoding: .utf8)
+            _ = try run(
                 "/bin/bash",
-                ["-c", "touch -h -t 202601010000 \"$0\" \"$0\"/* \"$0\"/.[!.]*", copies.appending(path: name).path],
-                in: work, home: home)
+                [
+                    "-c",
+                    "cd \"$0\" && git -c user.name=T -c user.email=t@users.noreply.github.com commit -q --allow-empty -m B",
+                    copies.appending(path: "unmerged").path,
+                ])
+            for name in ["old", "busy", "deep", "local", "unmerged"] {
+                _ = try run(
+                    "/bin/bash",
+                    ["-c", "find \"$0\" -exec touch -h -t 202601010000 {} +", copies.appending(path: name).path])
+            }
+            try FileManager.default.createDirectory(at: place("deep", ".build"), withIntermediateDirectories: true)
+            try "building\n".write(to: place("deep", ".build/Now.o"), atomically: true, encoding: .utf8)
+            let hook = work.appending(path: ".claude/hooks/start").path
+            let removed = try run("/bin/bash", ["-c", "printf '%s' \"$1\" | \"$0\" tidy", hook, merged])
+            #expect(removed == "old ")
+            #expect(!FileManager.default.fileExists(atPath: copies.appending(path: "old").path))
+            for name in ["fresh", "busy", "deep", "local", "unmerged"] {
+                #expect(FileManager.default.fileExists(atPath: copies.appending(path: name).path))
+            }
         }
-        let merged = try printed("/usr/bin/env", ["git", "rev-parse", "HEAD"], in: work, home: home)
-        let hook = work.appending(path: ".claude/hooks/start").path
-        let removed = try printed(
-            "/bin/bash", ["-c", "printf '%s' \"$1\" | \"$0\" tidy", hook, merged], in: work, home: home)
-        #expect(removed == "old ")
-        #expect(!FileManager.default.fileExists(atPath: copies.appending(path: "old").path))
-        #expect(FileManager.default.fileExists(atPath: copies.appending(path: "fresh").path))
-        #expect(FileManager.default.fileExists(atPath: copies.appending(path: "busy/Slice.swift").path))
     }
 }

@@ -43,7 +43,7 @@ Each chat's start measures it; anything else Xcode, Swift or Claude leaves there
 | Rule | Number | Held by |
 |---|--:|---|
 | Claude's own folder, `~/.claude`, in MB | 2000 | `.claude/hooks/start` lean |
-| Builds, projects or package downloads elsewhere on it | 0 | `.claude/hooks/start` lean and ready |
+| Builds, projects or package downloads elsewhere on it | 0 | `.claude/hooks/start` lean |
 
 ## The App in Work, Measured by Its Tour on the Hosted Runner
 

@@ -74,13 +74,15 @@ finished() { # finished <merged heads>: the folders of chats' copies whose work 
             [ -d "$copy" ] && grep -qx "$head" <<<"$1" && [ -z "$(git -C "$copy" status --porcelain)" ] && echo "$copy"
         done
 }
-leftovers() { finished "$1" | xargs -I{} basename {} | tr '\n' ' '; }
+leftovers() { finished "$1" | while read -r copy; do basename "$copy"; done | tr '\n' ' '; }
 
 tidy() { # tidy <merged heads>: on the drive, a finished copy untouched for a day goes; git refuses one with changes
     local copy
     finished "$1" | while read -r copy; do
-        [ -z "$(find "$copy" -maxdepth 1 -mtime -1 -print -quit)" ] && git worktree remove "$copy" 2>/dev/null &&
-            echo "$(basename "$copy")"
+        [ -z "$(find "$copy" -mtime -1 -print -quit)" ] || continue # anything in it touched within the day
+        # Ignored files are gone with the copy: only builds may be among them.
+        [ -z "$(git -C "$copy" clean -ndX | grep -v -E '^Would remove (\.build|\.swiftpm)/$|\.DS_Store$')" ] || continue
+        git worktree remove "$copy" 2>/dev/null && basename "$copy"
     done | tr '\n' ' '
 }
 
