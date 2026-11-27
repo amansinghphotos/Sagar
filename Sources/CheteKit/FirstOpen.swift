@@ -20,7 +20,7 @@ nonisolated package enum FirstOpen {
     package static func bringBack(from file: URL, into folder: URL, keyName: String) throws -> String {
         let history = try History.bringBack(from: file)
         try history.replace(in: folder, keyName: keyName)
-        return history.clips.count == 1 ? "1 clip brought back." : "\(history.clips.count) clips brought back."
+        return history.clips.count == 1 ? "Brought back 1 clip." : "Brought back \(history.clips.count) clips."
     }
 }
 
@@ -87,38 +87,37 @@ package struct FirstOpenPages: View {
             switch page {
             case 0:
                 WelcomeHeading(
-                    "Chete keeps what you copy.",
-                    "Later, in any app, press one key and type a few letters of what you want. Return pastes it where you were, and nothing leaves this Mac."
+                    "Chete remembers what you copy.",
+                    "Open it in any app and type a few letters. Press Return, and it’s pasted. Nothing leaves your Mac."
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
             case 1:
                 VStack(alignment: .leading, spacing: Space.wide.rawValue + Space.near.rawValue) {
                     WelcomeHeading(
-                        "Two things to allow.",
-                        "Each turns on once you allow it in System Settings. macOS asks only once.")
+                        "Two quick permissions.", "Your Mac asks once for each.")
                     card {
                         Look.Choice(
-                            "Keep what you copy", "In Paste from Other Apps, so each copy is kept without a question.",
+                            "Keep what you copy", "Your Mac stops asking before each copy.",
                             on: asking(now.keepingCopies, act.allowKeeping), plain: true)
                         Rule(inset: 0)
                         Look.Choice(
-                            "Paste for you", "In Accessibility, so Chete can paste into the app you were in.",
+                            "Paste for you", "Chete pastes right into the app you were using.",
                             on: asking(now.pasting, act.allowPasting), plain: true)
                     }
                 }
             default:
                 VStack(alignment: .leading, spacing: Space.wide.rawValue + Space.near.rawValue) {
                     WelcomeHeading(
-                        "Two more choices.", "Choose when Chete opens, and bring back a history from another Mac.")
+                        "Almost done.", "Two last things, both optional.")
                     card {
                         Look.Choice(
-                            "Open at login", "Chete waits in the menu bar from the moment you log in.",
+                            "Open at login", "Chete starts when you log in.",
                             on: $opensAtLogin, plain: true)
                         Rule(inset: 0)
                         HStack(spacing: Space.apart.rawValue) {
                             VStack(alignment: .leading, spacing: Space.hair.rawValue) {
-                                Text("Bring back a history").type(.body).foregroundStyle(Role.ink)
-                                Text(broughtBack ?? "A file you exported from Chete. It replaces what is here now.")
+                                Text("Bring back your history").type(.body).foregroundStyle(Role.ink)
+                                Text(broughtBack ?? "Pick a file you exported. It replaces what’s here.")
                                     .type(.detail).foregroundStyle(Role.muted)
                             }
                             Spacer()
