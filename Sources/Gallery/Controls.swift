@@ -2,7 +2,7 @@ import Look
 import SwiftUI
 
 /// The Controls page: every button, field, switch and choice, and what shows when there is nothing, trouble or
-/// work under way, sidebar rows, a drag handle and a folder's arrow,
+/// work under way, shortcut boxes, sidebar rows, a drag handle and a folder's arrow,
 /// as Search has them.
 struct Controls: View {
     @State private var search = ""
@@ -15,6 +15,7 @@ struct Controls: View {
     @State private var shown = true
     @State private var closes = false
     @State private var look = 1
+    @State private var shortcut: KeyCombo? = KeyCombo("v", shift: true)
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.page.rawValue) {
@@ -42,6 +43,10 @@ struct Controls: View {
                 }
                 Ticks(items: [("Show the page's colour", $shown), ("Close tabs after a day", $closes)])
                 Segmented(options: [(0, "Light"), (1, "Dark"), (2, "System")], selection: $look)
+                HStack(spacing: Space.near.rawValue) {
+                    KeyBox(key: $shortcut, changed: true)
+                    FixedKey("⌘1 – ⌘9")
+                }
             }
             VStack(alignment: .leading, spacing: 0) {
                 Nothing("No clips yet.")

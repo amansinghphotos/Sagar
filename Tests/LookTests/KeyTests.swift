@@ -1,0 +1,62 @@
+import Foundation
+import Pictures
+import SwiftUI
+import Testing
+
+@testable import Look
+
+/// Search's shortcut boxes: one set, one changed, one with none, one listening, and a fixed key, on Search's ground.
+/// The same showcase was pictured from Search's own code at commit c92ea7c, by a scratch copy of it that uses this
+/// repository's picture harness, into `Fixtures/Search Keys Light.png` and `Dark.png`.
+private struct Showcase: View {
+    @State var set: KeyCombo? = KeyCombo("t")
+    @State var changed: KeyCombo? = KeyCombo("k", shift: true)
+    @State var none: KeyCombo?
+    @State var listening: KeyCombo?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                KeyBox(key: $set)
+                KeyBox(key: $changed, changed: true)
+                KeyBox(key: $none)
+            }
+            HStack(spacing: 10) {
+                KeyBox(key: $listening, listening: true)
+                FixedKey("⌘1 – ⌘9")
+            }
+        }
+        .padding(16)
+        .frame(width: 340, height: 140)
+        .background(Role.ground)
+    }
+}
+
+@Test(arguments: [false, true])
+func theShortcutBoxesLookAsSearchsDo(dark: Bool) throws {
+    let file = URL(filePath: #filePath).deletingLastPathComponent()
+        .appending(path: "Fixtures/Search Keys \(dark ? "Dark" : "Light").png")
+    let search = try #require(approvedPicture(at: file))
+    let ours = try picture(of: Showcase(), width: 340, height: 140, dark: dark)
+    #expect(differingPixels(ours, search) <= tolerance)
+}
+
+@Test func aShortcutIsShownAsAMenuShowsIt() {
+    #expect(KeyCombo("k", shift: true).display == "⇧⌘K")
+    #expect(KeyCombo("left", command: false, option: true, control: true).display == "⌃⌥←")
+    #expect(KeyCombo("=", shift: true).display == "⌘+")
+}
+
+@Test func aKeyAloneOrWithShiftIsTypingNotAShortcut() {
+    #expect(!KeyCombo("a", command: false).isUsable)
+    #expect(!KeyCombo("a", command: false, shift: true).isUsable)
+    #expect(KeyCombo("f5", command: false).isUsable)
+    #expect(KeyCombo("a", command: false, option: true).isUsable)
+}
+
+@Test func aKeyHeardIsReadAsItsName() {
+    #expect(KeyCombo(key: .leftArrow, characters: "", modifiers: [.command]) == KeyCombo("left"))
+    #expect(
+        KeyCombo(key: KeyEquivalent("t"), characters: "t", modifiers: [.command, .shift]) == KeyCombo("t", shift: true))
+    #expect(KeyCombo(key: KeyEquivalent("x"), characters: "", modifiers: []) == KeyCombo("x", command: false))
+}
