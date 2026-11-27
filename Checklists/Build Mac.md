@@ -21,7 +21,8 @@ when a chat works.
 - [ ] **Owner.** Agents' GitHub key: paste the note of Sagar · Agents' GitHub Key into the file the agent names.
 - [ ] `.claude/hooks/start setup <that file>`, then delete the file. It keeps the key, gives git the agents'
       identity, installs `gh`, clones the private notes beside, sends Xcode's builds to the drive, and
-      brings back his Claude instructions, plugins and skill. It stops if the project is not on its own drive.
+      brings back his Claude instructions, plugins and skill. It stops if the project is not on its own drive,
+      and marks the Mac: from then on, a chat or a commit in a copy off the drive stops.
 - [ ] **Owner.** macOS asks once whether Claude may use the drive: Allow.
 - [ ] `.claude/hooks/start ready` prints nothing. Every session start says what is still missing.
 - [ ] Notary profile: it comes by iCloud Keychain. `xcrun notarytool history --keychain-profile Sagar` answers. If not, stop and tell him.

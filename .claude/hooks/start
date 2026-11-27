@@ -61,6 +61,15 @@ plugins='agent-skills@addy-agent-skills=addyosmani/agent-skills taste-skill@tast
 
 # Everything that grows lives on its own drive, never on the disk that holds the owner's home folder.
 on_drive() { [ "$(stat -f %d "$shared")" != "$(stat -f %d "$HOME")" ]; }
+# A Mac set up by these steps carries a mark; there, work off the drive stops instead of piling up at home.
+drive_mac() { [ "$(git config --global --get sagar.drive)" = yes ]; }
+
+leftovers() { # leftovers < merged heads: chats' copies whose work has merged, which archiving their chats removes
+    git worktree list --porcelain | awk '/^worktree /{copy = substr($0, 10)} /^HEAD /{print $2, copy}' | sed 1d |
+        while read -r head copy; do # the first is the shared folder itself
+            [ -d "$copy" ] && grep -qx "$head" <<<"$1" && [ -z "$(git -C "$copy" status --porcelain)" ] && basename "$copy"
+        done | tr '\n' ' '
+}
 
 ready() { # Checklists/Build Mac.md, as what can be seen without asking the keychain or the network.
     local wanted have='' plugin
@@ -89,9 +98,11 @@ case ${1:-} in
     "") ;;
     token) token; exit ;;
     ready) ready; exit ;;
+    leftovers) leftovers "$(cat)"; exit ;;
     answers) answers "${2:?}"; exit ;;
     setup)
         on_drive || { echo "Stop: clone the project onto the external drive. Is it plugged in?"; exit 1; }
+        git config --global sagar.drive yes
         [ -z "${2:-}" ] || security add-generic-password -U -s Sagar.Agent -a key -w "$(base64 -i "$2")"
         git config core.hooksPath .githooks
         git config user.name 'sagar-agent[bot]'
@@ -130,6 +141,10 @@ case ${1:-} in
     *) echo "Usage: .claude/hooks/start [token | ready | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
 esac
 
+if drive_mac && ! on_drive; then
+    echo "Stop: this copy of the project is not on its drive. Plug the drive in and open the project there. Change nothing here."
+    exit 0
+fi
 # With no agents' token, gh must fail, never fall back to a person's own sign-in.
 # The commit gate, Scripts/check, is git's own hook. Every chat shares one settings file, so it is written only when it differs.
 [ "$(git config core.hooksPath)" = .githooks ] || git config core.hooksPath .githooks
@@ -154,10 +169,7 @@ echo "Checkout: $(git status -sb | head -1)$(git status --porcelain | sed -n '1s
     echo "This is the shared folder, where every chat opens. Change nothing here: move into your own copy first (EnterWorktree), from origin/main. It stays on clean main, for Scripts/release alone."
 # Copies of finished work are what piles up: archiving a chat removes its copy, and this shows any left behind.
 merged=$(gh pr list --state merged --limit 1000 --json headRefOid --jq '.[].headRefOid' 2>/dev/null)
-leftover=$(git worktree list --porcelain | awk '/^worktree /{copy = substr($0, 10)} /^HEAD /{print $2, copy}' | sed 1d |
-    while read -r head copy; do # the first is the shared folder itself
-        [ -d "$copy" ] && grep -qx "$head" <<<"$merged" && [ -z "$(git -C "$copy" status --porcelain)" ] && basename "$copy"
-    done | tr '\n' ' ')
+leftover=$(leftovers "$merged")
 [ -z "$leftover" ] || echo "Copies whose work has merged, which archiving their chats removes: $leftover"
 echo "Branches besides main: $(git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' ')"
 repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)

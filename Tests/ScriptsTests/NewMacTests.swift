@@ -129,3 +129,31 @@ private struct Mac {
     #expect(held.words.contains("Work, 7-a-slice: work GitHub does not have\n"))
     #expect(held.words.contains("Work Private: changes not yet committed\n"))
 }
+
+/// Of the chats' copies, only one whose work has merged, that holds no changes and is still there, is left behind.
+@Test func onlyACleanCopyOfMergedWorkIsListedAsLeftBehind() throws {
+    let mac = try Mac()
+    defer { try? FileManager.default.removeItem(at: mac.top) }
+    let copies = mac.top.appending(path: "Copies")
+    for (name, branch) in [("done", "1-done"), ("gone", "2-gone"), ("busy", "3-busy")] {
+        try mac.git(["worktree", "add", "-q", "-b", branch, copies.appending(path: name).path], in: mac.work)
+    }
+    try FileManager.default.removeItem(at: copies.appending(path: "gone"))
+    try mac.write("half done\n", to: copies.appending(path: "busy/Slice.swift"))
+    let merged = try mac.git(["rev-parse", "HEAD"], in: mac.work).words
+    let left = try mac.run(
+        "/bin/bash", ["-c", "printf '%s' \"$0\" | .claude/hooks/start leftovers", merged], in: mac.work)
+    #expect(left.words == "done ")
+}
+
+/// On a Mac set up by the steps, a copy of the project on the home folder's own disk stops a chat and the commit gate.
+@Test func aMacSetUpForTheDriveStopsWorkOffIt() throws {
+    let mac = try Mac()
+    defer { try? FileManager.default.removeItem(at: mac.top) }
+    try mac.write("[sagar]\n\tdrive = yes\n", to: mac.home.appending(path: ".gitconfig"))
+    let started = try mac.run(mac.work.appending(path: ".claude/hooks/start").path, [], in: mac.work)
+    #expect(started.words.hasPrefix("Stop: this copy of the project is not on its drive."))
+    let gate = try mac.run(mac.work.appending(path: "Scripts/check").path, ["folder"], in: mac.work)
+    #expect(!gate.passes)
+    #expect(gate.words.hasPrefix("This copy is not on the drive the project lives on"))
+}

@@ -44,6 +44,11 @@ if [ "${1:-}" = tool ]; then # Scripts/check tool <command>…: runs a command a
     exec "$@"
 fi
 
+if [ "${1:-}" = folder ] && [ "$(git config --global --get sagar.drive)" = yes ] &&
+    [ "$(stat -f %d "$(git rev-parse --path-format=absolute --git-common-dir)")" = "$(stat -f %d "$HOME")" ]; then
+    echo "This copy is not on the drive the project lives on: a Mac set up by Checklists/Build Mac.md commits only there."
+    exit 1
+fi
 if [ "${1:-}" = folder ]; then # Scripts/check folder: the commit gate's first rule. Each chat works in its own copy;
     # the shared folder, where every chat opens, stays on clean main, and only a release commits there.
     [ "$(git rev-parse --path-format=absolute --git-dir)" = "$(git rev-parse --path-format=absolute --git-common-dir)" ] ||
