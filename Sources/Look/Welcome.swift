@@ -10,6 +10,8 @@ package struct Welcome<Page: View>: View {
     private let finish: () -> Void
     private let page: (Int) -> Page
     @State private var index: Int
+    /// Whether the last step went on rather than back, so the pages slide the way the person went.
+    @State private var forward = true
 
     package init(
         pages: Int, last: String, startPage: Int = 0, finish: @escaping () -> Void,
@@ -32,8 +34,8 @@ package struct Welcome<Page: View>: View {
                     .id(index)
                     .transition(
                         .asymmetric(
-                            insertion: .opacity.combined(with: .offset(x: 24)),
-                            removal: .opacity.combined(with: .offset(x: -24))))
+                            insertion: .opacity.combined(with: .offset(x: forward ? 40 : -40)),
+                            removal: .opacity.combined(with: .offset(x: forward ? -40 : 40))))
             }
             .frame(maxHeight: .infinity)
             foot
@@ -50,13 +52,32 @@ package struct Welcome<Page: View>: View {
         HStack(spacing: 14) {
             dots
             Spacer(minLength: 0)
-            if index > 0 { Big("Back") { index -= 1 } }
-            if !onLast { Big("Skip", act: finish) }
-            Big(onLast ? last : "Continue", filled: true) {
-                if onLast { finish() } else { index += 1 }
+            if index > 0 {
+                quiet("Back") {
+                    forward = false
+                    index -= 1
+                }
             }
+            if !onLast { quiet("Skip", act: finish) }
+            Big(onLast ? last : "Continue", filled: true) {
+                if onLast {
+                    finish()
+                } else {
+                    forward = true
+                    index += 1
+                }
+            }
+            .keyboardShortcut(.defaultAction)
         }
         .frame(height: 34)
+    }
+
+    /// Back and Skip: words only, in the quieter grey.
+    private func quiet(_ title: String, act: @escaping () -> Void) -> some View {
+        Button(action: act) {
+            Text(title).type(.body).foregroundStyle(Role.muted)
+        }
+        .buttonStyle(.plain)
     }
 
     private var dots: some View {
@@ -98,11 +119,13 @@ package struct WelcomeHeading: View {
     }
 }
 
-/// A button along a first-open page's foot: quiet words, or, when filled, a capsule in ink that goes on.
+/// A first-open page's large button: a capsule in ink when filled, otherwise a soft grey one that lightens under the
+/// pointer.
 package struct Big: View {
     private let title: String
     private let filled: Bool
     private let act: () -> Void
+    @State private var hovering = false
 
     package init(_ title: String, filled: Bool = false, act: @escaping () -> Void) {
         self.title = title
@@ -112,27 +135,21 @@ package struct Big: View {
 
     package var body: some View {
         Button(action: act) {
-            if filled {
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Role.ground)
-                    .padding(.horizontal, 16)
-                    .frame(height: 34)
-                    .background(Role.ink, in: Capsule())
-            } else {
-                Text(title)
-                    .type(.body)
-                    .foregroundStyle(Role.muted)
-                    .frame(height: 34)
-            }
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(filled ? Role.ground : Role.ink)
+                .padding(.horizontal, 16)
+                .frame(height: 34)
+                .background(filled ? Role.ink : hovering ? Role.hover : Role.wash, in: Capsule())
+                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .contentShape(Capsule())
+        .onHover { hovering = $0 }
     }
 }
 
-/// A row a first-open page offers: what it is, a line on what it does, and a switch. The line fades while the switch
-/// is off, unless the row is plain.
+/// A row a first-open page offers: what it is, a line on what it does, and a switch. The line is faint, or in the
+/// darker grey when the row is plain, for a line that must be read.
 package struct Choice: View {
     private let title: String
     private let detail: String
@@ -154,7 +171,8 @@ package struct Choice: View {
                     .foregroundStyle(Role.ink)
                 Text(detail)
                     .type(.detail)
-                    .foregroundStyle(on || plain ? Role.muted : Role.faint)
+                    .foregroundStyle(plain ? Role.muted : Role.faint)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
             Switch(on: $on)
