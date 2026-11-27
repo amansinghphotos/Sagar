@@ -29,7 +29,8 @@ this Mac unless you carry it.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
 4. **It pastes for you** into the app you were in, or pastes as plain text if you hold Shift. If you
    have not allowed it to paste, it copies, and says to press Command-V.
-   *Asks for:* Accessibility, once, in System Settings, to paste for you.
+   *Asks for:* Device Control and Data Access, once, in System Settings, to paste for you. Earlier
+   versions of macOS called it Accessibility.
 5. **It keeps things as long as you choose:** a week, a month, a year or forever, a year at first.
    You can delete one thing, or everything.
 6. **Your history goes with you in one file.** Export saves everything in a plain file you choose,
