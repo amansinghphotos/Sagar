@@ -42,6 +42,13 @@ package struct Store: Sendable {
         try seal.seal(encoder.encode(value)).write(to: try file(named: name, sealed: true), options: .atomic)
     }
 
+    /// Removes the value sealed under a name, if there is one.
+    package func removeSealed(named name: String) throws {
+        let file = try file(named: name, sealed: true)
+        guard FileManager.default.fileExists(atPath: file.path) else { return }
+        try FileManager.default.removeItem(at: file)
+    }
+
     /// The name of every sealed value in the folder.
     package func sealedNames() throws -> [String] {
         guard FileManager.default.fileExists(atPath: folder.path) else { return [] }
