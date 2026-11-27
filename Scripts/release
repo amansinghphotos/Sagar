@@ -6,6 +6,7 @@
 #   Scripts/release <App> <version> withdraw    he reported a fault: mend it, then offer the same number again
 #   Scripts/release <App> <version> publish     run by GitHub when his approval merges the pull request
 #   Scripts/release follows <last> <next>       says whether one version may follow another
+#   Scripts/release may <App> <now> < state     why a release of <App> may not start yet, or nothing
 #   Scripts/release notice <App> <version> <passed|failed> <owner> <why> < comments    the note that tells him, if any
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -16,6 +17,18 @@ follows() { # follows <last> <next>: yes if <next> is the next second number, or
         print (want == was[1] "." was[2] + 1 || want == was[1] + 1 ".0") ? "yes" : "no" }'
 }
 [ "${1:-}" != follows ] || { follows "${2:-}" "${3:-}"; exit; }
+
+may() { # may <App> <now> < {"open": [every open branch], "milestone": [its open issues, with their labels]}: why
+    # it may not start yet, or nothing. One build waits for him at a time, and an app NOW does not name ships
+    # faults only (the platform spec, Mending a Shipped App). Other open work never holds a release back.
+    jq -r --arg app "$1" --arg now "$2" '
+        ([.open[]? | select(startswith("release/"))][0] // empty | "\(.) is waiting for the owner. One build waits at a time."),
+        (select(($app | ascii_downcase) != ($now | ascii_downcase))
+            | [.milestone[]? | select(any(.labels[]?; .name == "fault" or .name == "release") | not) | .number]
+            | select(length > 0)
+            | "\($app) is mended beside the app in work, so it ships faults only, not #\(map(tostring) | join(", #")).")'
+}
+[ "${1:-}" != may ] || { may "${2:-}" "${3:-}"; exit; }
 
 why() { # why < notes: the owner's reason for a release, if its notes are allowed. The notes are New, Better and Fixed
     # lines in that order, each with something to say, one at least, and no issue number or code. The reason is
@@ -152,7 +165,12 @@ git fetch -q origin main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || stop "main is not what GitHub has."
 [ -f "$feed" ] && grep -q "data-app=\"$name\"" docs/index.html ||
     stop "$feed or the page's entry is missing: see Checklists/New App.md."
-[ -z "$(gh pr list --state open --json number --jq '.[].number')" ] || stop "Merge or close every open pull request first."
+open=$(gh pr list --state open --json headRefName --jq '[.[].headRefName]') &&
+    milestone=$(gh issue list --state open --search "milestone:\"$app $version\"" --json number,labels) ||
+    stop "Could not ask GitHub what is open."
+why=$(jq -n --argjson open "$open" --argjson milestone "$milestone" '{open: $open, milestone: $milestone}' |
+    may "$app" "$(tr -d '[:space:]' <NOW)")
+[ -z "$why" ] || stop "$why"
 issue=$(gh issue list --state open --json number,title \
     --jq "[.[] | select(.title == \"Release $app $version\")][0].number // empty")
 [ -n "$issue" ] || stop "Open the Release issue titled 'Release $app $version' first."
