@@ -68,7 +68,7 @@ package struct Keyboard: View {
 
     /// A Mac's keys in their rows, each named as `KeyCombo` names it, each row 14½ units wide. The modifiers are drawn
     /// on the left alone, so a shortcut reads at a glance: the space bar takes the place of the right ones, and the
-    /// right Shift is a blank key that keeps the row's edge.
+    /// right Shift's place is left empty.
     private static let rows: [[Cap]] = [
         [Cap("escape", "esc", 1.5)] + (1...12).map { Cap("f\($0)", "F\($0)", 13 / 12) },
         "`1234567890-=".map { Cap(String($0)) } + [Cap("delete", "⌫", 1.5)],
@@ -110,7 +110,9 @@ package struct Keyboard: View {
         let short: Bool
 
         var body: some View {
-            if key.arrows {
+            if key.id == "blank" {
+                Color.clear.frame(width: key.width, height: Keyboard.unit - Keyboard.gap)
+            } else if key.arrows {
                 HStack(alignment: .bottom, spacing: Keyboard.gap) {
                     half("left", "←")
                     VStack(spacing: Keyboard.gap) {
