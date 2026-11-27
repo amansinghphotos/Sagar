@@ -5,10 +5,13 @@ import UniformTypeIdentifiers
 
 /// Chete's settings window, as the app opens it from Chete › Settings….
 package struct CheteSettings: View {
-    @State private var choices = Choices.onThisMac()
+    @State private var choices: Choices
     @State private var opensAtLogin = LoginItem.isOn
 
-    package init() {}
+    /// Settings that tell Chete when clips were deleted or brought back.
+    package init(changed: @escaping () -> Void) {
+        _choices = State(initialValue: Choices.onThisMac(changed: changed))
+    }
 
     package var body: some View {
         let login = Binding {
