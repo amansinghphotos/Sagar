@@ -32,12 +32,14 @@ nonisolated package enum Palette {
     /// The items whose words hold every typed word, those typed exactly before those that needed a typo forgiven,
     /// and otherwise in their own order. Nothing typed offers them all.
     package static func rank(_ items: [PaletteItem], for typed: String) -> [PaletteItem] {
-        let words = typed.lowercased().split(whereSeparator: \.isWhitespace).map { Array($0.utf8) }
+        let words = typed.lowercased().split(separator: " ").map { Array($0.utf8) }
         guard !words.isEmpty else { return items }
         let found = items.compactMap { item in
             Fuzzy.match(words, in: "\(item.key) \(item.title)".lowercased()).map { (item: item, score: $0) }
         }
-        return found.sorted { $0.score > $1.score }.map(\.item)
+        let exact = found.filter { $0.score == 1 }.map(\.item)
+        let forgiven = found.filter { $0.score == 0 }.map(\.item)
+        return exact + forgiven
     }
 }
 
@@ -81,12 +83,7 @@ package struct PaletteRow: View {
     /// The tile with a letter, or the symbol, before the words.
     @ViewBuilder private var mark: some View {
         if let letter = item.letter {
-            Text(letter)
-                .font(.system(size: 7.75, weight: .medium))
-                .offset(y: 0.5)
-                .foregroundStyle(Greys.white.muted)
-                .frame(width: Self.mark, height: Self.mark)
-                .background(Role.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 3, style: .continuous))
+            Mark(icon: nil, letter: letter, size: Self.mark)
         } else {
             Image(systemName: item.symbol ?? "magnifyingglass")
                 .font(.system(size: 10, weight: .medium))
@@ -127,7 +124,7 @@ package struct CommandPalette: View {
             if !offers.isEmpty {
                 LaunchList {
                     ForEach(Array(offers.enumerated()), id: \.element.id) { index, item in
-                        PaletteRow(item: item, picked: index == min(pick, offers.count - 1))
+                        PaletteRow(item: item, picked: index == pick)
                             .onTapGesture { take(item) }
                     }
                 }
