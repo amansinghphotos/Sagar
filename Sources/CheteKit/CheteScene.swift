@@ -40,6 +40,7 @@ public struct CheteScene: Scene {
                 watcher = Watcher(copies: copies)
                 watcher?.kept = { shelf.add($0) }
                 watcher?.start()
+                copies.trimDaily { shelf.remove($0) }
             } catch {
                 Logger(subsystem: "com.amansingh.chete", category: "Copies").error("Chete keeps no copies: \(error)")
             }
