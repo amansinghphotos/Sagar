@@ -9,6 +9,14 @@ case ${1:-} in "" | request | words | apps | plain | shown | title | launch | re
     exit 2 ;;
 esac
 export LC_ALL=C
+# Inside a commit hook git names its own folder and index in the environment. Only this script's git keeps them:
+# any other tool that starts git, a package fetch or a test's own small repository, would be sent here instead.
+hook=()
+for name in $(git rev-parse --local-env-vars); do
+    [ -z "${!name+set}" ] || hook+=("$name=${!name}")
+    unset "$name"
+done
+git() { env ${hook[@]+"${hook[@]}"} git "$@"; }
 
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
     set -e
@@ -365,7 +373,7 @@ build() {
     [ -d Sources ] || [ -d Tests ] || return $nothing
     ! words_only || return $nothing
     local app
-    compile outside_git swift build --build-tests || return 1
+    compile swift build --build-tests || return 1
     for app in Apps/*/; do
         [ -d "$app" ] || continue
         # GitHub's Mac builds every app. This Mac does only when the change touches what nothing else here compiles.
@@ -375,10 +383,6 @@ build() {
     done
 }
 
-outside_git() { # run a command without the settings a commit hook gives git, which name this repository and would
-    # send any git the command starts, a package fetch or a test's own small repository, here instead
-    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX "$@"
-}
 compile() { # run a build; any warning or error fails it, and only those lines are shown
     local log status problems
     log=$("$@" 2>&1)
@@ -391,7 +395,7 @@ compile() { # run a build; any warning or error fails it, and only those lines a
 tests() {
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
-    outside_git swift test --quiet 2>&1
+    swift test --quiet 2>&1
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
