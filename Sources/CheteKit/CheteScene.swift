@@ -12,6 +12,7 @@ public struct CheteScene: Scene {
 
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
+        SwiftUI.Settings { CheteSettings() }.restorationBehavior(.disabled)
         Window("Chete", id: "chete") {
             ClipList(clips: Self.shelf.clips) { clip, plainText in
                 _ = Pasting.paste(clip, plainText: plainText, mayPaste: false)
