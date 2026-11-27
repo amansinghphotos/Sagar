@@ -152,7 +152,7 @@ that does not talk to Claude never asks. This is built with the first app that n
 ## 8. The Look
 
 `spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
-Search's motion, shown in a Gallery where the owner approves it as pictures.
+Search's motion. Modern is Search's look exactly, proved part by part against Search's own pictures.
 
 ## 9. Boundaries
 

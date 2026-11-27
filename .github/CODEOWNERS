@@ -8,6 +8,8 @@
 
 # How a screen looks, and an app's icon.
 /Tests/*/Pictures/        @amansinghphotos
+# The Gallery's pictures are the agents' own, checked against Search's (spec/look.md).
+/Tests/GalleryTests/Pictures/
 /Sources/Look/Tokens*     @amansinghphotos
 *.xcassets/               @amansinghphotos
 
