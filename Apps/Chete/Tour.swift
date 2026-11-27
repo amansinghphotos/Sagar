@@ -72,7 +72,8 @@ extension CheteTour {
         // Without the list, the keys below would be typed into whatever is open instead, so the tour stops here.
         guard field.waitForExistence(timeout: 10) else { return XCTFail("Chete opened no field to find a clip.") }
         let row = { (title: String) in
-            app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch
+            // Each row reads as one piece of text: its first line, then what it is and when it was copied.
+            app.staticTexts.matching(NSPredicate(format: "value BEGINSWITH %@", title)).firstMatch
         }
         if !row("https://example.com/tickets").waitForExistence(timeout: 10) {
             add(XCTAttachment(string: app.debugDescription))
