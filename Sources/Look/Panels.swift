@@ -1,19 +1,19 @@
 // The surfaces things are laid on: a panel with a title and a foot, a card, a dividing rule and a small caption.
 import SwiftUI
 
-/// A panel that floats over the page: its title and a close button, what it holds, and a foot below a rule. Shown as
-/// a tab of its own, it lies flat on the page instead.
+/// A panel that floats over the page: its title and a close button, what it holds, and, when it has one, a foot below
+/// a rule. Shown as a tab of its own, it lies flat on the page instead, with no close button: the tab closes it.
 package struct Plate<Content: View, Foot: View>: View {
     private let title: String
     private let width: CGFloat
-    private let close: (() -> Void)?
+    private let close: () -> Void
     private let content: () -> Content
     private let foot: () -> Foot
     @Environment(\.asTab) private var asTab
 
     package init(
-        _ title: String, width: CGFloat, close: (() -> Void)? = nil, @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder foot: @escaping () -> Foot
+        _ title: String, width: CGFloat = 560, close: @escaping () -> Void,
+        @ViewBuilder content: @escaping () -> Content, @ViewBuilder foot: @escaping () -> Foot
     ) {
         self.title = title
         self.width = width
@@ -22,54 +22,70 @@ package struct Plate<Content: View, Foot: View>: View {
         self.foot = foot
     }
 
+    private var hasFoot: Bool { Foot.self != EmptyView.self }
+
     package var body: some View {
+        if asTab { flat } else { floating }
+    }
+
+    private var floating: some View {
         let shape = RoundedRectangle(cornerRadius: Radius.panel.rawValue, style: .continuous)
-        VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: 0) {
             Text(title)
                 .type(.title)
                 .foregroundStyle(Role.ink)
                 .accessibilityAddTraits(.isHeader)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .overlay(alignment: .trailing) {
-                    if let close {
-                        Button(action: close) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(Role.muted)
-                                .frame(width: 26, height: 26)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .keyboardShortcut(.cancelAction)
-                        .accessibilityLabel("Close")
-                    }
+                    Door(icon: "xmark", help: "Done   esc", act: close).accessibilityLabel("Close")
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 21)
                 .padding(.bottom, 17)
             VStack(alignment: .leading, spacing: 0, content: content)
                 .padding(.horizontal, 22)
-                .padding(.bottom, 18)
-            if Foot.self != EmptyView.self {
+                .padding(.bottom, hasFoot ? 18 : 20)
+            if hasFoot {
                 Rule(inset: 0)
-                HStack(spacing: 10) { foot() }
+                foot()
                     .padding(.horizontal, 22)
                     .padding(.vertical, 14)
             }
         }
-        .frame(width: asTab ? nil : width, alignment: .leading)
-        .frame(maxWidth: asTab ? .infinity : nil, alignment: .leading)
+        .frame(width: width, alignment: .leading)
         .background(Role.ground)
-        .clipShape(asTab ? AnyShape(Rectangle()) : AnyShape(shape))
-        .overlay { if !asTab { shape.strokeBorder(Role.hairline) } }
-        .background { if !asTab { shape.fill(Role.ground).elevation(.panel) } }
+        .clipShape(shape)
+        .overlay { shape.strokeBorder(Role.hairline) }
+        .background { shape.fill(Role.ground).elevation(.panel) }
+    }
+
+    /// In a tab: a larger title, and what the panel holds no wider than the panel was, down the middle of the page.
+    private var flat: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Role.ink)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.top, 44)
+                .padding(.bottom, 20)
+            VStack(alignment: .leading, spacing: 0, content: content)
+            if hasFoot {
+                Rule(inset: 0).padding(.top, 18)
+                foot().padding(.vertical, 14)
+            }
+            Spacer().frame(height: 12)
+        }
+        .padding(.horizontal, 22)
+        .frame(maxWidth: width, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
 extension Plate where Foot == EmptyView {
     /// A panel with nothing at its foot.
     package init(
-        _ title: String, width: CGFloat, close: (() -> Void)? = nil, @ViewBuilder content: @escaping () -> Content
+        _ title: String, width: CGFloat = 560, close: @escaping () -> Void,
+        @ViewBuilder content: @escaping () -> Content
     ) {
         self.init(title, width: width, close: close, content: content) { EmptyView() }
     }
@@ -86,6 +102,7 @@ package struct Card<Content: View>: View {
     package var body: some View {
         let shape = RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous)
         VStack(alignment: .leading, spacing: 0, content: content)
+            .background(Role.ground)
             .clipShape(shape)
             .overlay(shape.strokeBorder(Role.hairline))
     }
