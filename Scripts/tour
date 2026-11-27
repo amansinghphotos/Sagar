@@ -104,7 +104,7 @@ setup)
     same_xcode || prepare || { echo "Could not give the hidden Mac Xcode."; "$guest" stop "$home"; exit 1; }
     sleep 30 # let the guest settle before it is kept
     "$guest" keep "$home" && rm -f "$home/Restore.ipsw"
-    [ -f "$home/Machine/Clean.vzvmsave" ] && echo "The hidden Mac is ready." || exit 1
+    [ -f "$home/Machine/Clean/State.vzvmsave" ] && echo "The hidden Mac is ready." || exit 1
     exit
     ;;
 '' | -*)
@@ -114,7 +114,7 @@ setup)
 esac
 app=$1
 [ -f "Apps/$app/Tour.swift" ] || { echo "Apps/$app/Tour.swift: no such tour."; exit 1; }
-[ -f "$home/Machine/Clean.vzvmsave" ] || { echo "No hidden Mac here yet: Scripts/tour setup makes it."; exit 1; }
+[ -f "$home/Machine/Clean/State.vzvmsave" ] || { echo "No hidden Mac here yet: Scripts/tour setup makes it."; exit 1; }
 products=.build/Xcode/Build/Products
 result=.build/Tours/$app.xcresult
 
@@ -123,7 +123,7 @@ if [ "${2:-}" != --in-turn ]; then
     began=$(date +%s)
     echo "Building $app and its tour."
     xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode -quiet build-for-testing \
-        CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1 | grep -E ': (error|warning): ' | sort -u
+        -xcconfig Scripts/tour.xcconfig 2>&1 | grep -E ': (error|warning): ' | sort -u
     [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
     TOUR_BEGAN=$began exec "$guest" turn "$home" "$(basename "$PWD"), touring $app" "$0" "$app" --in-turn
 fi
