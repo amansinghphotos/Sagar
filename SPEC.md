@@ -9,8 +9,8 @@ the rules below.
 
 | What It Prevents | The guard | Held by |
 |---|---|---|
-| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails. Look's shared parts are not an app. | A check, and his approval to change `NOW` |
-| More builds waiting than he can try | A release waiting for him locks its app: its other pull requests fail until he answers. | A check |
+| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails, unless it mends a fault in a shipped app. Look's shared parts are not an app. | A check, and his approval to change `NOW` |
+| More builds waiting than he can try | One build waits for him at a time. It locks its app: its other pull requests fail until he answers. | A check |
 | Home-made tools where standard ones exist | Standard tools only: Xcode, Swift Testing, XCUITest, GitHub issues, pull requests and Actions, Sparkle. | His approval of any dependency |
 | Work scattered, with no one record | Every change is a pull request of 400 changed lines at most that names one issue. Branches are deleted on merge. Status is the milestone page. | GitHub settings and a check |
 | The look changing unseen | The token file and the approved pictures change only with his approval. The Gallery's pictures are checked against Search's instead. | His approval |
@@ -42,7 +42,7 @@ His pending approvals are the only list of things waiting on him.
    they need from the network.
 7. Checklists, as in aviation: every repeated procedure is a short list that is read every time.
 
-Until Look's first set of parts is approved, decision 7 sets principles 4 and 5 aside for Look alone.
+Until Look's first set of parts is approved, decision 7 sets principle 5 aside for Look alone.
 
 ## 3. The Repository
 
@@ -105,7 +105,7 @@ first of them, and a release will not start while its own has a box unticked.
   converting them, or drops a must-have. That is his call each time.
 - There is no third number: every copy is offered each update, so no old version is ever mended. Under the
   version each build carries its commit's date and time, which always rises and is what Sparkle compares.
-- One waiting build per app, and one app in work.
+- One build waiting for him at a time, and one app in work.
 - Each GitHub release carries three plain lines: New, Better, Fixed.
 - A fault he describes becomes an issue, and the release that mends it says so in plain words. An
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
@@ -123,6 +123,21 @@ first of them, and a release will not start while its own has a box unticked.
 - Before a release an agent confirms it opens the files the previous release wrote, and ticks that
   in the Release issue. After his approval GitHub's Mac installs the previous release and watches it
   take the update.
+
+### Mending a Shipped App
+
+A fault in a shipped app is mended beside the app in work, and `NOW` stays as it is. (`Scripts/check`
+scope)
+
+- His report is enough to start. The fault becomes an issue marked `fault`, in the milestone for the
+  app's next number. Only its branch may touch the shipped app. (`Scripts/check` scope)
+- That milestone holds faults only. Nothing new reaches a shipped app until `NOW` names it again.
+  (`Scripts/check` scope and `Scripts/release`)
+- The mend is made on `main`, like any slice. GitHub's Mac tours that app too, as well as the app in
+  work. (`Scripts/check` tour)
+- Its release is tried and shipped like any other. It waits only while another build waits for him.
+  (`Scripts/release`)
+- It locks only the app it mends, so the app in work never waits for it. (`Scripts/check` lock)
 
 ## 6. Keys
 
