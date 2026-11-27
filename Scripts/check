@@ -130,7 +130,15 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
         { echo "He reviewed #$request: his part must answer **What Changed Since Your Review:** first. Nobody was asked."; exit 1; }
     unasked=0
     said=$(mktemp) # what gh says on the side, kept apart so that a warning is never read as GitHub's answer
-    trap 'rm -f "$said"' EXIT
+    unjudged="" # set while the request is shown and GitHub has not yet passed its words
+    take_back() { # any end before GitHub passed the words makes the request a draft again, out of his list
+        if gh pr ready "$request" --undo >/dev/null 2>&1; then
+            echo "#$request had been shown, and is a draft again."
+        else
+            echo "#$request is still shown, unjudged: make it a draft again with gh pr ready $request --undo."
+        fi
+    }
+    trap 'status=$?; rm -f "$said"; [ "$status" -eq 0 ] || [ -z "$unjudged" ] || take_back' EXIT
     unanswered() { # GitHub gave no answer, as when the agents' hourly allowance runs out. It is asked again a minute
         # later; after a quarter of an hour of no answers in a row, this says so, and when GitHub can next be asked.
         unasked=$((unasked + 1))
@@ -162,9 +170,7 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             answer=$(gh run view "$run" --json status,conclusion 2>"$said") && status=0 || status=$?
             case $(Scripts/check run "$status" <<<"$answer") in
                 passed) return 0 ;;
-                failed) # shown a moment ago, it becomes a draft again, which takes it out of his list
-                    [ "$1" != words ] || gh pr ready "$request" --undo >/dev/null 2>&1 || true
-                    echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
+                failed) echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
                 running) unasked=0; sleep 30 ;;
                 *) unanswered ;;
             esac
@@ -173,6 +179,7 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     # Two checks count. The code's ran on the newest commit. The words' ran on GitHub once the request was shown, and
     # after its description last changed.
     passed check ""
+    unjudged=yes
     gh pr ready "$request" >/dev/null 2>&1
     shown=$(gh api graphql -F owner="$owner" -F name="${repository#*/}" -F number="$request" -f query='
         query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
@@ -181,6 +188,7 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
         --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt, .timelineItems.nodes[0].createdAt] |
             map(select(. != null)) | max')
     passed words "$shown"
+    unjudged=""
     # If the owner answered before, he is asked again: GitHub does not do that by itself.
     if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
         gh pr edit "$request" --add-reviewer "$owner" >/dev/null

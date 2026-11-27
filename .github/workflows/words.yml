@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   words:
+    # A skipped run counts as passed for the merge, which is safe: a draft cannot merge.
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
