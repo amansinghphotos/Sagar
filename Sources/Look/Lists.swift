@@ -1,14 +1,11 @@
-// Taken from Search at commit c92ea7c: Line (Plate.swift), Quiet (Side.swift), Mark (Icons.swift), Always
-// (Settings.swift) and Welcome's Key (Welcome.swift). Copyright (c) 2026 Office Commun, MIT licence
-// (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's colours and motion are
-// read from Look, and a mark's icon is a SwiftUI image, told whether it is a template, instead of an AppKit one.
+// The parts a list is made of: a line with its control, a quiet row, a mark, an always-on badge and a key cap.
 import SwiftUI
 
-/// One thing to set or do: what it is on the left, the control on the right.
+/// A line in a list: its name, a line under it if there is one, and its control at the end.
 package struct Line<Control: View>: View {
-    let title: String
-    let detail: String?
-    @ViewBuilder let control: () -> Control
+    private let title: String
+    private let detail: String?
+    private let control: () -> Control
 
     package init(_ title: String, _ detail: String? = nil, @ViewBuilder control: @escaping () -> Control) {
         self.title = title
@@ -17,20 +14,14 @@ package struct Line<Control: View>: View {
     }
 
     package var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Role.ink)
+                Text(title).type(.body).foregroundStyle(Role.ink)
                 if let detail {
-                    Text(detail)
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(Role.muted)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(detail).type(.detail).foregroundStyle(Role.muted)
                 }
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
             control()
         }
         .padding(.horizontal, 14)
@@ -38,54 +29,35 @@ package struct Line<Control: View>: View {
     }
 }
 
-/// A row that is an action rather than a page. Quiet until the pointer is on it.
+/// A row that waits quietly until the pointer comes to it: a symbol and words, faint at rest.
 package struct Quiet: View {
     @Environment(\.greys) private var greys
     @Environment(\.motion) private var motion
-    let icon: String
-    let title: String
-    var height: CGFloat = 28
-    var size: CGFloat = 12.5
-    /// The icon alone, in the middle: the column of icons' new tab.
-    var centred = false
-    let act: () -> Void
-
+    private let icon: String
+    private let title: String
+    private let act: () -> Void
     @State private var hovering = false
 
-    package init(
-        icon: String, title: String, height: CGFloat = 28, size: CGFloat = 12.5, centred: Bool = false,
-        act: @escaping () -> Void
-    ) {
+    package init(icon: String, title: String, act: @escaping () -> Void) {
         self.icon = icon
         self.title = title
-        self.height = height
-        self.size = size
-        self.centred = centred
         self.act = act
     }
 
     package var body: some View {
         Button(action: act) {
-            HStack(spacing: 8) {
-                if centred { Spacer(minLength: 0) }
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: .medium))
-                    .frame(width: 15)
-                if !title.isEmpty {
-                    Text(title)
-                        .font(.system(size: size))
-                }
+            HStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 10)).frame(width: 11)
+                Text(title).font(.system(size: 12.5))
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.faint))
-            .padding(.leading, centred ? 0 : 10)
-            .frame(height: height)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(hovering ? greys.muted : greys.faint)
+            .padding(.horizontal, 12)
+            .frame(height: 28)
             .background(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(hovering ? AnyShapeStyle(greys.hover) : AnyShapeStyle(.clear))
+                greys.hover.opacity(hovering ? 1 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
@@ -93,71 +65,60 @@ package struct Quiet: View {
     }
 }
 
-/// What stands for a page when there is no room for its title: the site's
-/// icon if there is one, and a letter in a faint square until there is.
+/// What stands for a page or a thing in a list: its own picture when it has one, or else its first letter on a
+/// small tile. A template picture is drawn in ink, a little softened; a dim mark steps back.
 package struct Mark: View {
     @Environment(\.greys) private var greys
     @Environment(\.motion) private var motion
-    let icon: Image?
-    /// Whether the icon is a symbol to draw in the row's ink, as Search's own pages' are.
-    var template = false
-    let letter: String
-    var size: CGFloat = 16
-    var dim = false
-    /// Full ink for the letter, instead of the soft grey a resting mark usually wears: the
-    /// ground's own, as the doors' (see Door), so it still reads on glass.
-    var contrast = false
+    private let icon: Image?
+    private let template: Bool
+    private let letter: String
+    private let size: CGFloat
+    private let dim: Bool
 
-    package init(
-        icon: Image?, template: Bool = false, letter: String, size: CGFloat = 16, dim: Bool = false,
-        contrast: Bool = false
-    ) {
+    package init(icon: Image?, template: Bool = false, letter: String, size: CGFloat = 16, dim: Bool = false) {
         self.icon = icon
         self.template = template
         self.letter = letter
         self.size = size
         self.dim = dim
-        self.contrast = contrast
     }
 
     package var body: some View {
-        Group {
-            if let icon, template {
-                // One of the app's own pages: its symbol, in the row's ink, light or dark.
-                icon
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundStyle(Role.ink.opacity(0.75))
-                    .padding(size * 0.06)
-                    .frame(width: size, height: size)
-            } else if let icon {
-                icon
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: size, height: size)
-                    .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
-            } else {
-                Text(letter)
-                    .font(.system(size: size * 0.56, weight: .medium))
-                    .foregroundStyle(contrast ? AnyShapeStyle(Role.ink) : AnyShapeStyle(greys.muted))
-                    .frame(width: size, height: size)
-                    .background(
-                        RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                            .fill(Role.ink.opacity(0.06))
-                    )
+        ZStack {
+            Group {
+                if let icon {
+                    if template {
+                        icon.resizable().scaledToFit()
+                            .foregroundStyle(Role.ink.opacity(0.75))
+                            .frame(width: size * 0.875, height: size * 0.875)
+                    } else {
+                        icon.resizable().scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+                    }
+                } else {
+                    RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
+                        .fill(greys.pinLive.opacity(0.5))
+                        .overlay {
+                            Text(letter.prefix(1).uppercased())
+                                .font(.system(size: size * 0.56, weight: .medium))
+                                .foregroundStyle(greys.muted)
+                        }
+                }
             }
+            .transition(.opacity)
         }
-        .opacity(dim ? 0.45 : 1)
-        .transition(.opacity)
+        .frame(width: size, height: size)
+        .opacity(dim ? 0.5 : 1)
         .animation(motion.quick, value: icon == nil)
         .animation(motion.quick, value: dim)
+        .accessibilityHidden(true)
     }
 }
 
-/// For a feature that is simply there: no switch, a quiet word.
+/// A small badge for a setting that cannot be turned off.
 package struct Always: View {
-    var text = "Always on"
+    private let text: String
 
     package init(text: String = "Always on") {
         self.text = text
@@ -168,15 +129,15 @@ package struct Always: View {
             .font(.system(size: 11))
             .foregroundStyle(Role.muted)
             .padding(.horizontal, 8)
-            .padding(.vertical, 3)
+            .frame(height: 20)
             .background(Role.wash, in: Capsule())
     }
 }
 
-/// A key, or keys, in a cap, and what they do: Search's welcome's.
+/// A key cap and what pressing it does.
 package struct Key: View {
-    let keys: String
-    let what: String
+    private let keys: String
+    private let what: String
 
     package init(_ keys: String, _ what: String) {
         self.keys = keys
@@ -188,11 +149,14 @@ package struct Key: View {
             Text(keys)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(Role.ink)
-                .padding(.horizontal, 7)
+                .padding(.horizontal, 8)
                 .padding(.vertical, 3)
                 .background(Role.wash, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .frame(minWidth: 44)
-            Text(what).font(.system(size: 13)).foregroundStyle(Role.muted)
+            Text(what)
+                .type(.body)
+                .foregroundStyle(Role.muted)
         }
+        .accessibilityElement(children: .combine)
     }
 }
