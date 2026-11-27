@@ -63,7 +63,7 @@ A Modern part is done when its picture matches the same part pictured from Searc
 to match: the owner first sees it in an app's screen, and approves that screen's pictures. Motion is done when each movement, measured
 through time, stays within two hundredths of the same movement measured from Search's own code at
 `c92ea7c`, kept beside it as the reference, and a test shows each movement is instant under Reduce
-Motion, but for that one fade. Keyboard reach and labels are proven by the Gallery's tour and its audit.
+Motion, but for that one fade. Keyboard reach and labels are to be proven by the Gallery's tour and its audit, set aside for now (decision 9).
 
 ## Out of Scope
 
