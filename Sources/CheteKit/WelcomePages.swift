@@ -50,12 +50,12 @@ package struct WelcomePages: View {
             case .keeping:
                 step(
                     "Let Chete keep what you copy.",
-                    "Chete saves each thing you copy. Your Mac wants your OK first.",
+                    "Chete saves each thing you copy. You allow that once, in System Settings.",
                     done: "Chete keeps what you copy.", on: given.keeping, ask: act.allowKeeping)
             case .pasting:
                 step(
                     "Let Chete paste for you.",
-                    "Pick a clip, and Chete pastes it for you. Your Mac wants your OK first.",
+                    "Pick a clip, and Chete pastes it for you. You allow that once, in System Settings.",
                     done: "Chete pastes it where you were.", on: given.pasting, ask: act.allowPasting)
             case .last: last
             }
@@ -91,7 +91,7 @@ package struct WelcomePages: View {
                 if on {
                     offer("Allowed", done) { Image(systemName: "checkmark").type(.title).foregroundStyle(Role.ink) }
                 } else {
-                    offer("Allow it in System Settings", "A small card shows you where to click.") {
+                    offer("Allow Chete", "A small card shows you where to click.") {
                         Pill("Open System Settings", filled: true, action: ask)
                     }
                 }
@@ -135,26 +135,31 @@ package struct WelcomePages: View {
 
 /// The small card that stays in front of System Settings: where to go there, and what to look for.
 package struct WelcomeCard: View, Sendable {
-    package static let size = CGSize(width: 340, height: 150)
-    /// For keeping what is copied: Chete's row there has a menu, and Allow is the one to choose.
+    package static let size = CGSize(width: 340, height: 166)
+    /// For keeping what is copied. macOS gives each app a menu there: Ask, Allow or Deny.
     package static let keeping = WelcomeCard(
-        name: "keeping", ask: "Choose Allow for Chete.", place: "Privacy & Security, then Paste from Other Apps.",
-        menu: "Allow")
-    /// For pasting: Chete's row there has a switch.
+        name: "keeping", place: "Paste from Other Apps", menu: "Allow",
+        how: "Set its menu to Allow. Chete only reads what you copy.")
+    /// For pasting. macOS gives each app a switch there. macOS 27 names the place Device Control and Data Access;
+    /// earlier versions called it Accessibility.
     package static let pasting = WelcomeCard(
-        name: "pasting", ask: "Turn on Chete.", place: "Privacy & Security, then Accessibility.", menu: nil)
+        name: "pasting", place: "Device Control and Data Access", menu: nil,
+        how: "Turn its switch on. Chete only uses it to paste.")
 
     package let name: String
-    let ask: String
+    /// The section of Privacy & Security, in Apple's own words for it.
     let place: String
     /// The word to choose on the row's menu, or nothing where the row has a switch.
     let menu: String?
+    /// The one line that differs: what macOS shows there, and that Chete does no more with it.
+    let how: String
 
     package var body: some View {
         VStack(alignment: .leading, spacing: Space.apart.rawValue) {
             VStack(alignment: .leading, spacing: Space.hair.rawValue) {
-                Text(ask).type(.heading).foregroundStyle(Role.ink)
-                Text(place).type(.detail).foregroundStyle(Role.muted)
+                Text("Find Chete, and allow it.").type(.heading).foregroundStyle(Role.ink)
+                Text("In Privacy & Security, under \(place).").type(.detail).foregroundStyle(Role.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             rows {
                 // A picture of the row to look for. It is not the real one, so it takes no clicks.
@@ -179,7 +184,7 @@ package struct WelcomeCard: View, Sendable {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
             }
-            Text("Once that's done, Chete moves on by itself.").type(.detail).foregroundStyle(Role.muted)
+            Text(how).type(.detail).foregroundStyle(Role.muted)
         }
         .padding(Space.page.rawValue)
         .frame(width: Self.size.width, height: Self.size.height, alignment: .topLeading)
