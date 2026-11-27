@@ -82,19 +82,19 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     passed check ""
     passed words "$edited"
     gh pr ready "$request" >/dev/null 2>&1
+    # If the owner answered before, he is asked again: GitHub does not do that by itself.
     owner=${repository%/*}
+    if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
+        gh pr edit "$request" --add-reviewer "$owner" >/dev/null
+    fi
     if ! gh pr merge "$request" --auto --squash >/dev/null 2>&1; then
         # GitHub lets nobody pass the owner's review, and this merges only what has nothing left to wait for.
         state=$(gh pr view "$request" --json mergeStateStatus,reviewDecision,latestReviews)
         [ "$(Scripts/check merging "$owner" <<<"$state")" = now ] ||
-            { echo "GitHub would not set #$request to merge: see gh pr view $request."; exit 1; }
+            { echo "#$request waits for the owner's answer, or GitHub would not set it to merge: see gh pr view $request."; exit 1; }
         gh pr merge "$request" --squash >/dev/null
         echo "merged    #$request passed both checks on its newest commit, and had nobody left to answer"
         exit
-    fi
-    # If the owner answered before, he is asked again: GitHub does not do that by itself.
-    if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
-        gh pr edit "$request" --add-reviewer "$owner" >/dev/null
     fi
     echo "ready     #$request passed both checks on its newest commit, and merges once whoever must answer has"
     exit
