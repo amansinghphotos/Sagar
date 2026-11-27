@@ -43,8 +43,11 @@ private func grey(_ shade: Int) throws -> CVReadOnlyPixelBuffer {
     let process = Process()
     process.executableURL = root.appending(path: "Scripts/film")
     process.arguments = ["gif", try await movie(in: folder).path, film.path]
-    try process.run()
-    process.waitUntilExit()
+    // Waits for the script without holding one of the few threads every test shares, as it compiles for some seconds.
+    try await withCheckedThrowingContinuation { (finished: CheckedContinuation<Void, any Error>) in
+        process.terminationHandler = { _ in finished.resume() }
+        do { try process.run() } catch { finished.resume(throwing: error) }
+    }
     #expect(process.terminationStatus == 0)
 
     // An animated picture, which GitHub shows in a description as it shows a still, playing for ever. It holds every
