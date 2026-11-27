@@ -14,3 +14,11 @@ import Testing
     try expectPicture(
         of: Gallery(appearance: .dark), width: size.width, height: size.height, named: "gallery-dark", dark: true)
 }
+
+@Test(arguments: [false, true])
+func theControlsPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: Gallery(page: .controls, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        named: "gallery-controls-\(dark ? "dark" : "light")", dark: dark)
+}
