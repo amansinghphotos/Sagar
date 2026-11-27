@@ -49,6 +49,7 @@ package enum WhatIsNew {
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false  // a panel hides while its app is not the active one, unless told not to
+        panel.level = .floating  // above the app's own window, which may open after it
         panel.center()
         window = panel
         panel.orderFrontRegardless()  // in front, though the app was opened behind: the keyboard stays where it was
