@@ -227,8 +227,8 @@ tells an app a switch was turned on. So the card names the place, and the welcom
 No test turns the switch either: those steps he tries with a build. Motion cannot be judged from a
 still. He sees each movement as a row of pictures through time, and judges its feel with a build.
 A welcome he gives no reference pictures for follows Apple's guidelines for a first open, and uses
-only Look's parts and motion. His yes is then the standard: on its pictures, and on its feel with a
-build. References he sends later are used from then on.
+only Look's parts and motion, which stay held to their own measure. His yes is then the standard:
+on its pictures, and on its feel with a build. References he sends later are used from then on.
 
 The guards catch honest mistakes, not deliberate ones. The agents' app may push workflow files, so a
 branch could carry a workflow that reports a pass it did not earn. The network rule reads for the
