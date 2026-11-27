@@ -1,19 +1,29 @@
 #!/bin/bash
-# One app, built and signed the way it ships. Usage: Scripts/build <App> [version]
+# One app, built and signed the way it ships. Usage: NOTES=… Scripts/build <App> [version]
+#   Scripts/build settings < notes    the settings that carry a release's notes into the build
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+settings() { # settings < notes: one setting for each of New, Better and Fixed, empty where a line is left out
+    awk '{ label = $0; sub(/:.*/, "", label); text = $0; sub(/^[A-Za-z]*: */, "", text)
+           said[label] = toupper(substr(text, 1, 1)) substr(text, 2) }
+        END { print "SAGAR_NEW=" said["New"]; print "SAGAR_BETTER=" said["Better"]; print "SAGAR_FIXED=" said["Fixed"] }'
+}
+[ "${1:-}" != settings ] || { settings; exit; }
 
 app=${1:?Usage: Scripts/build <App> [version]}
 version=${2:-0}
 number=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y%m%d%H%M)
 out=.build/Release/$app
 
+notes=()
+while IFS= read -r setting; do notes+=("$setting"); done < <(settings <<<"${NOTES:-}")
 rm -rf "$out"
 mkdir -p "$out"
 quietly() { "$@" >>"$out/build.log" 2>&1 || { tail -n 30 "$out/build.log"; exit 1; }; }
 quietly xcodebuild -project Sagar.xcodeproj -scheme "$app" -derivedDataPath .build/Xcode \
     -destination generic/platform=macOS -archivePath "$out/$app.xcarchive" archive \
-    MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$number"
+    MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$number" "${notes[@]}"
 quietly xcodebuild -exportArchive -archivePath "$out/$app.xcarchive" \
     -exportOptionsPlist Config/Export.plist -exportPath "$out"
 

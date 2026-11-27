@@ -42,6 +42,12 @@ package actor Copies {
         try clips.all()
     }
 
+    /// Every clip kept, read afresh after Settings deleted or brought back clips, newest first.
+    package func reread() throws -> [Clip] {
+        known = nil
+        return try clips.all()
+    }
+
     /// Deletes every clip copied longer ago than the settings say to keep things, and says which went.
     @discardableResult
     package func trim(now: Date = .now, calendar: Calendar = .current) throws -> [Clip] {

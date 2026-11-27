@@ -14,5 +14,11 @@
 	<true/>
 	<key>SUVerifyUpdateBeforeExtraction</key>
 	<true/>
+	<key>SagarNew</key>
+	<string>$(SAGAR_NEW)</string>
+	<key>SagarBetter</key>
+	<string>$(SAGAR_BETTER)</string>
+	<key>SagarFixed</key>
+	<string>$(SAGAR_FIXED)</string>
 </dict>
 </plist>
