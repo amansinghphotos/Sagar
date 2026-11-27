@@ -124,13 +124,14 @@ his GitHub sign-in stays in his browser and phone, never in a terminal an agent 
 | In Passwords | What it is for | If it is lost | A new Mac |
 |---|---|---|---|
 | Sagar · Update Key | Proves each update comes from him: every installed copy checks it | No installed copy can update again | He pastes it once |
-| Sagar · Developer ID | Apple's signature on each app: the certificate's file, as text, and its password | He makes a new one in Xcode | He pastes it once |
-| Sagar · Apple Notary | The notary profile's sign-in, which sends each build to Apple's notary | He makes a new one on his Apple Account | iCloud Keychain |
+| Sagar · Developer ID | Apple's signature on each app, without which a Mac will not open it | He makes a new one in Xcode | He pastes it once |
+| Sagar · Apple Notary | Lets Apple check each build before anyone downloads it; on a Mac it is the notary profile named Theatre | He makes a new one on his Apple Account | iCloud Keychain |
 | Sagar · Agents' GitHub Key | The agents' own GitHub identity, never his | He generates a new one on the app's page | He pastes it once |
-| Sagar · Claude API Key | Lets an app talk to Claude | He makes a new one on Claude's site | iCloud Keychain |
+| Sagar · Claude API Key | Lets an app talk to Claude; made when the first such app asks for it | He makes a new one on Claude's site | iCloud Keychain |
 
-Five is the fewest. The update key and the Developer ID live in the login keychain, which does not
-sync, and no other key can do their work.
+These five are all that signing, publishing and updating need, and none can stand in for another.
+The update key and the Developer ID live in the login keychain, which does not sync, so those two,
+and the agents' key, are pasted.
 
 One Claude API key serves every app. The first app that talks to Claude asks for it once and keeps it
 in Apple's shared keychain group for his team, which iCloud Keychain carries to his other Macs. An app
