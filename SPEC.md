@@ -9,7 +9,7 @@ the rules below.
 
 | What It Prevents | The guard | Held by |
 |---|---|---|
-| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails. | A check, and his approval to change `NOW` |
+| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails. Look's shared parts are not an app. | A check, and his approval to change `NOW` |
 | More builds waiting than he can try | A release waiting for him locks its app: its other pull requests fail until he answers. | A check |
 | Home-made tools where standard ones exist | Standard tools only: Xcode, Swift Testing, XCUITest, GitHub issues, pull requests and Actions, Sparkle. | His approval of any dependency |
 | Work scattered, with no one record | Every change is a pull request of 400 changed lines at most that names one issue. Branches are deleted on merge. Status is the milestone page. | GitHub settings and a check |
@@ -69,7 +69,7 @@ Decisions/             why things are the way they are
 Scripts/               check, build, release
 ```
 
-A module exists once an app needs it. AppKit is allowed only in Shell, Taps and a Kit's `Mac/` folder.
+A module exists once an app needs it, but for Look (principle 5). AppKit is allowed only in Shell, Taps and a Kit's `Mac/` folder.
 Network code is allowed only in Shell (updates) and Minds. Windows adapt by container width, and each
 screen is pictured narrow, default and wide.
 
@@ -177,5 +177,5 @@ usual calls and cannot see every way to fetch a file.
 Keep. Shell's settings window, permissions, login item, menu bar, hot keys and Send Report. Taps and
 Minds. The three lines of notes shown once inside an app after it updates.
 
-Contrast is a number on Look's colour roles, worked out from their values. The tour's audit leaves
+Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.

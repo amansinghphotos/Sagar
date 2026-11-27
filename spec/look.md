@@ -3,8 +3,8 @@
 Look is how every app here looks and moves. It is one set of parts, made once and shared, so that a new
 app starts finished on the outside and only its own feature is new.
 
-Look is not an app. Its work may run beside the app in `NOW`, each in its own git worktree and its own
-files. While an app is in
+Look is not an app. Its work may run beside the app in `NOW`, each in its own copy of the repository
+and its own files. While an app is in
 work, the parts its screens need are built first, and the app writes none of its own.
 
 ## What It Is For
@@ -39,11 +39,12 @@ a colour, a font or a size, so a change to the look reaches every app at once.
    - *Status:* progress bar, spinner, loading placeholder, badge, key cap, count, meter, sound level,
      banner, nothing-here-yet, and an error with Try Again.
    - *Reading:* long text, code, a picture, Quick Look preview, and a style for charts.
-4. **Motion from Search, as written.** Search's springs and timings (glide, settle, quick, the press
-   that gives to 97 per cent, the sliding column) and the transitions its parts use are taken word for
-   word from Search at commit `c92ea7c`, with its MIT notice kept. Left out: Search's slower motion in
-   Low Power Mode, since power is the owner's to manage, and its test switches. Changed only where
-   Swift 6 or this repository's rules require. Every movement stops under Reduce Motion.
+4. **Motion from Search, as written.** Search's springs and timings (glide, settle, quick, the shrink
+   to 97 per cent when pressed, the sliding column) and the transitions its parts use are taken word
+   for word from Search at commit `c92ea7c`, with its MIT notice kept. Left out: Search's quicker motion
+   in Low Power Mode or when the Mac is hot, since power is the owner's to manage, and its test
+   switches. Changed only where this repository's rules require. Under Reduce Motion every movement is
+   instant, but for the sliding column's short fade, which Search keeps.
 5. **Keyboard and VoiceOver everywhere.** Controls are Apple's own with a style, so each is reached with
    Tab, shows a focus ring and is read aloud.
 6. **A Gallery.** One window, never shipped, showing every part in every state, with a bar to switch
@@ -56,7 +57,7 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 
 A part is done when its Gallery pictures are approved. Motion is done when the reviewer, reading it beside
 Search's source, finds nothing changed beyond what must-have 4 allows, and a test shows each movement
-is none under Reduce Motion. Keyboard reach and labels are proven by the Gallery's tour and its audit.
+is instant under Reduce Motion, but for that one fade. Keyboard reach and labels are proven by the Gallery's tour and its audit.
 
 ## Out of Scope
 

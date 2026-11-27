@@ -102,7 +102,7 @@ Never, whatever the reason:
 ## How the Code Is Laid Out
 
 - `Apps/<App>/Main.swift` only starts the app's Kit. Everything else is in `Sources/<App>Kit/`.
-- Shared modules exist once an app needs them: Look, Keep, Shell, Taps, Minds.
+- Shared modules exist once an app needs them: Keep, Shell, Taps, Minds. Look is built whole, ahead of need.
 - `import AppKit` only in Shell, Taps and a Kit's `Mac/` folder. Network code only in Shell and Minds.
 - Screens name roles from Look, never a colour, a font or a size.
 - `package` is the widest access, but for the one scene a Kit hands to `Main.swift`, which is `public`.
