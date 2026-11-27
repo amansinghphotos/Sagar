@@ -1,0 +1,34 @@
+import Foundation
+import Pictures
+import SwiftUI
+import Testing
+
+@testable import Look
+
+/// Search's buttons at rest, as one showcase. The same showcase was pictured from Search's own code at commit
+/// c92ea7c, through this repository's picture harness, into `Fixtures/Search Buttons Light.png` and `Dark.png`.
+private var buttons: some View {
+    VStack(alignment: .leading, spacing: 10) {
+        HStack(spacing: 8) {
+            Pill("Plain") {}
+            Pill("Main", filled: true) {}
+            Pill("Delete", tint: .unsafe) {}
+            Quick("Show") {}
+        }
+        HStack(spacing: 8) {
+            Door(icon: "sidebar.left") {}
+            Door(icon: "sidebar.left", on: true) {}
+            Text("Pressed").modifier(Give(pressed: true))
+        }
+    }
+    .padding(12)
+}
+
+@Test(arguments: [false, true])
+func theButtonsLookAsSearchsDo(dark: Bool) throws {
+    let file = URL(filePath: #filePath).deletingLastPathComponent()
+        .appending(path: "Fixtures/Search Buttons \(dark ? "Dark" : "Light").png")
+    let search = try #require(approvedPicture(at: file))
+    let ours = try picture(of: buttons, width: 320, height: 90, dark: dark)
+    #expect(differingPixels(ours, search) <= tolerance)
+}

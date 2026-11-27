@@ -46,6 +46,7 @@ struct Gallery: View {
             Group {
                 switch page {
                 case .tokens: Tokens()
+                case .controls: Controls()
                 default: ContentUnavailableView(page.rawValue, systemImage: "square.dashed")
                 }
             }
