@@ -181,13 +181,13 @@ gh release create "$tag" "$image" --draft --target "$(git rev-parse origin/main)
 new=$(sed -n 's/^New: //p' <<<"$notes")
 request=$(gh pr create --draft --title "Release $app $version" --body "## For the Owner
 
-**What This Does:** Sends $app $version to everyone who has $app. It is in your Applications folder now, for you to try first.
+**What This Does:** Sends $app $version to everyone who has $app. It's in your Applications folder now, so you can try it first.
 
 **Why:** $(tr '[:lower:]' '[:upper:]' <<<"${new:0:1}")${new:1}
 
-**Does It Change Your Apps?** Yes: everyone who has $app is offered $version, and chooses when to take it.
+**Does It Change Your Apps?** Yes. Everyone who has $app is offered $version. They choose when to install it.
 
-**What to Do:** Quit $app if it is open, then open it from your Applications folder and try it. If it is right, approve. If something is wrong, choose Request changes and say what happened.
+**What to Do:** Quit $app if it's open. Then open it from your Applications folder and try it. If it's right, approve. If something's wrong, choose Request changes and say what happened.
 
 <details><summary>Checklist for the Agents</summary>
 
