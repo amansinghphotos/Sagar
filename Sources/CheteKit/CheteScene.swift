@@ -9,9 +9,11 @@ public struct CheteScene: Scene {
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
         Window("Chete", id: "chete") {
-            // Plain words: an empty-state view that fills the window is a group VoiceOver cannot name.
+            // The window's outer group needs a name of its own, or VoiceOver says only "group".
             Text("What You Copy Appears Here")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Your Clips")
         }
         .commands { UpdateCommands() }
     }
