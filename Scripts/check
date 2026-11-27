@@ -4,11 +4,25 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | request | size | order | words | apps | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | request | size | order | ready <number> | words <file>… | apps <file>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | request | size | order | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | request | size | order | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
+# Inside a commit hook git names its own folder and index in the environment. Only this script's git keeps them:
+# any other tool that starts git, a package fetch or a test's own small repository, would be sent here instead.
+hook=()
+names=$(git rev-parse --local-env-vars) || exit 1
+for name in $names; do
+    [ -z "${!name+set}" ] || hook+=("$name=${!name}")
+    unset "$name"
+done
+git() { env ${hook[@]+"${hook[@]}"} git "$@"; }
+if [ "${1:-}" = tool ]; then # Scripts/check tool <command>…: runs a command as the rules run a build tool
+    shift
+    [ $# -gt 0 ] || { echo "Usage: Scripts/check tool <command>…"; exit 2; }
+    exec "$@"
+fi
 
 if [ "${1:-}" = folder ]; then # Scripts/check folder: the commit gate's first rule. Each chat works in its own copy;
     # the shared folder, where every chat opens, stays on clean main, and only a release commits there.
@@ -390,7 +404,7 @@ build() {
     [ -d Sources ] || [ -d Tests ] || return $nothing
     ! words_only || return $nothing
     local app
-    compile outside_git swift build --build-tests || return 1
+    compile swift build --build-tests || return 1
     for app in Apps/*/; do
         [ -d "$app" ] || continue
         # GitHub's Mac builds every app. This Mac does only when the change touches what nothing else here compiles.
@@ -400,10 +414,6 @@ build() {
     done
 }
 
-outside_git() { # run a command without the settings a commit hook gives git, which name this repository and would
-    # send any git the command starts, a package fetch or a test's own small repository, here instead
-    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX "$@"
-}
 compile() { # run a build; any warning or error fails it, and only those lines are shown
     local log status problems
     log=$("$@" 2>&1)
@@ -416,7 +426,7 @@ compile() { # run a build; any warning or error fails it, and only those lines a
 tests() {
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
-    outside_git swift test --quiet 2>&1
+    swift test --quiet 2>&1
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
