@@ -19,6 +19,13 @@ let package = Package(
         .testTarget(name: "KeepTests", dependencies: ["Keep"], swiftSettings: strict),
         .target(name: "Shell", dependencies: [.product(name: "Sparkle", package: "Sparkle")], swiftSettings: strict),
         .testTarget(name: "ShellTests", dependencies: ["Shell"], swiftSettings: strict),
+        .target(name: "Look", swiftSettings: strict),
+        .testTarget(name: "LookTests", dependencies: ["Look"], swiftSettings: strict),
+        // Every part of the look on its own pages, for the owner to see and approve. Never shipped.
+        .executableTarget(name: "Gallery", dependencies: ["Look"], swiftSettings: strict),
+        .testTarget(
+            name: "GalleryTests", dependencies: ["Gallery", "Look", "Pictures"], exclude: ["Pictures"],
+            swiftSettings: strict),
         .testTarget(name: "ScriptsTests", exclude: ["Fixtures"], swiftSettings: strict),
         // Test support: pictures a screen from a window that is never shown.
         .target(name: "Pictures", path: "Tests/Pictures", swiftSettings: strict),
