@@ -15,12 +15,12 @@ package struct Plate<Content: View, Foot: View>: View {
         _ title: String, width: CGFloat = 560, close: @escaping () -> Void,
         @ViewBuilder content: @escaping () -> Content, @ViewBuilder foot: @escaping () -> Foot
     ) {
-        self.title = title
-        self.width = width
-        self.close = close
-        self.content = content
-        self.foot = foot
+        (self.title, self.width, self.close) = (title, width, close)
+        (self.content, self.foot) = (content, foot)
     }
+
+    /// How far the panel's words sit in from its sides.
+    private let side: CGFloat = 22
 
     private var hasFoot: Bool { Foot.self != EmptyView.self }
 
@@ -28,54 +28,45 @@ package struct Plate<Content: View, Foot: View>: View {
         if asTab { flat } else { floating }
     }
 
+    /// Over the page: the title with its cross, what the panel holds, then the foot or a little room, on a lifted
+    /// rounded ground.
     private var floating: some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.panel.rawValue, style: .continuous)
-        return VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .type(.title)
-                .foregroundStyle(Role.ink)
-                .accessibilityAddTraits(.isHeader)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(alignment: .trailing) {
-                    Door(icon: "xmark", help: "Done   esc", act: close).accessibilityLabel("Close")
-                }
-                .padding(.horizontal, 22)
-                .padding(.top, 21)
-                .padding(.bottom, 17)
-            VStack(alignment: .leading, spacing: 0, content: content)
-                .padding(.horizontal, 22)
-                .padding(.bottom, hasFoot ? 18 : 20)
-            if hasFoot {
-                Rule(inset: 0)
-                foot()
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 14)
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            content().padding(.horizontal, side)
+            if hasFoot { footing(sides: side) } else { Color.clear.frame(height: 20) }
         }
         .frame(width: width, alignment: .leading)
-        .background(Role.ground)
-        .clipShape(shape)
-        .overlay { shape.strokeBorder(Role.hairline) }
-        .background { shape.fill(Role.ground).elevation(.panel) }
+        .onGround(.panel)
+        .elevation(.panel)
+    }
+
+    /// The title, and at the far end the cross that closes the panel.
+    private var header: some View {
+        HStack(spacing: 10) {
+            Text(title).type(.title).foregroundStyle(Role.ink)
+            Spacer(minLength: 0)
+            Door(icon: "xmark", help: "Done   esc", act: close)
+        }
+        .padding(EdgeInsets(top: 18, leading: side, bottom: 14, trailing: side))
+    }
+
+    /// The rule, a little below what the panel holds, and the foot under it, set in by `sides`.
+    @ViewBuilder private func footing(sides: CGFloat) -> some View {
+        Rule(inset: 0).padding(.top, 18)
+        foot().padding(EdgeInsets(top: 14, leading: sides, bottom: 14, trailing: sides))
     }
 
     /// In a tab: a larger title, and what the panel holds no wider than the panel was, down the middle of the page.
     private var flat: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(Role.ink)
-                .accessibilityAddTraits(.isHeader)
-                .padding(.top, 44)
-                .padding(.bottom, 20)
-            VStack(alignment: .leading, spacing: 0, content: content)
-            if hasFoot {
-                Rule(inset: 0).padding(.top, 18)
-                foot().padding(.vertical, 14)
-            }
-            Spacer().frame(height: 12)
+            Text(title).font(.system(size: 22, weight: .semibold)).foregroundStyle(Role.ink)
+                .padding(EdgeInsets(top: 44, leading: 0, bottom: 20, trailing: 0))
+            content()
+            if hasFoot { footing(sides: 0) }
+            Color.clear.frame(height: 12)
         }
-        .padding(.horizontal, 22)
+        .padding(.horizontal, side)
         .frame(maxWidth: width, maxHeight: .infinity, alignment: .topLeading)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -100,11 +91,7 @@ package struct Card<Content: View>: View {
     }
 
     package var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous)
-        VStack(alignment: .leading, spacing: 0, content: content)
-            .background(Role.ground)
-            .clipShape(shape)
-            .overlay(shape.strokeBorder(Role.hairline))
+        VStack(spacing: 0, content: content).onGround(.card)
     }
 }
 
@@ -118,11 +105,8 @@ package struct Rule: View {
     }
 
     package var body: some View {
-        Rectangle()
-            .fill(Role.hairline)
-            .frame(height: 1)
+        Rectangle().fill(Role.hairline).frame(height: 1)
             .padding(.leading, inset ?? standard)
-            .accessibilityHidden(true)
     }
 }
 
@@ -133,34 +117,26 @@ package struct Caption: View {
     package init(_ text: String) { self.text = text }
 
     package var body: some View {
-        Text(text)
-            .type(.caption)
-            .foregroundStyle(Role.muted)
-            .padding(.leading, 2)
-            .accessibilityAddTraits(.isHeader)
+        Text(text).type(.caption).foregroundStyle(Role.muted).padding(.leading, 2)
     }
 }
 
-nonisolated private struct AsTabKey: EnvironmentKey {
-    static let defaultValue = false
+extension View {
+    /// Lays a panel or a card on the page's ground, clipped to its rounded shape as one, so a shadow falls only outside
+    /// it, with a hairline round its edge.
+    fileprivate func onGround(_ radius: Radius) -> some View {
+        let edge = RoundedRectangle(cornerRadius: radius.rawValue, style: .continuous)
+        return background(Role.ground, in: edge)
+            .clipShape(edge)
+            .overlay { edge.strokeBorder(Role.hairline) }
+    }
 }
 
-nonisolated private struct RuleInsetKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 14
-}
-
-extension EnvironmentValues {
+nonisolated extension EnvironmentValues {
     /// Whether a panel is shown as a tab of its own, flat on the page, rather than floating over it.
-    nonisolated package var asTab: Bool {
-        get { self[AsTabKey.self] }
-        set { self[AsTabKey.self] = newValue }
-    }
-
+    @Entry package var asTab = false
     /// How far a rule is set in from the leading edge where no inset is given.
-    nonisolated package var ruleInset: CGFloat {
-        get { self[RuleInsetKey.self] }
-        set { self[RuleInsetKey.self] = newValue }
-    }
+    @Entry package var ruleInset: CGFloat = 14
 }
 
 extension View {
