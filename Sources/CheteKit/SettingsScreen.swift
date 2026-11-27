@@ -1,4 +1,5 @@
 import Look
+import Shell
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -19,6 +20,7 @@ package struct CheteSettings: View {
         SettingsScreen(choices: choices, opensAtLogin: login)
             .frame(width: SettingsScreen.width)
             .fixedSize(horizontal: false, vertical: true)
+            .windowName("Chete's settings")
     }
 }
 
