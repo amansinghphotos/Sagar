@@ -189,6 +189,17 @@ sentence an app shows runs past 12 words, and none uses a listed stock word, suc
 Until that check is built, the reviewer holds both. Whether words are warm and easy to read is judged
 by the reviewer on every change, and by him on each picture.
 
+Every app's first open is a welcome that a person new to computers can finish alone, and is glad to
+have seen. It greets them, says what the app is for in two lines, and names the quickest way to use
+it. Then it sets the app up, one step to a page. Any step can be skipped, and waits in Settings.
+Where a step needs System Settings, the welcome opens it at the right place, steps aside as a small
+card that stays in front, shows the switch to look for, and goes on by itself once it is on. Where
+the app has a keyboard shortcut, the person chooses it there: suggestions, a keyboard that lights
+the keys pressed, and a warning when macOS or the app already uses them. The welcome moves with
+Look's motion, and each app gives it one touch of its own, as Chete does with Gurmukhi. The pages,
+the shortcut recorder with its keyboard, and the card are made once, in Look and Shell, so the next
+app's welcome starts at this level.
+
 ## 9. Boundaries
 
 - **Always:** a test first; `Scripts/check` green before a commit; one issue per pull request.
@@ -207,6 +218,11 @@ request that changes a check runs its own new version, and is read by the review
 
 Launch is judged by the fastest of three launches on GitHub's Mac. That shows what the code costs,
 not how an app feels on its very first open after an install, which he judges when he tries a build.
+
+macOS lets no app turn on a permission's switch, and shows no app another app's shortcuts. So a
+welcome shows the switch but cannot press it, and warns only of macOS's shortcuts and the app's own.
+No test turns the switch either: those steps he tries with a build. Motion cannot be judged from a
+still. He sees each movement as a row of pictures through time, and judges its feel with a build.
 
 The guards catch honest mistakes, not deliberate ones. The agents' app may push workflow files, so a
 branch could carry a workflow that reports a pass it did not earn. The network rule reads for the

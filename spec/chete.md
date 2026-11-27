@@ -20,8 +20,11 @@ this Mac unless you carry it.
    by itself, is kept too, unless you turn that off.
    *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. Until you choose
    Allow there, macOS asks before each copy is kept.
-2. **It opens from any app,** with the same keyboard shortcut the Chete before it used, and from its item in
-   the menu bar. It lives in the menu bar and has no Dock icon.
+2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
+   You choose the shortcut in the welcome, and can change it in Settings. Chete suggests three, with
+   the first already chosen, and shows a keyboard that lights each key you press. It warns you when
+   macOS or Chete already uses those keys, or macOS will not take them. It cannot warn of another
+   app's shortcut, which macOS shows to no app. It lives in the menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
 4. **It pastes for you** into the app you were in, or pastes as plain text if you hold Shift. If you
    have not allowed it to paste, it copies, and says to press Command-V.
@@ -31,10 +34,19 @@ this Mac unless you carry it.
 6. **Your history goes with you in one file.** Export saves everything in a plain file you choose,
    which opens on any Mac with no key or password, so keep it somewhere safe: it holds every clip,
    passwords included. Bring Back reads such a file on any Mac and replaces what is there.
-7. **The first open on a new Mac** says what Chete does in two lines, asks once to keep what you copy
-   and once to paste for you, offers to bring back an exported file, and offers to open at login. It
-   never asks for a Claude key.
-   *Asks for:* Login Items, if you choose to open it at login.
+7. **The first open on a new Mac is a welcome** that a person new to computers can finish alone.
+   It greets you in Gurmukhi and in English, and says what Chete does in two lines: that it opens
+   from the menu bar or, quicker, with a shortcut. Then it sets Chete up, one step to a page: your
+   shortcut, keeping what you copy, pasting for you, and last the offers to bring back an exported
+   file and to open at login. For each permission it opens System Settings at the right place, steps
+   aside as a small card that stays in front, shows the switch to look for, and goes on by itself
+   once the switch is on. Only you can turn it on: macOS lets no app do that. Pages arrive and leave
+   with Look's motion. Any step can be skipped, and waits in Settings. It never asks for a Claude key.
+   The Gurmukhi shows where Chete's name comes from, in three places, each with its English beside it:
+   the greeting ਜੀ ਆਇਆਂ ਨੂੰ ("welcome"), the name ਚੇਤੇ, and a last line, ਹੁਣ ਸਭ ਕੁਝ ਚੇਤੇ ਰਹੇਗਾ ("now
+   everything is remembered"). Nothing you need is said in Gurmukhi alone.
+   *Asks for:* Login Items, if you choose to open it at login. The Gurmukhi is set in a typeface macOS
+   carries, so no font is added.
 8. **It takes over the Chete before it.** On its first open on a Mac where the earlier Chete kept a
    history, it brings in every clip and both settings, how long to keep things and whether copies from
    other devices arrive. macOS asks you once, and you choose Always Allow. The earlier history is read
