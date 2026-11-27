@@ -41,12 +41,13 @@ private func withoutGitsOwnSettings(_ environment: [String: String]) -> [String:
 }
 
 /// A small real repository with the real rules script in it: `main`, a branch whose change the reviewer read,
-/// then `main` moving on and the branch brought up to date with it.
+/// then `main` moving on and the branch brought up to date with it. A change to the working rules changes a
+/// file beside the rules script; any other changes a page of its own.
 private struct Branch {
     let folder: URL
     private(set) var read = ""
 
-    init() throws {
+    init(changing changed: String = "changed.txt") throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "reviewed-\(UUID().uuidString)")
         let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
@@ -57,7 +58,7 @@ private struct Branch {
         try commit("The first page")
         try git("update-ref", "refs/remotes/origin/main", "HEAD")
         try git("checkout", "-q", "-b", "work")
-        try write("the change", to: "changed.txt")
+        try write("the change", to: changed)
         try commit("The change the reviewer read")
         read = try git("rev-parse", "HEAD")
         try git("checkout", "-q", "main")
@@ -81,11 +82,18 @@ private struct Branch {
         try run("/usr/bin/env", ["git"] + arguments, input: nil)
     }
 
-    /// Whether the script, given a folded reply from the agents' app that names the commit read, counts the
-    /// branch as it now stands as read.
-    func countsAsRead() throws -> String {
+    /// A commit after the reading, as a mend of what it found.
+    @discardableResult mutating func mend(_ words: String) throws -> String {
+        try write(words, to: "mend.txt")
+        try commit("A mend of the reading")
+        return try git("rev-parse", "HEAD").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Whether the script, given a folded reply from the agents' app, counts the branch as it now stands as
+    /// read. Unless another reply is given, it names the commit read.
+    func countsAsRead(_ words: String? = nil) throws -> String {
         let reply: [[String: Any]] = [
-            ["user": ["login": "sagar-agent[bot]"], "body": "<details>Read at \(read.prefix(7)).</details>"]
+            ["user": ["login": "sagar-agent[bot]"], "body": words ?? "<details>Read at \(read.prefix(7)).</details>"]
         ]
         let newest = try git("rev-parse", "HEAD")
         return try run(
@@ -125,6 +133,46 @@ private struct Branch {
     try branch.write("the change, and more", to: "changed.txt")
     try branch.commit("More, after the reading")
     #expect(try branch.countsAsRead() == "no")
+}
+
+/// Its one mend, answered on the reading, is not read again: only a change to the change itself is.
+@Test func theOneMendAnsweredOnTheReadingNeedsNoSecondReading() throws {
+    var branch = try Branch()
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend("mended")
+    let reply = "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(mend.prefix(7))</summary>"
+    #expect(try branch.countsAsRead(reply) == "yes")
+}
+
+/// A second commit after the reading is more than its mend.
+@Test func aSecondCommitAfterTheReadingNeedsANewReading() throws {
+    var branch = try Branch()
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    try branch.mend("mended")
+    let more = try branch.mend("mended, and more")
+    let reply = "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(more.prefix(7))</summary>"
+    #expect(try branch.countsAsRead(reply) == "no")
+}
+
+/// A reply that names only the mend, and no commit read, is no reading.
+@Test func aMendNamedWithoutTheCommitReadIsNoReading() throws {
+    var branch = try Branch()
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend("mended")
+    #expect(
+        try branch.countsAsRead("<details><summary>Reviewer's reading, answered at \(mend.prefix(7))</summary>") == "no"
+    )
+}
+
+/// A change to the working rules could weaken a check, so its mend is read again, and that reading counts.
+@Test func aMendOfTheWorkingRulesIsReadAgain() throws {
+    var branch = try Branch(changing: "Scripts/rule.txt")
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend("mended")
+    let answered =
+        "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(mend.prefix(7))</summary>"
+    #expect(try branch.countsAsRead(answered) == "no")
+    #expect(try branch.countsAsRead("<details><summary>The reviewer read \(mend.prefix(7))</summary>") == "yes")
 }
 
 /// Inside a commit hook, git names its own folder: in a second working copy it reaches the test as `GIT_DIR`.

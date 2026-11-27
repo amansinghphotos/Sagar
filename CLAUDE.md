@@ -62,9 +62,10 @@ pictures. The download page is built with `design-taste-frontend`.
    honestly. 400 changed lines at most, naming one issue. Whatever he must read, decide or see is
    inside the owner's part, with no link away: a changed spec's must-haves, each changed picture.
 5. **Review,** once, when the change is finished. Give the `reviewer` agent the diff, the commit
-   messages, the issue, the description and any review of his. Post its reply on the pull request as a comment that
-   names the commit it read, folded inside `<details>`. Mend what it says must be mended, in one
-   commit; a nit is yours to take or leave. Only a change to the change itself needs a new reading.
+   messages, the issue, the description and any review of his. Post its reply on the pull request as a comment
+   folded inside `<details>`, that says "The reviewer read <commit>". Mend what it says must be mended, in one
+   commit, and say so there: "answered at <commit>". That mend is not read again, but for a change to the
+   working rules or a plan. A nit is yours to take or leave. Any later commit needs a new reading.
    Mend the description's words on GitHub, which costs no commit.
 6. **Ready, then merge,** always and only by `Scripts/check ready <number>`. It judges the words
    here first, by GitHub's own rules, and refuses with the lines to mend. Only once the code's check
