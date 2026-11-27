@@ -94,6 +94,13 @@ func aSpecWhoseMustHavesTheOwnerCannotSeeFails(description: String) throws {
     #expect(try !showsTheOwner(description, [spec()]))
 }
 
+/// A spec whose must-haves cannot be counted would otherwise ask for nothing to be shown.
+@Test func aChangedSpecWithNoMustHavesToCountFails() throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).md")
+    try "# Specimen\n\n## What It Does\n\n1. **It opens.**\n".write(to: file, atomically: true, encoding: .utf8)
+    #expect(try !showsTheOwner(description(owner: three), [file]))
+}
+
 @Test func aChangedPictureShownInTheOwnersPartPasses() throws {
     #expect(try showsTheOwner(description(owner: shown), [picture()]))
 }
@@ -104,6 +111,15 @@ func aSpecWhoseMustHavesTheOwnerCannotSeeFails(description: String) throws {
 
 /// Where a picture is kept is not a word he reads, so showing it does not break the plain-words rule.
 @Test func aPictureInTheOwnersPartIsStillPlainWords() throws {
+    #expect(try isPlain(description(owner: shown)))
+}
+
+/// A picture's own words are words he reads.
+@Test func aPictureNamedForAFileIsNotPlainWords() throws {
+    #expect(try !isPlain(description(owner: "![Sources/AKit/Window.swift](https://example.com/a.png)")))
+}
+
+private func isPlain(_ description: String) throws -> Bool {
     let process = Process()
     let question = Pipe()
     let answer = Pipe()
@@ -112,8 +128,8 @@ func aSpecWhoseMustHavesTheOwnerCannotSeeFails(description: String) throws {
     process.standardInput = question
     process.standardOutput = answer
     try process.run()
-    question.fileHandleForWriting.write(Data(description(owner: shown).utf8))
+    question.fileHandleForWriting.write(Data(description.utf8))
     try question.fileHandleForWriting.close()
     process.waitUntilExit()
-    #expect(String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n")
+    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
 }
