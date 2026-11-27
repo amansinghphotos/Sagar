@@ -88,7 +88,7 @@ package struct FirstOpenPages: View {
             case 0:
                 WelcomeHeading(
                     "Chete remembers what you copy.",
-                    "Open it in any app and type a few letters. Press Return, and it’s pasted. Nothing leaves your Mac."
+                    "Click its icon in the menu bar to see your clips. Pick one, then paste it anywhere. Nothing leaves your Mac."
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
             case 1:
