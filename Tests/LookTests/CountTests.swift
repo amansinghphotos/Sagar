@@ -32,3 +32,32 @@ func theCountLooksAsSearchsDoes(dark: Bool) throws {
     let ours = try picture(of: Showcase(), width: 220, height: 80, dark: dark)
     #expect(differingPixels(ours, search) <= tolerance)
 }
+
+/// Search's reading fill, two fifths of the way, over its row's wash.
+private struct Reading: View {
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Rectangle().fill(Role.wash)
+            GeometryReader { geo in ReadingFill(value: 0.4, width: geo.size.width) }
+        }
+        .frame(width: 200, height: 32)
+        .padding(20)
+        .frame(width: 240, height: 72)
+        .background(Role.ground)
+    }
+}
+
+@Test(arguments: [false, true])
+func theReadingFillLooksAsSearchsDoes(dark: Bool) throws {
+    let file = URL(filePath: #filePath).deletingLastPathComponent()
+        .appending(path: "Fixtures/Search Reading \(dark ? "Dark" : "Light").png")
+    let search = try #require(approvedPicture(at: file))
+    let ours = try picture(of: Reading(), width: 240, height: 72, dark: dark)
+    #expect(differingPixels(ours, search) <= tolerance)
+    // The fill is faint: read its edge, two fifths along, rather than trust the count of pixels.
+    let filled = colour(at: 60, 36, in: ours)
+    let open = colour(at: 140, 36, in: ours)
+    #expect(filled != open)
+    let theirs = colour(at: 60, 36, in: search)
+    #expect(zip(theirs, filled).allSatisfy { abs($0 - $1) <= 2 })
+}

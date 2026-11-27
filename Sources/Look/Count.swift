@@ -1,6 +1,7 @@
-// Taken from Search at commit c92ea7c: UnreadBadge and unreadBadge(_:icon:ring:) (UnreadBadge.swift). Copyright (c)
-// 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: the ring
-// and Search's motion are read from Look, and the access is this repository's.
+// Taken from Search at commit c92ea7c: UnreadBadge and unreadBadge(_:icon:ring:) (UnreadBadge.swift), and ReadingFill
+// (Tab.swift). Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this
+// repository's rules require: the ring, the ink and Search's motion are read from Look, the access is this
+// repository's, and the fill is given how far along it is rather than Search's Reading object.
 import SwiftUI
 
 /// The count, hung from the top right of a pin's icon as an app's hangs from
@@ -76,5 +77,26 @@ private struct Hung: ViewModifier {
                 }
             }
             .animation(motion.quick, value: count)
+    }
+}
+
+/// The fill itself: the grey that grows from the left of the tab you are on
+/// as you read down its page, in a width it is given.
+package struct ReadingFill: View {
+    let value: Double
+    let width: CGFloat
+
+    @Environment(\.motion) private var motion
+
+    package init(value: Double, width: CGFloat) {
+        self.value = value
+        self.width = width
+    }
+
+    package var body: some View {
+        Rectangle()
+            .fill(Role.ink.opacity(0.055))
+            .frame(width: width * value)
+            .animation(motion.timed(.easeOut(duration: 0.15)), value: value)
     }
 }
