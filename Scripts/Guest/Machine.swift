@@ -9,7 +9,8 @@ import Virtualization
 struct Machine {
     let folder: URL
     func file(_ name: String) -> URL { folder.appending(path: "Machine/\(name)") }
-    var frozen: Bool { FileManager.default.fileExists(atPath: file("Clean.vzvmsave").path) }
+    /// The clean guest is one folder, Clean: its disk, its storage and its saved memory, always from one moment.
+    var frozen: Bool { FileManager.default.fileExists(atPath: file("Clean/State.vzvmsave").path) }
 
     @MainActor
     func configuration(creating restore: VZMacOSConfigurationRequirements? = nil) throws
@@ -35,7 +36,7 @@ struct Machine {
             let identifier = VZMacMachineIdentifier(
                 dataRepresentation: try Data(contentsOf: file("MachineIdentifier"))),
             let address = VZMACAddress(string: try String(contentsOf: file("MAC"), encoding: .utf8))
-        else { fail("The hidden Mac's files are damaged: make it again with Scripts/tour setup.") }
+        else { throw Damaged() }
         platform.hardwareModel = model
         platform.machineIdentifier = identifier
 
@@ -69,24 +70,28 @@ struct Machine {
 
     /// The working disk and storage, copied afresh from the clean ones: APFS shares their blocks, so it is instant.
     func copyClean() throws {
-        for (clean, working) in [("Clean.img", "Disk.img"), ("Clean.aux", "AuxiliaryStorage")] {
-            try? FileManager.default.removeItem(at: file(working))
-            guard clonefile(file(clean).path, file(working).path, 0) == 0 else {
-                fail("Cannot copy \(clean): \(String(cString: strerror(errno))). The hidden Mac needs an APFS drive.")
-            }
+        for name in ["Disk.img", "AuxiliaryStorage"] {
+            try? FileManager.default.removeItem(at: file(name))
+            guard clonefile(file("Clean/\(name)").path, file(name).path, 0) == 0 else { throw Damaged() }
         }
     }
 
     func discard() {
-        for working in ["Disk.img", "AuxiliaryStorage"] { try? FileManager.default.removeItem(at: file(working)) }
+        for name in ["Disk.img", "AuxiliaryStorage"] { try? FileManager.default.removeItem(at: file(name)) }
     }
 
-    /// The running guest, as it is now, becomes the clean one every tour starts from.
+    /// The stopped guest and its saved memory, staged in Kept, become the clean one in a single rename; a failure
+    /// before that rename leaves the old clean guest whole.
     func keepAsClean() throws {
-        for (working, clean) in [("Disk.img", "Clean.img"), ("AuxiliaryStorage", "Clean.aux")] {
-            try? FileManager.default.removeItem(at: file(clean))
-            try FileManager.default.moveItem(at: file(working), to: file(clean))
+        for name in ["Disk.img", "AuxiliaryStorage"] {
+            try FileManager.default.moveItem(at: file(name), to: file("Kept/\(name)"))
         }
+        try? FileManager.default.removeItem(at: file("Clean.old"))
+        if FileManager.default.fileExists(atPath: file("Clean").path) {
+            try FileManager.default.moveItem(at: file("Clean"), to: file("Clean.old"))
+        }
+        try FileManager.default.moveItem(at: file("Kept"), to: file("Clean"))
+        try? FileManager.default.removeItem(at: file("Clean.old"))
     }
 }
 
@@ -226,14 +231,11 @@ final class Host: NSObject, VZVirtualMachineDelegate {
         Task {
             do {
                 try await vm.pause()
-                // The saved memory takes its name last, so a guest half kept is never taken for a clean one.
-                let saved = machine.file("Clean.vzvmsave.new")
-                defer { try? FileManager.default.removeItem(at: saved) }
-                try await vm.saveMachineStateTo(url: saved)
+                try? FileManager.default.removeItem(at: machine.file("Kept"))
+                try FileManager.default.createDirectory(at: machine.file("Kept"), withIntermediateDirectories: false)
+                try await vm.saveMachineStateTo(url: machine.file("Kept/State.vzvmsave"))
                 try await vm.stop()
                 try machine.keepAsClean()
-                try? FileManager.default.removeItem(at: machine.file("Clean.vzvmsave"))
-                try FileManager.default.moveItem(at: saved, to: machine.file("Clean.vzvmsave"))
                 print("kept as the clean guest")
                 exit(0)
             } catch { fail("Could not keep the guest: \(error)") }
@@ -249,11 +251,15 @@ func serve(_ folder: URL) async throws {
     ftruncate(lock, 0)
     writeAll(lock, Data("\(getpid())\n".utf8))
     let machine = Machine(folder: folder)
-    let host = try Host(machine)
+    let host: Host
+    do { host = try Host(machine) } catch {
+        machine.discard()  // a guest that cannot start leaves no copy behind
+        throw error
+    }
     host.listenForSignals()
     let listener = listenUnix(folder.appending(path: "guest.sock").path)
     if machine.frozen {
-        try await host.vm.restoreMachineStateFrom(url: machine.file("Clean.vzvmsave"))
+        try await host.vm.restoreMachineStateFrom(url: machine.file("Clean/State.vzvmsave"))
         try await host.vm.resume()
     } else {
         try await host.vm.start()
@@ -309,4 +315,8 @@ func lastFrame(of video: URL, to picture: URL) async throws {
     }
     CGImageDestinationAddImage(file, frame, nil)
     guard CGImageDestinationFinalize(file) else { fail("Cannot write \(picture.path).") }
+}
+
+struct Damaged: Error, CustomStringConvertible {
+    var description: String { "its files are damaged, or not on an APFS drive: make it again with Scripts/tour setup." }
 }
