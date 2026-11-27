@@ -16,7 +16,8 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 ## Must-Haves
 
 1. **Two themes, each light and dark.** Modern is Search's look exactly, from Search at commit
-   `c92ea7c`: its typeface, colours, sizes, spacing, corners, shadows and parts, with nothing changed.
+   `c92ea7c`: its typeface, colours, sizes, spacing, corners, shadows and parts, with nothing changed
+   but the one size named in 2.
    A part Search does not have is drawn the way Search draws its nearest one. Lexicon
    is paper and ink, set in Caslon, sharing Modern's parts and spacing. Modern comes first, and Lexicon
    follows once Modern's pictures are approved. An app chooses its theme once. No seasons, no variants.

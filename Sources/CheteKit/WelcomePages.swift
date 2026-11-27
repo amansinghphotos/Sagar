@@ -44,7 +44,7 @@ package struct WelcomeActs {
 /// offers. Everything Chete will ever ask is asked here, so nothing asks once the welcome is done.
 package struct WelcomePages: View {
     /// The window's size, which does not change.
-    package static let size = CGSize(width: WindowSize.narrow.width, height: 480)
+    package static let size = WelcomeSize.window
 
     private let startPage: WelcomePage
     private let act: WelcomeActs
@@ -117,7 +117,7 @@ package struct WelcomePages: View {
             .background(Role.wash, in: Capsule())
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Chete means remembered")
-            Text("It keeps what you copy.\nFind it in the menu bar, or open it quicker with a shortcut.")
+            Text("It keeps what you copy, and lives in the menu bar.\nA shortcut opens it quicker.")
                 .type(.body).lineSpacing(Space.tight.rawValue).foregroundStyle(Role.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -207,18 +207,17 @@ extension KeyCombo {
 
 /// The small card that stays in front of System Settings: where to go there, and what to look for.
 package struct WelcomeCard: View, Sendable {
-    package static let size = CGSize(width: 340, height: 178)
+    package static let size = WelcomeSize.card
     /// For keeping what is copied. macOS gives each app a menu there: Ask, Allow or Deny.
     package static let keeping = WelcomeCard(
-        name: "keeping", place: "Paste from Other Apps", menu: "Allow",
+        place: "Paste from Other Apps", menu: "Allow",
         how: "Choose Allow in its menu. Chete only reads what you copy.")
     /// For pasting. macOS gives each app a switch there. macOS 27 names the place Device Control and Data Access;
     /// earlier versions called it Accessibility.
     package static let pasting = WelcomeCard(
-        name: "pasting", place: "Device Control and Data Access", menu: nil,
+        place: "Device Control and Data Access", menu: nil,
         how: "Turn its switch on. Chete only uses it to paste.")
 
-    package let name: String
     /// The section of Privacy & Security, in Apple's own words for it.
     let place: String
     /// The word to choose on the row's menu, or nothing where the row has a switch.

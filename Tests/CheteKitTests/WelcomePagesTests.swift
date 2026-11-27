@@ -53,9 +53,13 @@ func eachCardLooksAsApproved(name: String, dark: Bool) throws {
         height: WelcomeCard.size.height, named: "welcome-card-\(name)-\(dark ? "dark" : "light")", dark: dark)
 }
 
-@Test func theWelcomeOpensOnItsGreetingAndEndsOnItsLastPage() {
-    #expect(WelcomePage.allCases.first == .greeting)
-    #expect(WelcomePage.allCases.last == .last)
+@Test func theWelcomeAMacGetsOpensOnItsGreetingAndEndsOnItsLastPage() {
+    var withOldClips = WelcomeGiven()
+    withOldClips.hasOldClips = true
+    for given in [WelcomeGiven(), withOldClips] {
+        #expect(WelcomePages.pages(for: given).first == .greeting)
+        #expect(WelcomePages.pages(for: given).last == .last)
+    }
 }
 
 @Test func aShortcutIsSaidInWordsAsAppleWritesOne() {
