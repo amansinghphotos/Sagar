@@ -84,7 +84,7 @@ package struct ReadingFill: View {
 
     package var body: some View {
         Rectangle()
-            .fill(Shade(light: 0.05, dark: 0.05))
+            .fill(Shade(light: 0.055, dark: 0.055))
             .frame(width: width * min(max(value, 0), 1))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .animation(motion.timed(.easeOut(duration: 0.15)), value: value)
