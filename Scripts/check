@@ -23,11 +23,15 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     jq -r --arg now "${2:?Scripts/check $1 <now> < state}" "$mends"
     exit ;;
 esac
-# Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | findings | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | findings < tests | reviewed <commit> < comments]"
-    exit 2 ;;
-esac
+# Anything else on the command line is a mistake, and must never fall through to running every rule. The commands
+# are the words this script answers below, each where it tests "${1:-}" against it: a new one is written there alone,
+# and no shared line lists them, so two pieces of work that add one never change the same line.
+commands=$(grep -oE '"[$][{]1:-[}]" !?= [a-z]+ []]' Scripts/check | cut -d' ' -f3 | sort -u)
+if [ -n "${1:-}" ] && ! grep -qx -- "$1" <<<"$commands"; then
+    echo "Usage: Scripts/check [$(paste -sd '|' - <<<"$commands" | sed 's/|/ | /g')]"
+    echo "Each is described where Scripts/check answers it."
+    exit 2
+fi
 export LC_ALL=C
 # Inside a commit hook git names its own folder and index in the environment. Only this script's git keeps them:
 # any other tool that starts git, a package fetch or a test's own small repository, would be sent here instead.
