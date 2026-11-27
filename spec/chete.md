@@ -22,10 +22,10 @@ this Mac unless you carry it.
    Allow there, macOS asks before each copy is kept.
 2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
    You choose the shortcut in the welcome, and can change it in Settings. Chete suggests three. The
-   first is the one the earlier Chete used, and is chosen when the page opens. A keyboard lights
-   each key you press. It warns you when macOS or Chete already uses those keys. It asks for Command
-   or Control, as macOS may refuse a shortcut without one. It cannot warn of another app's shortcut.
-   It lives in the menu bar and has no Dock icon.
+   first is Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. A
+   keyboard lights each key you press. It warns you when macOS or Chete already uses those keys. It
+   asks for Command or Control, as macOS may refuse a shortcut without one. It cannot warn of another
+   app's shortcut. It lives in the menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
 4. **It pastes for you** into the app you were in, or pastes as plain text if you hold Shift. If you
    have not allowed it to paste, it copies, and says to press Command-V.
@@ -44,9 +44,9 @@ this Mac unless you carry it.
    to look for. Only you can turn it on. The welcome keeps checking, and goes on by itself once it
    is on. Pages arrive and leave with Look's motion. Any step can be skipped, and waits in Settings.
    It never asks for a Claude key.
-   The Gurmukhi shows where Chete's name comes from, in three places, each with its English beside
-   it. The greeting is ਜੀ ਆਇਆਂ ਨੂੰ ("welcome"). The name is ਚੇਤੇ. The last line is ਹੁਣ ਸਭ ਕੁਝ ਚੇਤੇ ਰਹੇਗਾ
-   ("now everything will be remembered"). Nothing you need is said in Gurmukhi alone.
+   The Gurmukhi shows where Chete's name comes from, in two places, each with its English beside
+   it. The greeting is ਜੀ ਆਇਆਂ ਨੂੰ ("welcome"), and the name is ਚੇਤੇ. Nothing you need is said in
+   Gurmukhi alone.
    *Asks for:* Login Items, if you choose to open it at login. The Gurmukhi is set in a typeface macOS
    carries, so no font is added.
 8. **It takes over the Chete before it.** On its first open on a Mac where the earlier Chete kept a
