@@ -165,7 +165,7 @@ git fetch -q origin main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || stop "main is not what GitHub has."
 [ -f "$feed" ] && grep -q "data-app=\"$name\"" docs/index.html ||
     stop "$feed or the page's entry is missing: see Checklists/New App.md."
-open=$(gh pr list --state open --json headRefName --jq '[.[].headRefName]') &&
+open=$(gh pr list --state open --limit 1000 --json headRefName --jq '[.[].headRefName]') &&
     milestone=$(gh issue list --state open --search "milestone:\"$app $version\"" --json number,labels) ||
     stop "Could not ask GitHub what is open."
 why=$(jq -n --argjson open "$open" --argjson milestone "$milestone" '{open: $open, milestone: $milestone}' |

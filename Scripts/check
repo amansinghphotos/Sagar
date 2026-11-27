@@ -365,7 +365,7 @@ lock() {
         return 1
     fi
     changed | grep -qE '^(Apps|Sources|Tests)/' || return 0
-    if ! waiting=$(gh pr list --state open --json headRefName --jq '.[].headRefName' 2>&1); then
+    if ! waiting=$(gh pr list --state open --limit 1000 --json headRefName --jq '.[].headRefName' 2>&1); then
         [ -n "${CI:-}" ] || return $nothing
         echo "Could not ask GitHub which releases are waiting: $waiting"
         return 1
