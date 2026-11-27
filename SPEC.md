@@ -85,9 +85,8 @@ screen is pictured narrow, default and wide.
 6. **Merge** with green checks, squashed, branch deleted.
 7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` makes one signed and
    notarised build, holds that file as a draft release, and opens the release pull request. His Mac
-   is offered the build as an update: when he chooses Check for Updates, the app's own window says
-   what is new, and he chooses to install it. He is told what to try in three lines. The app is now
-   locked.
+   is offered the build as an update (section 5). He is told what to try in three lines. The app is
+   now locked.
 8. **Ship.** He approves the release pull request, and that is all. GitHub merges it, makes that same
    file public, and on a clean Mac installs the previous release and watches it take the update. If he
    reports a fault instead, the release is withdrawn, the fault is fixed, and step 7 repeats under the
@@ -112,10 +111,12 @@ first of them, and a release will not start while its own has a box unticked.
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
 - An update is always offered and never forced or silent: the app shows what is new and the person
   chooses to install it, to be reminded later, or to skip that version.
-- A build to try reaches him the way an update reaches anyone. The file, and a feed that offers it,
-  stay on his Mac, signed with the update key. A small helper there hands them to his copy of the
-  app. No other Mac can reach them, nothing new is served to people, and the public feed changes only
-  with his approval. Once he approves, his copy reads the public feed again.
+- A build to try reaches him the way an update reaches anyone. When he chooses Check for Updates,
+  the app's own window says what is new, and he chooses to install it. The build waits on his Mac,
+  where a small program, started with his Mac, offers it to his Mac alone. It is signed with the
+  update key, like every update. Until he approves, only he and the agents can get the build: the
+  draft release is not shown to anyone else, and the public feed is unchanged. Once he approves, his
+  copy looks for updates where everyone's does.
 - An app's first build has no earlier copy to update, so it is put in his Applications folder.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
   good code is released again, under the next number.
