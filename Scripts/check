@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | request | size | order | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | request | size | order | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | merging < state | request | size | order | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -40,6 +40,12 @@ if [ "${1:-}" = clashes ]; then # Scripts/check clashes <commit>: the files wher
     case $? in 0) exit 0 ;; 1) printf '%s\n' "$out" | sed '1d; /^$/d'; exit 1 ;; *) exit 2 ;; esac
 fi
 
+if [ "${1:-}" = merging ]; then # Scripts/check merging < GitHub's state of a pull request: "now" only when nothing is
+    # left to wait for, no check and nobody's answer. GitHub then refuses to wait, so the ready step merges it itself.
+    jq -r 'if .mergeStateStatus == "CLEAN" then "now" else "wait" end'
+    exit
+fi
+
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
     set -e
     request=${2:?Scripts/check ready <number>}
@@ -70,7 +76,14 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     passed check ""
     passed words "$edited"
     gh pr ready "$request" >/dev/null 2>&1
-    gh pr merge "$request" --auto --squash >/dev/null
+    if ! gh pr merge "$request" --auto --squash >/dev/null 2>&1; then
+        # GitHub lets nobody pass the owner's review, and this merges only what has nothing left to wait for.
+        [ "$(gh pr view "$request" --json mergeStateStatus | Scripts/check merging)" = now ] ||
+            { echo "GitHub would not set #$request to merge: see gh pr view $request."; exit 1; }
+        gh pr merge "$request" --squash >/dev/null
+        echo "merged    #$request passed both checks on its newest commit, and had nobody left to answer"
+        exit
+    fi
     # If the owner answered before, he is asked again: GitHub does not do that by itself.
     owner=${repository%/*}
     if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
