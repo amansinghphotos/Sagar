@@ -16,3 +16,5 @@ parts themselves are still measured and written fresh.
 request that finishes that set deletes the lines in `SPEC.md` and `CLAUDE.md` that point here. From
 then on, a new part is written when an app needs it, and nothing is pasted. The motion already taken
 stays, with its notice. Later changes in Search are not taken.
+
+Decision 8 ends this copying: nothing of Search's is pasted, and its motion is written here.

@@ -39,8 +39,9 @@ struct Lists: View {
                 SettingRow(icon: "bell", title: "Notifications", detail: "Let sites ask to send them.") {
                     Switch(on: $notify)
                 }
-                SettingRow(icon: "textformat.size", title: "Page size", detail: "How large pages are drawn.", lit: true)
-                {
+                SettingRow(
+                    icon: "textformat.size", title: "Page size", detail: "Makes pages bigger or smaller.", lit: true
+                ) {
                     Steps(stops: [0.75, 0.9, 1.0, 1.1, 1.25], value: $size, home: 1.0) { "\(Int($0 * 100))%" }
                 }
             }
@@ -61,7 +62,7 @@ struct Lists: View {
         .overlay(alignment: .bottomTrailing) {
             Banner(
                 icon: "bell", question: "Chete wants to paste for you", yes: ("Allow once", {}),
-                maybe: ("Always allow", {}), no: ("Don't allow", {})
+                maybe: ("Always allow", {}), no: ("Don’t allow", {})
             )
             .padding(Space.page.rawValue)
         }
