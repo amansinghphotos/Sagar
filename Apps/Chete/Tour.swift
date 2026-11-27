@@ -22,6 +22,10 @@ final class CheteTour: XCTestCase {
         welcome.buttons["Continue"].click()
         welcome.buttons["Start"].click()
         XCTAssert(welcome.waitForNonExistence(timeout: 5), "The first open did not close.")
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete's window did not follow the first open.")
+        // Once done, it never shows again.
+        app.terminate()
+        app.launch()
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
         // Each finding is kept with the element it is about, so a failure says where to look.

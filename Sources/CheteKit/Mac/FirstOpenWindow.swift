@@ -16,6 +16,7 @@ struct FirstOpenWindow: Scene {
 
 private struct FirstOpenContent: View {
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         FirstOpenPages(
@@ -23,6 +24,8 @@ private struct FirstOpenContent: View {
             act: .onThisMac(folder: Copies.folderOnThisMac, keyName: Clips.keyName),
             finish: {
                 try? FirstOpen.done(in: Copies.folderOnThisMac)
+                // The pages came first at launch, in place of Chete's own window, which opens now.
+                openWindow(id: "chete")
                 dismissWindow(id: "first-open")
             }
         )

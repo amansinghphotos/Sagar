@@ -118,7 +118,7 @@ package struct FirstOpenPages: View {
                         HStack(spacing: Space.apart.rawValue) {
                             VStack(alignment: .leading, spacing: Space.hair.rawValue) {
                                 Text("Bring back a history").type(.body).foregroundStyle(Role.ink)
-                                Text(broughtBack ?? "A file you exported from Chete, in place of what is here.")
+                                Text(broughtBack ?? "A file you exported from Chete. It replaces what is here now.")
                                     .type(.detail).foregroundStyle(Role.muted)
                             }
                             Spacer()
