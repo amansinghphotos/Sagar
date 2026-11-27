@@ -97,3 +97,49 @@ func theSettingsMatchTheirPicture(dark: Bool) throws {
         of: screen, width: SettingsScreen.width, height: height,
         named: "settings-\(dark ? "dark" : "light")", dark: dark)
 }
+
+// The list keeps up with what Settings does.
+
+@Test func theListKeepsUpWhenSettingsDeleteOrBringBack() async throws {
+    let mac = Mac()
+    let other = Mac()
+    defer {
+        mac.removed()
+        other.removed()
+    }
+    // A history exported on another Mac, holding what this one also copied.
+    try await Copies(folder: other.folder, keyName: other.keyName)
+        .take([.text("Lunch menu")], fromOtherDevice: false, copied: now - 60, app: nil)
+    let file = other.folder.appending(path: "Chete Clips.json")
+    try other.choices().exported().write(to: file)
+
+    let copies = try Copies(folder: mac.folder, keyName: mac.keyName)
+    try await copies.take([.text("Lunch menu")], fromOtherDevice: false, copied: now, app: nil)
+    try await copies.take([.text("Trip notes")], fromOtherDevice: false, copied: now, app: nil)
+    let shelf = Shelf(try await copies.all())
+    var told = 0
+    let choices = Choices(folder: mac.folder, keyName: mac.keyName, now: { now }, changed: { told += 1 })
+
+    try choices.deleteAll()
+    #expect(told == 1)
+    shelf.clips = try await copies.reread()
+    #expect(shelf.clips.isEmpty)
+
+    try choices.bringBack(from: file)
+    #expect(told > 1)
+    shelf.clips = try await copies.reread()
+    #expect(shelf.clips.map(\.kinds) == [[.text("Lunch menu")]])
+
+    // Copied again, what was brought back stays one clip.
+    try await copies.take([.text("Lunch menu")], fromOtherDevice: false, copied: now, app: nil)
+    #expect(try await copies.all().count == 1)
+}
+
+@Test func choosingAShorterTimeTellsTheList() throws {
+    let mac = Mac()
+    defer { mac.removed() }
+    var told = 0
+    let choices = Choices(folder: mac.folder, keyName: mac.keyName, now: { now }, changed: { told += 1 })
+    choices.settings.keeping = .week
+    #expect(told == 1)
+}
