@@ -20,6 +20,7 @@ done
 git() { env ${hook[@]+"${hook[@]}"} git "$@"; }
 if [ "${1:-}" = tool ]; then # Scripts/check tool <command>…: runs a command as the rules run a build tool
     shift
+    [ $# -gt 0 ] || { echo "Usage: Scripts/check tool <command>…"; exit 2; }
     exec "$@"
 fi
 
