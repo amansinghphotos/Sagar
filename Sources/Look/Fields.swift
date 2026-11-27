@@ -23,6 +23,8 @@ package struct Hunt: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Role.ink)
                 .focused(focus)
+                // The words shown in the box are hidden from VoiceOver, so the box itself carries them as its name.
+                .accessibilityLabel(Text(prompt))
                 .overlay(alignment: .leading) {
                     if text.isEmpty {
                         Text(prompt)
