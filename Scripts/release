@@ -1,9 +1,12 @@
 #!/bin/bash
 # One release of one app. The Release issue is its checklist.
 #   printf 'New: …\nBetter: …\nFixed: …\n' | Scripts/release <App> <version>    the try, on the owner's Mac
+#                                               (a line with nothing to say is left out, but one stays)
+#   Scripts/release why < notes                 the owner's reason from the first line there, or nothing if not allowed
 #   Scripts/release <App> <version> withdraw    he reported a fault: mend it, then offer the same number again
 #   Scripts/release <App> <version> publish     run by GitHub when his approval merges the pull request
 #   Scripts/release follows <last> <next>       says whether one version may follow another
+#   Scripts/release may <App> <now> < state     why a release of <App> may not start yet, or nothing
 #   Scripts/release notice <App> <version> <passed|failed> <owner> <why> < comments    the note that tells him, if any
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -14,6 +17,34 @@ follows() { # follows <last> <next>: yes if <next> is the next second number, or
         print (want == was[1] "." was[2] + 1 || want == was[1] + 1 ".0") ? "yes" : "no" }'
 }
 [ "${1:-}" != follows ] || { follows "${2:-}" "${3:-}"; exit; }
+
+may() { # may <App> <now> < {"open": [every open branch], "milestone": [its open issues, with their labels]}: why
+    # it may not start yet, or nothing. One build waits for him at a time, and an app NOW does not name ships
+    # faults only (the platform spec, Mending a Shipped App). Other open work never holds a release back.
+    jq -r --arg app "$1" --arg now "$2" '
+        ([.open[]? | select(startswith("release/"))][0] // empty | "\(.) is waiting for the owner. One build waits at a time."),
+        (select(($app | ascii_downcase) != ($now | ascii_downcase))
+            | [.milestone[]? | select(any(.labels[]?; .name == "fault" or .name == "release") | not) | .number]
+            | select(length > 0)
+            | "\($app) is mended beside the app in work, so it ships faults only, not #\(map(tostring) | join(", #")).")'
+}
+[ "${1:-}" != may ] || { may "${2:-}" "${3:-}"; exit; }
+
+why() { # why < notes: the owner's reason for a release, if its notes are allowed. The notes are New, Better and Fixed
+    # lines in that order, each with something to say, one at least, and no issue number, code or dollar sign, which
+    # the build would fill in. The reason is the first line that is there: what is new, else what is better, else what
+    # is mended.
+    local notes first
+    notes=$(cat)
+    awk 'BEGIN { rank["New"] = 1; rank["Better"] = 2; rank["Fixed"] = 3 }
+        $0 !~ /^(New|Better|Fixed): +[^[:space:]]/ { bad = 1; next }
+        { label = $0; sub(/: .*/, "", label); if (rank[label] <= last) bad = 1; last = rank[label] }
+        END { exit bad }' <<<"$notes" || return 1
+    ! grep -q '[#`$]' <<<"$notes" || return 1
+    first=$(head -n 1 <<<"$notes" | sed 's/^[A-Za-z]*: *//')
+    printf '%s%s\n' "$(tr '[:lower:]' '[:upper:]' <<<"${first:0:1}")" "${first:1}"
+}
+[ "${1:-}" != why ] || { why; exit; }
 
 notice() { # notice <App> <version> <passed|failed> <owner> <why> < the release pull request's comments, as GitHub lists
     # them. Prints the note to post there for the owner, or nothing: a failed proof is said once, and so is a later pass.
@@ -127,15 +158,20 @@ esac
 profile=${NOTARY_PROFILE:-Sagar}
 tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
 notes=$(cat)
-[ "$(sed 's/: ..*//' <<<"$notes" | tr '\n' ' ')" = "New Better Fixed " ] && ! grep -q '[#`]' <<<"$notes" ||
-    stop "The notes are three plain lines on standard input, New: …, Better: …, Fixed: …, with no issue numbers or code."
+reason=$(why <<<"$notes") ||
+    stop "The notes are plain lines on standard input: New: …, Better: …, Fixed: …, in that order. Leave out a line with nothing to say, but keep one. No issue numbers, code or dollar signs."
 [ -x "$tools/generate_appcast" ] || stop "Sparkle's tools are missing: run swift build first."
 [ "$(git branch --show-current)" = main ] && [ -z "$(git status --porcelain)" ] || stop "Start from a clean main."
 git fetch -q origin main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || stop "main is not what GitHub has."
 [ -f "$feed" ] && grep -q "data-app=\"$name\"" docs/index.html ||
     stop "$feed or the page's entry is missing: see Checklists/New App.md."
-[ -z "$(gh pr list --state open --json number --jq '.[].number')" ] || stop "Merge or close every open pull request first."
+open=$(gh pr list --state open --limit 1000 --json headRefName --jq '[.[].headRefName]') &&
+    milestone=$(gh issue list --state open --search "milestone:\"$app $version\"" --json number,labels) ||
+    stop "Could not ask GitHub what is open."
+why=$(jq -n --argjson open "$open" --argjson milestone "$milestone" '{open: $open, milestone: $milestone}' |
+    may "$app" "$(tr -d '[:space:]' <NOW)")
+[ -z "$why" ] || stop "$why"
 issue=$(gh issue list --state open --json number,title \
     --jq "[.[] | select(.title == \"Release $app $version\")][0].number // empty")
 [ -n "$issue" ] || stop "Open the Release issue titled 'Release $app $version' first."
@@ -167,7 +203,7 @@ run=$(gh run list --workflow check --branch main --event push --limit 1 --json d
 [ -n "$run" ] && gh run watch "$run" --exit-status >/dev/null 2>&1 ||
     stop "GitHub's Mac has not passed main as it stands: see gh run list --workflow check --branch main."
 
-Scripts/build "$app" "$version"
+NOTES="$notes" Scripts/build "$app" "$version"
 image=$out/$app-$version.dmg
 ditto -c -k --keepParent "$out/$app.app" "$out/$app.zip"
 notarise "$out/$app.zip" "$out/$app.app"
@@ -208,12 +244,11 @@ git commit -q -m "Release $app $version" -m "$notes" >/dev/null
 git push -q -u origin "$branch"
 gh release create "$tag" "$image" --draft --target "$(git rev-parse origin/main)" \
     --title "$app $version" --notes "$notes" >/dev/null
-new=$(sed -n 's/^New: //p' <<<"$notes")
 request=$(gh pr create --draft --title "Release $app $version" --body "## For the Owner
 
 **What This Does:** Sends $app $version to everyone who has $app. It's in your Applications folder now, so you can try it first.
 
-**Why:** $(tr '[:lower:]' '[:upper:]' <<<"${new:0:1}")${new:1}
+**Why:** $reason
 
 **Does It Change Your Apps?** Yes. Everyone who has $app is offered $version. They choose when to install it.
 
