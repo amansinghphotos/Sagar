@@ -2,7 +2,7 @@ import Look
 import SwiftUI
 
 /// The Controls page: every button, field, switch and choice, and what shows when there is nothing, trouble or
-/// work under way, as Search has them.
+/// work under way, and sidebar rows, as Search has them.
 struct Controls: View {
     @State private var search = ""
     @State private var typed = "notes"
@@ -48,6 +48,12 @@ struct Controls: View {
                 ProgressCard(
                     filename: "Clips from the old Chete", message: "Bringing them in", completed: 1200, total: 3400,
                     cancel: {})
+                VStack(spacing: 2) {
+                    SideItem(title: "Meeting notes", letter: "M", live: true)
+                    SideItem(title: "Quarterly report", letter: "Q", selected: true)
+                    SideItem(title: "Recipes", letter: "R", close: {})
+                }
+                .frame(width: 240)
             }
             .frame(width: 380)
         }
