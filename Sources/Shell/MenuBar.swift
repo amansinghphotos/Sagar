@@ -17,8 +17,11 @@ package struct MenuBarItem: Scene {
     }
 
     package var body: some Scene {
-        MenuBarExtra(app, systemImage: symbol) {
+        MenuBarExtra {
             MenuBarMenu(app: app, window: window)
+        } label: {
+            // Named for the app, so VoiceOver says the app, not what the symbol shows.
+            Image(systemName: symbol).accessibilityLabel(app)
         }
     }
 }
