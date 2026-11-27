@@ -1,8 +1,9 @@
 // Taken from Search at commit c92ea7c: PictureChoices (Pictures in Settings.swift), Swatches (the solid row in
-// ThemesPage.swift) and Writing (the box in SiteStyles.swift). Copyright (c) 2026 Office Commun, MIT licence
-// (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's colours and motion are read
-// from Look, Pictures is renamed because the picture tests' module holds that name, and given values replace
-// Search's settings.
+// ThemesPage.swift, with its six colours and the colour well beside them) and Writing (the box in SiteStyles.swift).
+// Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed where this repository's rules require:
+// Search's colours and motion are read from Look, Pictures is renamed because the picture tests' module holds that
+// name, and given values replace Search's settings. Two things are added so an app can use the row: the colour well
+// is optional, and Search's six colours are a list here, because a screen may not name a colour.
 import SwiftUI
 
 /// A choice of a few, each a small picture with its name below, the chosen one ringed.
