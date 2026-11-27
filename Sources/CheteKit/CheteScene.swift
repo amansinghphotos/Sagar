@@ -12,7 +12,7 @@ public struct CheteScene: Scene {
 
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
-        SwiftUI.Settings { CheteSettings() }.restorationBehavior(.disabled)
+        SwiftUI.Settings { CheteSettings() }.restorationBehavior(.disabled).defaultLaunchBehavior(.suppressed)
         Window("Chete", id: "chete") {
             ClipList(clips: Self.shelf.clips) { clip, plainText in
                 _ = Pasting.paste(clip, plainText: plainText, mayPaste: false)
@@ -21,6 +21,8 @@ public struct CheteScene: Scene {
             .windowName("Your clips")
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
+        // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
+        .defaultLaunchBehavior(.presented)
         .commands { UpdateCommands() }
     }
 

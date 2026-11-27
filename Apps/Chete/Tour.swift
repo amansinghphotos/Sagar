@@ -69,7 +69,8 @@ extension CheteTour {
         app.launch()
 
         let field = app.textFields["Find a clip"]
-        XCTAssert(field.waitForExistence(timeout: 10), "Chete opened no field to find a clip.")
+        // Without the list, the keys below would be typed into whatever is open instead, so the tour stops here.
+        guard field.waitForExistence(timeout: 10) else { return XCTFail("Chete opened no field to find a clip.") }
         let row = { (title: String) in
             app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch
         }
