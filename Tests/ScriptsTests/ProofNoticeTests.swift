@@ -34,7 +34,7 @@ private func adding(_ note: String, to comments: Data) throws -> Data {
 
 private nonisolated let failed = """
     @the-owner **Chete 1.1 failed its last check, after you approved it.**
-    GitHub's Mac couldn't get it the way people will.
+    GitHub's Mac tried getting it the way people will. It didn't work.
     Say "the Chete check failed" in any chat, and we'll mend it.
 
     <details><summary>For the Agents</summary>

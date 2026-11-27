@@ -22,7 +22,7 @@ notice() { # notice <App> <version> <passed|failed> <owner> <why> < the release 
     [ "$3" != "$said" ] || return 0
     if [ "$3" = failed ]; then
         printf '@%s **%s %s failed its last check, after you approved it.**\n' "$4" "$1" "$2"
-        printf "GitHub's Mac couldn't get it the way people will.\n"
+        printf "GitHub's Mac tried getting it the way people will. It didn't work.\n"
         printf 'Say "the %s check failed" in any chat, and we'\''ll mend it.\n\n' "$1"
         printf '<details><summary>For the Agents</summary>\n\n%s\n\n</details>\n' "$5"
     else

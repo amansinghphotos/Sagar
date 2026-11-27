@@ -1,7 +1,7 @@
 # Runs when the owner's approval merges a release pull request, which changes an app's feed.
 # It makes the file he tried public, then proves on a clean Mac that the previous version takes it.
 # If that proof fails, it says so once on the pull request he approved. Writing that comment is all "issues" is for:
-# GitHub keeps a pull request's comments with the issues, and this right cannot approve or change a pull request.
+# GitHub keeps a pull request's comments with the issues, and this right cannot approve or merge a pull request.
 name: release
 
 on:
