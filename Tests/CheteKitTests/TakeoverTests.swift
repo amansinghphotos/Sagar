@@ -138,13 +138,16 @@ func theSettingsComeIn(earlier json: String, now settings: Settings) throws {
     #expect(try macs.settings() == settings)
 }
 
-/// He may choose the earlier Chete's folder, or the Clips folder inside it.
-@Test func anEmptyHistoryBringsInOnlyItsSettings() throws {
+/// He may choose the earlier Chete's folder, or the Clips folder inside it. A clip of formatting this Chete does
+/// not keep, with no words, opened with the right key: it is left out, and the settings still come in.
+@Test(arguments: [false, true])
+func aHistoryWithNoClipToKeepBringsInOnlyItsSettings(holdsFormatting: Bool) throws {
     let macs = Macs()
     defer { macs.removed() }
     try FileManager.default.createDirectory(at: macs.earlierClips, withIntermediateDirectories: true)
+    if holdsFormatting { try macs.keep(["kind": "text", "copied": copied], bytes: [("public.html", Data())]) }
     try macs.earlierSettings(#"{"keepFor": "7 Days"}"#)
-    #expect(try macs.bringIn(from: macs.earlierClips) == Takeover(broughtIn: 0, leftOut: 0))
+    #expect(try macs.bringIn(from: macs.earlierClips) == Takeover(broughtIn: 0, leftOut: holdsFormatting ? 1 : 0))
     #expect(try macs.clips().all().isEmpty)
     #expect(try macs.settings().keeping == .week)
 }

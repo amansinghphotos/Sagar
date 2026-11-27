@@ -47,38 +47,42 @@ nonisolated package struct EarlierChete: Sendable {
         let clips = try Clips(cheteFolder: cheteFolder, keyName: keyName)
         let there = Set(try clips.store.sealedNames())
         var added: [Clip] = []
-        var leftOut = 0
+        var unopened = 0
+        var empty = 0
         do {
             for record in records {
                 // A file that is not named by an id or does not open is left out, and so is a clip with nothing in it.
                 guard let id = UUID(uuidString: record.deletingPathExtension().lastPathComponent),
                     let clip = try? clip(id, in: found)
                 else {
-                    leftOut += 1
+                    unopened += 1
+                    continue
+                }
+                guard !clip.kinds.isEmpty else {
+                    empty += 1
                     continue
                 }
                 guard !there.contains(id.uuidString) else { continue }
                 try clips.keep(clip)
                 added.append(clip)
             }
-            guard leftOut < records.count || records.isEmpty else { throw TakeoverError.wrongKey }
+            guard unopened < records.count || records.isEmpty else { throw TakeoverError.wrongKey }
             try settings(in: settingsFile).write(in: cheteFolder)
         } catch {
             for clip in added { try? clips.delete(clip) }
             throw error
         }
-        return Takeover(broughtIn: added.count, leftOut: leftOut)
+        return Takeover(broughtIn: added.count, leftOut: unopened + empty)
     }
 
-    /// The clip kept under an id, as this Chete keeps it, or nil if it holds nothing this Chete keeps.
+    /// The clip kept under an id, as this Chete keeps it, with no kinds if it holds nothing this Chete keeps.
     /// A file that does not open is an error.
-    private func clip(_ id: UUID, in folder: URL) throws -> Clip? {
+    private func clip(_ id: UUID, in folder: URL) throws -> Clip {
         let record = try open(Record.self, folder.appending(path: "\(id.uuidString).clip"), id)
         let formsFile = folder.appending(path: "\(id.uuidString).data")
         let forms =
             FileManager.default.fileExists(atPath: formsFile.path) ? try open([Form].self, formsFile, id) : []
-        let kinds = record.kinds(forms)
-        return kinds.isEmpty ? nil : Clip(id: id, kinds: kinds, copied: record.copied, app: record.appID)
+        return Clip(id: id, kinds: record.kinds(forms), copied: record.copied, app: record.appID)
     }
 
     private func open<Value: Decodable>(_ type: Value.Type, _ file: URL, _ id: UUID) throws -> Value {
