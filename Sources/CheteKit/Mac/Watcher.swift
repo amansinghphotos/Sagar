@@ -15,6 +15,8 @@ package final class Watcher {
     /// The change count last seen. What was on the pasteboard before Chete opened is not a new copy.
     private var seen: Int
     private var watching: Task<Void, Never>?
+    /// Told of each clip kept, so the list can show it.
+    package var kept: (Clip) -> Void = { _ in }
 
     /// A watcher for a pasteboard: the one everything is copied to, unless a test brings its own.
     package init(pasteboard: NSPasteboard = .general, copies: Copies) {
@@ -46,7 +48,9 @@ package final class Watcher {
         let fromOtherDevice = pasteboard.types?.contains(.fromOtherDevice) == true
         let app = fromOtherDevice ? nil : NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         do {
-            try await copies.take(kinds(), fromOtherDevice: fromOtherDevice, copied: .now, app: app)
+            if let clip = try await copies.take(kinds(), fromOtherDevice: fromOtherDevice, copied: .now, app: app) {
+                kept(clip)
+            }
         } catch {
             Logger(subsystem: "com.amansingh.chete", category: "Copies").error("A copy was not kept: \(error)")
         }

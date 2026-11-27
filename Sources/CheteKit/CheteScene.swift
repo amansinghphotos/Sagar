@@ -1,8 +1,9 @@
+import Look
 import Shell
 import SwiftUI
 import os
 
-/// Chete's one window, which its Main.swift opens. What you copy will appear here.
+/// Chete's one window, which its Main.swift opens: the clips you copied, to find and pick.
 public struct CheteScene: Scene {
     /// The scene, ready for the app to open. Chete starts keeping what you copy as it opens.
     public init() {
@@ -11,15 +12,21 @@ public struct CheteScene: Scene {
 
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
+        SwiftUI.Settings { CheteSettings() }.restorationBehavior(.disabled)
         Window("Chete", id: "chete") {
-            Text("What You Copy Appears Here")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .windowName("Your clips")
+            ClipList(clips: Self.shelf.clips) { clip, plainText in
+                _ = Pasting.paste(clip, plainText: plainText, mayPaste: false)
+            }
+            .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
+            .windowName("Your clips")
         }
+        .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         .commands { UpdateCommands() }
         MenuBarItem(app: "Chete", symbol: "list.clipboard", window: "chete")
     }
 
+    /// The clips the window shows. Picking one copies it, until pasting for you comes with the panel.
+    private static let shelf = Shelf()
     /// Watches what you copy for as long as Chete is open.
     private static var watcher: Watcher?
     private static var started = false
@@ -30,8 +37,12 @@ public struct CheteScene: Scene {
         started = true
         Task {
             do {
-                watcher = Watcher(copies: try await Task.detached { try Copies.onThisMac() }.value)
+                let copies = try await Task.detached { try Copies.onThisMac() }.value
+                shelf.clips = try await copies.all()
+                watcher = Watcher(copies: copies)
+                watcher?.kept = { shelf.add($0) }
                 watcher?.start()
+                copies.trimDaily { shelf.remove($0) }
             } catch {
                 Logger(subsystem: "com.amansingh.chete", category: "Copies").error("Chete keeps no copies: \(error)")
             }

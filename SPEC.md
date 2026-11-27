@@ -42,7 +42,7 @@ His pending approvals are the only list of things waiting on him.
    they need from the network.
 7. Checklists, as in aviation: every repeated procedure is a short list that is read every time.
 
-Until Look's first set of parts is approved, decision 7 sets principles 4 and 5 aside for Look alone.
+Until Look's first set of parts is approved, decision 7 sets principle 5 aside for Look alone.
 
 ## 3. The Repository
 
@@ -149,10 +149,21 @@ that does not talk to Claude never asks. This is built with the first app that n
    the app needs no permission.
 4. What needs a permission or his hardware he tries at step 7.
 
-## 8. The Look
+## 8. The Look and the Words
 
 `spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
 Search's motion. Modern is Search's look exactly, proved part by part against Search's own pictures.
+
+Every app's words are written the way a friendly person would say them: short, warm and plain. One
+idea to a sentence, everyday words, "you" for the reader, and contractions where they sound natural.
+A label says plainly what it is, and the line under it says what you will notice, never how it works.
+This holds for every app and every part they share. That means windows, settings, first open, menus,
+alerts, updates, About, the download page and the release notes.
+
+What can be counted becomes a check in `Scripts/check`, with its numbers in `CONSTRAINTS.md`: no
+sentence an app shows runs past 12 words, and none uses a listed stock word, such as "seamlessly".
+Until that check is built, the reviewer holds both. Whether words are warm and easy to read is judged
+by the reviewer on every change, and by him on each picture.
 
 ## 9. Boundaries
 

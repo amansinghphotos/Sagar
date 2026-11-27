@@ -2,7 +2,8 @@ import Look
 import SwiftUI
 
 /// The Controls page: every button, field, switch and choice, and what shows when there is nothing, trouble or
-/// work under way, as Search has them.
+/// work under way, shortcut boxes, sidebar rows, a drag handle and a folder's arrow,
+/// as Search has them.
 struct Controls: View {
     @State private var search = ""
     @State private var typed = "notes"
@@ -14,6 +15,7 @@ struct Controls: View {
     @State private var shown = true
     @State private var closes = false
     @State private var look = 1
+    @State private var shortcut: KeyCombo? = KeyCombo("v", shift: true)
 
     var body: some View {
         HStack(alignment: .top, spacing: Space.page.rawValue) {
@@ -41,6 +43,10 @@ struct Controls: View {
                 }
                 Ticks(items: [("Show the page's colour", $shown), ("Close tabs after a day", $closes)])
                 Segmented(options: [(0, "Light"), (1, "Dark"), (2, "System")], selection: $look)
+                HStack(spacing: Space.near.rawValue) {
+                    KeyBox(key: $shortcut, changed: true)
+                    FixedKey("⌘1 – ⌘9")
+                }
             }
             VStack(alignment: .leading, spacing: 0) {
                 Nothing("No clips yet.")
@@ -48,6 +54,19 @@ struct Controls: View {
                 ProgressCard(
                     filename: "Clips from the old Chete", message: "Bringing them in", completed: 1200, total: 3400,
                     cancel: {})
+                VStack(spacing: 2) {
+                    SideItem(title: "Meeting notes", letter: "M", live: true)
+                    SideItem(title: "Quarterly report", letter: "Q", selected: true)
+                    SideItem(title: "Recipes", letter: "R", close: {})
+                }
+                .frame(width: 240)
+                HStack(spacing: Space.page.rawValue) {
+                    EdgeGrip(lit: false, resting: true)
+                    EdgeGrip(lit: true)
+                    DisclosureArrow(open: false)
+                    DisclosureArrow(open: true)
+                }
+                .padding(Space.page.rawValue)
             }
             .frame(width: 380)
         }

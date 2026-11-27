@@ -23,9 +23,10 @@ package actor Copies {
 
     /// Keeps one copy, unless it holds nothing Chete keeps, or it came from another device and the
     /// settings say to leave those out.
-    package func take(_ kinds: [Clip.Kind], fromOtherDevice: Bool, copied: Date, app: String?) throws {
-        guard !kinds.isEmpty else { return }
-        if fromOtherDevice, try !Settings.read(in: folder).keepsCopiesFromOtherDevices { return }
+    @discardableResult
+    package func take(_ kinds: [Clip.Kind], fromOtherDevice: Bool, copied: Date, app: String?) throws -> Clip? {
+        guard !kinds.isEmpty else { return nil }
+        if fromOtherDevice, try !Settings.read(in: folder).keepsCopiesFromOtherDevices { return nil }
         var known =
             try known ?? Dictionary(clips.all().map { (try fingerprint($0.kinds), $0.id) }) { newer, _ in newer }
         let print = try fingerprint(kinds)
@@ -33,6 +34,18 @@ package actor Copies {
         try clips.keep(clip)
         known[print] = clip.id
         self.known = known
+        return clip
+    }
+
+    /// Every clip kept, newest first.
+    package func all() throws -> [Clip] {
+        try clips.all()
+    }
+
+    /// Deletes every clip copied longer ago than the settings say to keep things, and says which went.
+    @discardableResult
+    package func trim(now: Date = .now, calendar: Calendar = .current) throws -> [Clip] {
+        try clips.trim(Settings.read(in: folder).keeping, now: now, calendar: calendar)
     }
 
     private func fingerprint(_ kinds: [Clip.Kind]) throws -> SHA256Digest {
