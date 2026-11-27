@@ -19,6 +19,7 @@ enum Page: String, CaseIterable, Identifiable {
     case lists = "Lists"
     case overlays = "Overlays"
     case states = "States"
+    case keyboard = "Keyboard"
 
     var id: Self { self }
 }
@@ -52,6 +53,7 @@ struct Gallery: View {
                 case .lists: Lists()
                 case .overlays: Overlays()
                 case .states: States()
+                case .keyboard: KeyboardPage()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

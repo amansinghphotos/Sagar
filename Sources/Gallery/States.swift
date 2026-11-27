@@ -30,7 +30,7 @@ struct States: View {
             .padding(Space.page.rawValue)
             AboutBox(
                 icon: Image(systemName: "doc.on.clipboard"), name: "Chete", version: "Version 1.1",
-                copyright: "© Sagar", credit: "Parts of its look are from Search, © 2026 Office Commun, MIT licence.",
+                copyright: "© Sagar",
                 whatsNew: {}
             )
             .overlay(Rectangle().stroke(Role.hairline))
