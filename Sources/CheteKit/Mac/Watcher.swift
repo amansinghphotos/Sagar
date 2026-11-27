@@ -42,6 +42,7 @@ package final class Watcher {
         let count = pasteboard.changeCount
         guard count != seen else { return }
         seen = count
+        guard pasteboard.types?.contains(.chetePasted) != true else { return }
         let fromOtherDevice = pasteboard.types?.contains(.fromOtherDevice) == true
         let app = fromOtherDevice ? nil : NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         do {
@@ -59,6 +60,7 @@ package final class Watcher {
         let link = pasteboard.string(forType: .URL).flatMap(URL.init(string:))
         var kinds: [Clip.Kind] = []
         if let text = pasteboard.string(forType: .string), text != link?.absoluteString { kinds.append(.text(text)) }
+        if let rtf = pasteboard.data(forType: .rtf) { kinds.append(.richText(rtf)) }
         if let link { kinds.append(.link(link)) }
         if let type = pasteboard.availableType(from: [.png, .tiff]), let data = pasteboard.data(forType: type) {
             kinds.append(.picture(data, type: type.rawValue))
