@@ -663,7 +663,7 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
 tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are within the numbers
     local app=$1 log launch before after result=.build/Tours/$1.xcresult
     log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode \
-        -resultBundlePath "$result" test \
+        -resultBundlePath "$result" test SAGAR_NEW="A line the tour looks for." \
         CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) || {
         xcrun xcresulttool get test-results summary --path "$result" |
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20

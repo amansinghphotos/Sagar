@@ -77,6 +77,25 @@ final class CheteTour: XCTestCase {
         open.click()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "The card did not open Chete.")
     }
+
+    /// The first time a new build opens, it shows what is new, once. Told it last saw another build, Chete shows
+    /// the line this build was made with; opened again, it does not.
+    @MainActor
+    func testANewBuildShowsWhatIsNewOnce() throws {
+        let app = XCUIApplication()
+        let line = app.staticTexts["A line the tour looks for."]
+        app.launchArguments = ["-Shell.LastBuildSeen", "an older build"]
+        app.launch()
+        XCTAssert(line.waitForExistence(timeout: 10), "A new build did not show what is new.")
+        try audit(app, "What is new")
+        app.buttons["Close"].firstMatch.click()
+        XCTAssert(line.waitForNonExistence(timeout: 5), "The card for what is new did not close.")
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
+        XCTAssertFalse(line.exists, "What is new showed a second time.")
+    }
 }
 
 extension CheteTour {

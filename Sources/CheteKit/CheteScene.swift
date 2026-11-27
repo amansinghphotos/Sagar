@@ -19,6 +19,7 @@ public struct CheteScene: Scene {
             }
             .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
             .windowName("Your clips")
+            .showingWhatIsNew()
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
