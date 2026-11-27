@@ -13,11 +13,11 @@ struct States: View {
                 page: { _ in
                     VStack(alignment: .leading, spacing: 22) {
                         WelcomeHeading(
-                            "Keep what you copy.", "Everything you copy is kept on this Mac, so you can find it again.")
+                            "Keep what you copy.", "Everything you copy stays on this Mac. Find it again any time.")
                         VStack(alignment: .leading, spacing: 14) {
-                            Choice("Paste for you", "Asks once, in System Settings.", on: $keep, plain: true)
+                            Choice("Paste for you", "Your Mac asks once.", on: $keep, plain: true)
                             Rule(inset: 0)
-                            Choice("Open at login", "So it is there from the start.", on: $login)
+                            Choice("Open at login", "Chete starts when you log in.", on: $login)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
