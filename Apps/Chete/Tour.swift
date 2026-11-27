@@ -16,9 +16,12 @@ final class CheteTour: XCTestCase {
         close(settingsOf: app)
         app.terminate()
         app.launch()
-        // Chete opens its window as it starts; the card is asked for once that window is in front, or the window
+        // Chete opens its window as it starts; the card is asked for once its search field has the keys, or the window
         // coming forward would close the card as it drops.
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
+        let inFront = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "hasFocus == true"), object: app.windows["Chete"].textFields.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [inFront], timeout: 10), .completed, "Chete's window did not come forward.")
         let item = app.statusItems["Chete"]
         XCTAssert(item.waitForExistence(timeout: 10), "Chete has no item in the menu bar.")
         item.click()
