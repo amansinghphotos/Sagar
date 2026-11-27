@@ -51,6 +51,8 @@ package enum WindowSize: String, CaseIterable, Sendable {
 
 /// What words are for. Each is a size and weight Search uses for the same kind of words, at commit c92ea7c.
 nonisolated package enum TypeRole: String, CaseIterable, Sendable {
+    /// A greeting that leads an app's welcome. Search has none this large.
+    case hero
     /// The one big line of a first-open page: Search's welcome.
     case display
     /// A panel's title: Search's `Plate`.
@@ -75,6 +77,7 @@ nonisolated package enum TypeRole: String, CaseIterable, Sendable {
     /// The size in points.
     package var size: Double {
         switch self {
+        case .hero: 46
         case .display: 26
         case .title: 17
         case .heading: 15
@@ -89,7 +92,7 @@ nonisolated package enum TypeRole: String, CaseIterable, Sendable {
     /// The weight, by Apple's name for it.
     package var weightName: String {
         switch self {
-        case .display, .caption, .label: "medium"
+        case .hero, .display, .caption, .label: "medium"
         case .title, .heading: "semibold"
         case .body, .row, .detail, .small, .code: "regular"
         }
