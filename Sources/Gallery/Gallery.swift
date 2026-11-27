@@ -48,6 +48,7 @@ struct Gallery: View {
                 case .tokens: Tokens()
                 case .controls: Controls()
                 case .lists: Lists()
+                case .overlays: Overlays()
                 default: ContentUnavailableView(page.rawValue, systemImage: "square.dashed")
                 }
             }
