@@ -1,0 +1,172 @@
+#!/bin/bash
+# Scripts/tour <App>: tries an app's tour in the hidden Mac, in minutes, with nothing on the owner's screen.
+# GitHub's Mac still judges every pull request; this is for the tries in between.
+# Scripts/tour setup: makes the hidden Mac once per Mac, or gives it this Mac's Xcode again.
+#
+# The hidden Mac (Scripts/Guest) has no window and no sound. It lives on the project's drive, in the folder
+# that `git config --global sagar.virtualmac` names, never in the repository. Each tour starts from the
+# same clean guest and throws its copy away after; one tour runs at a time, whichever chat asks.
+set -uo pipefail
+cd "$(dirname "$0")/.." || exit 1
+[ -z "${CI:-}" ] || { echo "On GitHub's Mac, Scripts/check runs the tour."; exit 1; }
+home=$(git config --global --get sagar.virtualmac) || {
+    echo "No hidden Mac on this Mac. Name its folder on the drive: git config --global sagar.virtualmac <folder>"
+    exit 1
+}
+[ -d "$(dirname "$home")" ] || { echo "The drive that holds the hidden Mac is not plugged in: $home"; exit 1; }
+guest="$home/guest"
+
+tool() { # the guest program, built from this copy's source when it is newer
+    [ -x "$guest" ] && [ -z "$(find Scripts/Guest -newer "$guest" -name '*.swift')" ] && return
+    mkdir -p "$home"
+    printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+        '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+        '<plist version="1.0"><dict><key>com.apple.security.virtualization</key><true/></dict></plist>' >"$home/entitlements.plist"
+    swiftc -swift-version 6 -O -o "$guest.new" Scripts/Guest/*.swift &&
+        codesign -s - -f --entitlements "$home/entitlements.plist" "$guest.new" 2>/dev/null &&
+        mv -f "$guest.new" "$guest" || { echo "Could not build the guest program."; exit 1; }
+}
+
+in_guest() { "$guest" run "$home" "$@"; }
+
+awake() { # starts the guest, from clean once it has been kept, and waits until it answers
+    "$guest" start "$home"
+    for _ in $(seq 150); do
+        in_guest true 2>/dev/null && return
+        sleep 2
+    done
+    echo "The hidden Mac did not answer in five minutes. Its log: $home/serve.log"
+    "$guest" stop "$home"
+    exit 1
+}
+
+download() { # Apple's restore image; it resumes after a stall, a sleep or a change of network
+    local url size
+    url=$("$guest" latest) || exit 1
+    size=$(curl -sIL "$url" | awk 'tolower($1) == "content-length:" { n = $2 } END { print n + 0 }')
+    echo "Downloading macOS for the hidden Mac from Apple, $((size / 1000000000)) GB."
+    until [ "$size" -gt 0 ] && [ "$(stat -f %z "$home/Restore.ipsw" 2>/dev/null || echo 0)" -ge "$size" ]; do
+        [ -d "$home" ] || { echo "The drive went away."; exit 1; }
+        curl -sSL -C - --connect-timeout 20 --speed-limit 200000 --speed-time 30 -o "$home/Restore.ipsw" "$url" ||
+            sleep 10
+    done
+}
+
+agent_in() { # puts the agent in the stopped guest's disk, as a login item of its one user
+    local mounted volume user=tour
+    mounted=$(mktemp -d)
+    hdiutil attach -imagekey diskimage-class=CRawDiskImage -nobrowse -noverify -noautofsck -owners on \
+        -mountrandom "$mounted" "$home/Machine/Disk.img" >"$mounted.list" || return 1
+    volume=$(awk -F'\t' '$NF ~ /Data$/ { print $NF }' "$mounted.list" | sed 's/^ *//' | head -1)
+    if [ -d "$volume/Users/$user" ]; then
+        mkdir -p "$volume/Users/$user/Library/LaunchAgents" "$volume/Users/$user/Library/Sagar"
+        cp "$guest" "$volume/Users/$user/Library/Sagar/guest"
+        printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0"><dict><key>Label</key><string>sagar.guest</string><key>ProgramArguments</key>' \
+            '<array><string>/bin/sh</string><string>-c</string><string>exec ~/Library/Sagar/guest agent 2>>~/Library/Logs/Sagar.log</string></array>' \
+            '<key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ProcessType</key><string>Interactive</string>' \
+            '</dict></plist>' >"$volume/Users/$user/Library/LaunchAgents/sagar.guest.plist"
+    fi
+    local made=no
+    [ -f "$volume/Users/$user/Library/Sagar/guest" ] && made=yes
+    hdiutil detach -quiet "$(awk 'NR == 1 { print $1 }' "$mounted.list")"
+    rm -rf "$mounted" "$mounted.list"
+    [ $made = yes ] || { echo "The guest's user was not made."; return 1; }
+}
+
+prepare() { # gives the guest this Mac's Xcode, and keeps it quiet: no sleep, no indexing, no updates
+    local xcode
+    xcode=$(dirname "$(dirname "$(xcode-select -p)")")
+    echo "Giving the hidden Mac this Mac's Xcode."
+    in_guest "sudo -n true 2>/dev/null || sudo -S sh -c 'echo \"tour ALL=(ALL) NOPASSWD: ALL\" >/etc/sudoers.d/tour'" \
+        < <(cat "$home/Machine/Password"; echo) >/dev/null &&
+        in_guest "sudo rm -rf /Applications/Xcode.app" &&
+        tar -C "$(dirname "$xcode")" -cf - "$(basename "$xcode")" |
+        in_guest "sudo tar -C /Applications -xpf - && sudo mv '/Applications/$(basename "$xcode")' /Applications/Xcode.app 2>/dev/null; true" &&
+        in_guest "sudo xcode-select -s /Applications/Xcode.app && sudo xcodebuild -license accept &&
+            sudo xcodebuild -runFirstLaunch >/dev/null && sudo DevToolsSecurity -enable >/dev/null &&
+            sudo automationmodetool enable-automationmode-without-authentication >/dev/null &&
+            sudo pmset -a sleep 0 displaysleep 0 disksleep 0 && sudo mdutil -a -i off >/dev/null &&
+            sudo softwareupdate --schedule off >/dev/null && defaults -currentHost write com.apple.screensaver idleTime 0"
+}
+
+same_xcode() { [ "$(in_guest 'xcodebuild -version' 2>/dev/null)" = "$(xcodebuild -version)" ]; }
+
+case ${1:-} in
+setup)
+    tool
+    "$guest" stop "$home"
+    if [ ! -f "$home/Machine/HardwareModel" ]; then
+        download && "$guest" install "$home" && agent_in || exit 1
+    fi
+    awake
+    same_xcode || prepare || { echo "Could not give the hidden Mac Xcode."; "$guest" stop "$home"; exit 1; }
+    sleep 30 # let the guest settle before it is kept
+    "$guest" keep "$home" && rm -f "$home/Restore.ipsw"
+    [ -f "$home/Machine/Clean.vzvmsave" ] && echo "The hidden Mac is ready." || exit 1
+    exit
+    ;;
+'' | -*)
+    echo "usage: Scripts/tour <App> | Scripts/tour setup"
+    exit 1
+    ;;
+esac
+app=$1
+[ -f "Apps/$app/Tour.swift" ] || { echo "Apps/$app/Tour.swift: no such tour."; exit 1; }
+[ -f "$home/Machine/Clean.vzvmsave" ] || { echo "No hidden Mac here yet: Scripts/tour setup makes it."; exit 1; }
+products=.build/Xcode/Build/Products
+result=.build/Tours/$app.xcresult
+
+if [ "${2:-}" != --in-turn ]; then
+    tool
+    began=$(date +%s)
+    echo "Building $app and its tour."
+    xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode -quiet build-for-testing \
+        CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1 | grep -E ': (error|warning): ' | sort -u
+    [ "${PIPESTATUS[0]}" -eq 0 ] || exit 1
+    TOUR_BEGAN=$began exec "$guest" turn "$home" "$(basename "$PWD"), touring $app" "$0" "$app" --in-turn
+fi
+
+# From here on, this chat has the guest to itself: a clean copy, thrown away when it ends.
+trap '"$guest" stop "$home"' EXIT
+"$guest" stop "$home"
+awake
+same_xcode || { echo "This Mac's Xcode changed: Scripts/tour setup gives the hidden Mac the same."; exit 1; }
+plan=$(ls -t "$products/${app}Tour"_*.xctestrun | head -1)
+echo "Touring $app in the hidden Mac."
+tar -C "$products" -cf - Release "$(basename "$plan")" |
+    in_guest "mkdir -p ~/Tour/Products && tar -C ~/Tour/Products -xf -" || exit 1
+in_guest "cd ~/Tour && xcodebuild test-without-building -xctestrun 'Products/$(basename "$plan")' \
+    -destination platform=macOS -resultBundlePath Result.xcresult >Log.txt 2>&1"
+passed=$?
+rm -rf "$result" && mkdir -p .build/Tours
+in_guest "tar -C ~/Tour -cf - Result.xcresult Log.txt" | tar -C .build/Tours -xf - &&
+    mv .build/Tours/Result.xcresult "$result" && mv .build/Tours/Log.txt ".build/Tours/$app.log"
+took=$(($(date +%s) - ${TOUR_BEGAN:-$(date +%s)}))
+
+if [ $passed -eq 0 ]; then
+    echo "$app's tour passed in the hidden Mac, in $took s from the build."
+    exit 0
+fi
+echo "$app's tour failed in the hidden Mac, after $took s:"
+xcrun xcresulttool get test-results summary --path "$result" 2>/dev/null |
+    jq -r '.testFailures[] | "\(.testName): \(.failureText)"' 2>/dev/null || tail -n 20 ".build/Tours/$app.log"
+# What each failing test saw, under readable names: the app's accessibility tree, the screen recording, its last
+# frame as a picture, and Xcode's own snapshots.
+seen=".build/Tours/$app failure"
+rm -rf "$seen" && xcrun xcresulttool export attachments --path "$result" --output-path "$seen/all" >/dev/null 2>&1
+xcrun xcresulttool get test-results summary --path "$result" | jq -r '.testFailures[].testIdentifierString' | sort -u |
+    while IFS= read -r test; do
+        jq -r --arg test "$test" '.[] | select(.testIdentifier == $test) | .attachments[] |
+            "\(.exportedFileName)\t\(.suggestedHumanReadableName)"' "$seen/all/manifest.json" |
+            while IFS=$'\t' read -r file name; do
+                kind=${file##*.} && [ "$kind" != "$file" ] || kind=data
+                name="${test##*/} - ${name//\//-}" && name=${name%.$kind}.$kind
+                mv "$seen/all/$file" "$seen/$name"
+                [ "$kind" != mp4 ] || "$guest" frame "$seen/$name" "$seen/${test##*/} - last frame.png"
+            done
+    done
+rm -rf "$seen/all"
+echo "What the tour saw when it failed: $seen; the whole record: $result"
+exit 1

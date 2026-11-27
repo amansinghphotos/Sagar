@@ -666,7 +666,7 @@ tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those th
     esac
 }
 
-tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
+tour() { # The real app, driven as a person would. It takes the screen: here only on GitHub's runner (Scripts/tour tries it hidden).
     [ -n "${CI:-}" ] || return $nothing
     ! words_only || return $nothing
     local faults tags apps app toured=no
