@@ -80,6 +80,7 @@ package func picture(of view: some View, width: CGFloat, height: CGFloat, dark: 
     else { throw PictureError.couldNotDraw }
     bitmap.size = frame.size
     host.cacheDisplay(in: host.bounds, to: bitmap)
+    scratch116Log(host, width: width, height: height, dark: dark)
     guard let drawn = bitmap.cgImage else { throw PictureError.couldNotDraw }
     return try onItsWindow(drawn, window)
 }
@@ -145,4 +146,63 @@ package func approvedPicture(at file: URL) -> CGImage? {
 package func seeThroughPixels(_ image: CGImage) -> Int {
     let all = bytes(of: image)
     return stride(from: 3, to: all.count, by: 4).count { all[$0] < 255 }
+}
+
+// SCRATCH 116: never committed.
+private func scratch116Log(_ host: NSView, width: CGFloat, height: CGFloat, dark: Bool) {
+    guard let path = ProcessInfo.processInfo.environment["SCRATCH116_LOG"] else { return }
+    var lines: [String] = []
+    func walk(_ view: NSView) {
+        if let field = view as? NSTextField, field.isEditable {
+            let font = field.font
+            let lm = NSLayoutManager()
+            var line = "pid=\(getpid()) pic=\(Int(width))x\(Int(height)) dark=\(dark) \(type(of: field))"
+            line += " h=\(field.frame.height) host=\(field.superview?.frame.height ?? -1)"
+            line += " font=\(font?.fontName ?? "nil")@\(font?.pointSize ?? -1)"
+            line += " asc=\(font?.ascender ?? 0) desc=\(font?.descender ?? 0) lead=\(font?.leading ?? 0)"
+            line += " lmh=\(font.map { lm.defaultLineHeight(for: $0) } ?? -1)"
+            line += " intrinsic=\(field.intrinsicContentSize.height) cell=\(field.cell?.cellSize.height ?? -1)"
+            line += " editor=\(field.currentEditor() != nil) bezeled=\(field.isBezeled) bordered=\(field.isBordered)"
+            line += " control=\(field.controlSize.rawValue) scale=\(field.window?.backingScaleFactor ?? -1)"
+            line += " text=\(field.stringValue.count)"
+            lines.append(line)
+        }
+        view.subviews.forEach(walk)
+    }
+    walk(host)
+    func heights() -> String {
+        var out: [String] = []
+        func walk2(_ view: NSView) {
+            if let field = view as? NSTextField, field.isEditable { out.append("\(field.frame.height)") }
+            view.subviews.forEach(walk2)
+        }
+        walk2(host)
+        return out.joined(separator: ",")
+    }
+    let first = heights()
+    host.needsLayout = true
+    host.layoutSubtreeIfNeeded()
+    let relayout = heights()
+    func invalidate(_ view: NSView) {
+        view.invalidateIntrinsicContentSize()
+        view.subviews.forEach(invalidate)
+    }
+    invalidate(host)
+    host.layoutSubtreeIfNeeded()
+    let invalidated = heights()
+    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+    host.layoutSubtreeIfNeeded()
+    let spun = heights()
+    if !lines.isEmpty {
+        lines.append(
+            "STAGES pid=\(getpid()) first=\(first) relayout=\(relayout) invalidated=\(invalidated) spun=\(spun)")
+    }
+    guard !lines.isEmpty, let data = (lines.joined(separator: "\n") + "\n").data(using: .utf8) else { return }
+    if let handle = FileHandle(forWritingAtPath: path) {
+        handle.seekToEndOfFile()
+        handle.write(data)
+        try? handle.close()
+    } else {
+        FileManager.default.createFile(atPath: path, contents: data)
+    }
 }

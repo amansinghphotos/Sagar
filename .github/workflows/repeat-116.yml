@@ -1,0 +1,48 @@
+# For issue 116 only, and removed before its pull request is ready: runs Look's and the Gallery's tests many
+# times on GitHub's Mac, logging every text field's height at each picture, to catch a field laid out a point short.
+name: repeat-116
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repeat-116-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  repeat:
+    runs-on: xcode-27
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use the same Xcode as the owner's Mac
+        run: sudo xcode-select --switch /Applications/Xcode_27.2.app
+      - name: Build the tests
+        run: swift build --build-tests
+      - name: Run them 25 times
+        run: |
+          mkdir -p logs
+          for i in $(seq 1 25); do
+            log=logs/run-${{ matrix.part }}-$i.log
+            SCRATCH116_LOG=$PWD/logs/fields-${{ matrix.part }}-$i.txt \
+              swift test --skip-build --filter 'LookTests|GalleryTests' > "$log" 2>&1
+            echo "run $i exit $? failed $(grep -c 'recorded an issue' "$log")"
+          done
+      - name: Keep the logs and pictures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: repeat-116-${{ matrix.part }}
+          path: |
+            logs
+            .build/Pictures
+          if-no-files-found: ignore
