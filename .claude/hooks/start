@@ -7,7 +7,6 @@
 set -u
 here=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$here" || exit 0
-PATH=$HOME/.local/bin:$PATH # where setup puts GitHub's gh
 
 # The agents' GitHub App. None of this is secret; the key is in the login keychain.
 client=Iv23liG69KshMKWCxVzO
@@ -61,6 +60,11 @@ plugins='agent-skills@addy-agent-skills=addyosmani/agent-skills taste-skill@tast
 
 # Everything that grows lives on its own drive, never on the disk that holds the owner's home folder.
 on_drive() { [ "$(stat -f %d "$shared")" != "$(stat -f %d "$HOME")" ]; }
+# Beside the project on the drive: the tools setup downloads, and the caches Swift and its tests fill. Neither cache
+# can be moved by a setting, so each is a link from its usual place; with the drive away a write there just fails.
+tools="$(dirname "$shared")/Tools" caches="$(dirname "$shared")/Caches"
+moved='org.swift.swiftpm com.apple.dt.xctest.tool'
+PATH=$tools/bin:$PATH
 # A Mac set up by these steps carries a mark; there, work off the drive stops instead of piling up at home.
 drive_mac() { [ "$(git config --global --get sagar.drive)" = yes ]; }
 
@@ -78,7 +82,10 @@ ready() { # Checklists/Build Mac.md, as what can be seen without asking the keyc
     # Asking xcodebuild on a Mac without Xcode would put macOS's install dialog on the owner's screen.
     ! xcode-select -p >/dev/null 2>&1 || have=$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }')
     [ -z "$wanted" ] || [ "$have" = "$wanted" ] || echo "Xcode $wanted, opened once (this Mac has ${have:-none})"
-    command -v gh >/dev/null || echo "GitHub's gh, in ~/.local/bin"
+    command -v gh >/dev/null || echo "GitHub's gh, in the Tools folder beside the project"
+    for cache in $moved; do
+        ! on_drive || [ -L "$HOME/Library/Caches/$cache" ] || echo "The $cache cache, linked into the Caches folder beside the project"
+    done
     [ -d "$private/.git" ] || echo "The private notes, cloned beside the repository as '$(basename "$private")'"
     for plugin in $plugins; do
         jq -e --arg p "${plugin%%=*}" '.plugins[$p]' "$HOME/.claude/plugins/installed_plugins.json" >/dev/null 2>&1 ||
@@ -118,7 +125,7 @@ case ${1:-} in
                 curl -fsSLO "https://github.com/cli/cli/releases/download/$(jq -r .tag_name <<<"$release")/$zip" &&
                 curl -fsSL "https://github.com/cli/cli/releases/download/$(jq -r .tag_name <<<"$release")/$(jq -r \
                     '.assets[].name | select(endswith("_checksums.txt"))' <<<"$release")" | grep " $zip\$" | shasum -a 256 -c &&
-                unzip -q "$zip" && mkdir -p ~/.local/bin && mv "${zip%.zip}/bin/gh" ~/.local/bin/)
+                unzip -q "$zip" && mkdir -p "$tools/bin" && mv "${zip%.zip}/bin/gh" "$tools/bin/")
             status=$?
             rm -rf "$place"
             [ "$status" = 0 ] || { echo "Could not install gh from GitHub's releases."; exit 1; }
@@ -132,6 +139,12 @@ case ${1:-} in
         for file in CLAUDE.md settings.json; do [ -e ~/.claude/$file ] || cp "$private/Claude/$file" ~/.claude/; done
         # Xcode's own builds go beside the project's, on the drive, not into the home folder.
         defaults write com.apple.dt.Xcode IDECustomDerivedDataLocation "$shared/.build/Xcode"
+        for cache in $moved; do # what a cache already holds moves with it, unless the drive has its own
+            usual=$HOME/Library/Caches/$cache
+            mkdir -p "$caches" ~/Library/Caches && [ ! -L "$usual" ] || continue
+            if [ -e "$usual" ] && [ ! -e "$caches/$cache" ]; then mv "$usual" "$caches/"; fi
+            mkdir -p "$caches/$cache" && { [ -e "$usual" ] || ln -s "$caches/$cache" "$usual"; }
+        done
         [ -d ~/.claude/skills/cook ] || git clone -q https://github.com/Leonxlnx/cook ~/.claude/skills/cook
         for plugin in $plugins; do
             claude plugin marketplace add "${plugin#*=}" >/dev/null && claude plugin install "${plugin%%=*}" >/dev/null
@@ -155,7 +168,7 @@ for gone in $(git branch --format='%(refname:short) %(upstream:track)' | awk '$2
         --jq 'select(.state == "MERGED") | .headRefOid' 2>/dev/null)
     [ "$merged" != "$(git rev-parse "$gone")" ] || git branch -q -D "$gone"
 done
-[ -z "${CLAUDE_ENV_FILE:-}" ] || printf 'export PATH="$HOME/.local/bin:$PATH"\n' >>"$CLAUDE_ENV_FILE"
+[ -z "${CLAUDE_ENV_FILE:-}" ] || printf 'export PATH=%q:"$PATH"\n' "$tools/bin" >>"$CLAUDE_ENV_FILE"
 [ -z "${CLAUDE_ENV_FILE:-}" ] ||
     echo "export GH_TOKEN=\"\$('$here/.claude/hooks/start' token || echo no-agent-token)\"" >>"$CLAUDE_ENV_FILE"
 GH_TOKEN=$(token || echo no-agent-token)
