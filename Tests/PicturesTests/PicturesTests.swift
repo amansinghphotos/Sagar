@@ -80,6 +80,12 @@ private struct Controls: View {
     #expect(differingPixels(empty, window) == 0)
 }
 
+@Test func aDarkPictureIsDrawnOnTheDarkWindow() throws {
+    let light = try picture(of: Color.clear, width: 60, height: 40)
+    let dark = try picture(of: Color.clear, width: 60, height: 40, dark: true)
+    #expect(differingPixels(light, dark) > tolerance)
+}
+
 @Test func everyApprovedPictureIsSolidFromEdgeToEdge() throws {
     let tests = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
     let pictures = try FileManager.default.subpathsOfDirectory(atPath: tests.path)

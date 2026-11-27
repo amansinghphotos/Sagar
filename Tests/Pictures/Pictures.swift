@@ -21,21 +21,23 @@ package enum PictureError: Error {
 /// Fails the test unless the screen matches `Pictures/<name>.png` beside the test file.
 /// A new or changed picture is left in `.build/Pictures` for the owner to approve.
 package func expectPicture(
-    of view: some View, width: CGFloat, height: CGFloat, named name: String,
+    of view: some View, width: CGFloat, height: CGFloat, named name: String, dark: Bool = false,
     filePath: String = #filePath, sourceLocation: SourceLocation = #_sourceLocation
 ) throws {
     let approved = URL(filePath: filePath).deletingLastPathComponent().appending(path: "Pictures")
     let made = URL(filePath: FileManager.default.currentDirectoryPath).appending(path: ".build/Pictures")
-    let verdict = try compare(view, width: width, height: height, named: name, approved: approved, made: made)
+    let verdict = try compare(
+        view, width: width, height: height, named: name, dark: dark, approved: approved, made: made)
     #expect(verdict == .same, "\(name).png: see .build/Pictures", sourceLocation: sourceLocation)
 }
 
 /// Pictures the screen and compares it with `<name>.png` in `approved`. Unless they are the same,
 /// the new picture is written to `made`.
 package func compare(
-    _ view: some View, width: CGFloat, height: CGFloat, named name: String, approved: URL, made: URL
+    _ view: some View, width: CGFloat, height: CGFloat, named name: String, dark: Bool = false, approved: URL,
+    made: URL
 ) throws -> Verdict {
-    let image = try picture(of: view, width: width, height: height)
+    let image = try picture(of: view, width: width, height: height, dark: dark)
     var verdict = Verdict.noApprovedPicture
     let file = approved.appending(path: "\(name).png")
     if let expected = approvedPicture(at: file) {
@@ -56,8 +58,8 @@ private final class HiddenWindow: NSWindow {
 }
 
 /// Pictures a screen from a real window that is never put on screen: two pixels a point, the light
-/// look, scroll bars that show only while scrolling, drawn as the front window would be.
-package func picture(of view: some View, width: CGFloat, height: CGFloat) throws -> CGImage {
+/// look unless `dark`, scroll bars that show only while scrolling, drawn as the front window would be.
+package func picture(of view: some View, width: CGFloat, height: CGFloat, dark: Bool = false) throws -> CGImage {
     _ = NSApplication.shared
     UserDefaults.standard.set("WhenScrolling", forKey: "AppleShowScrollBars")
     let frame = NSRect(x: 0, y: 0, width: width, height: height)
@@ -67,7 +69,7 @@ package func picture(of view: some View, width: CGFloat, height: CGFloat) throws
     let host = NSHostingView(rootView: screen)
     let window = HiddenWindow(contentRect: frame, styleMask: [.titled], backing: .buffered, defer: false)
     window.isReleasedWhenClosed = false
-    window.appearance = NSAppearance(named: .aqua)
+    window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
     window.contentView = host
     host.layoutSubtreeIfNeeded()
     guard
