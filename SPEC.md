@@ -35,8 +35,10 @@ His pending approvals are the only list of things waiting on him.
    on anything that involves money, a key, a dependency or a permission. Everything else is decided
    and reported in a line. Agents merge ordinary work themselves once checks are green.
 3. What Apple provides is used as Apple intends. A dependency needs his yes and a decision record.
-4. Every line is written fresh, test first. Other code is read for ideas, and none is pasted.
-5. Shared code is written when the first app needs it, not ahead of need.
+4. Every line is written fresh, test first. Other code is read for ideas, and none is pasted, but for
+   Look's motion, taken from Search under its licence (decision 7).
+5. Shared code is written when the first app needs it, not ahead of need. Look is the exception: it is
+   built whole, so that every app starts from the same finished parts.
 6. Built to last. The method lives in plain Markdown, git, shell and GitHub's oldest features. The
    Claude layer is thin and only points at those files. Apps work offline unless their spec names what
    they need from the network.
@@ -58,6 +60,7 @@ Sources/Minds/         speech and language models behind one interface
 Sources/<App>Kit/      one app's feature; Mac-only files under Mac/
 Tests/<Module>Tests/   Swift Testing; approved pictures under Pictures/
 spec/<app>.md          what it is for, must-haves, network needs, out of scope
+spec/look.md           every part of the look, its two themes and its motion
 docs/                  what is served to people: the download page, each app's update feed, New Mac.md
 Checklists/            every repeated procedure, read every time
 Decisions/             why things are the way they are
@@ -143,10 +146,8 @@ that does not talk to Claude never asks. This is built with the first app that n
 
 ## 8. The Look
 
-Modern is the one library of components, with its colour and type roles, built from measured
-references and shown in a Gallery, where the owner approves it as pictures. Lexicon is a thin layer
-over Modern rather than a library of its own, with its own typeface and a paper feel, sharing Modern's
-components and spacing. Controls are Apple's own with styles, so keyboard and VoiceOver work.
+`spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
+Search's motion, shown in a Gallery where the owner approves it as pictures.
 
 ## 9. Boundaries
 
@@ -173,9 +174,8 @@ usual calls and cannot see every way to fetch a file.
 
 ## 11. Written When the First App Needs It
 
-Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The three lines of
-notes shown once inside an app after it updates.
+Keep. Shell's settings window, permissions, login item, menu bar, hot keys and Send Report. Taps and
+Minds. The three lines of notes shown once inside an app after it updates.
 
-Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
+Contrast is a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
