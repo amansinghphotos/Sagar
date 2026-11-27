@@ -16,18 +16,24 @@ private func merging(_ record: String) throws -> String {
     return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
 }
 
-/// Pasting for You, as GitHub answered for it: both checks passed and nobody had to answer, so GitHub refused to
-/// wait and left it open.
+/// Recorded from GitHub for Pasting for You: both checks passed and nobody had to answer, so GitHub refused to wait
+/// and left it open.
 @Test func workWithNothingLeftToWaitForIsMergedNow() throws {
     #expect(try merging("Nothing Left to Wait For") == "now\n")
 }
 
-/// Clips Are Kept while it waited for the owner's approval: it must wait for him.
-@Test func workThatWaitsForTheOwnerIsNotMergedNow() throws {
-    #expect(try merging("Waiting for the Owner") == "wait\n")
+/// Recorded from GitHub for a pull request it still blocked, as it blocks one that waits for the owner's approval.
+@Test func workGitHubStillBlocksIsNotMergedNow() throws {
+    #expect(try merging("Still Blocked") == "wait\n")
 }
 
-/// A pull request just brought up to date, before GitHub has worked out where it stands.
+/// Recorded from GitHub for a pull request just brought up to date, before it had worked out where it stands.
 @Test func workGitHubHasNotWorkedOutIsNotMergedNow() throws {
     #expect(try merging("Not Yet Worked Out") == "wait\n")
+}
+
+/// Made up, since no pull request has had one yet: the owner asked for changes on files he does not own, so GitHub
+/// itself would merge it, but his words still stand.
+@Test func workTheOwnerAskedToChangeIsNotMergedNow() throws {
+    #expect(try merging("Changes Asked For") == "wait\n")
 }

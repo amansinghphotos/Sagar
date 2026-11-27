@@ -42,7 +42,9 @@ fi
 
 if [ "${1:-}" = merging ]; then # Scripts/check merging < GitHub's state of a pull request: "now" only when nothing is
     # left to wait for, no check and nobody's answer. GitHub then refuses to wait, so the ready step merges it itself.
-    jq -r 'if .mergeStateStatus == "CLEAN" then "now" else "wait" end'
+    # A request for changes stands even where GitHub would merge: on files the owner does not own, it does not block.
+    jq -r 'if .mergeStateStatus == "CLEAN" and .reviewDecision != "CHANGES_REQUESTED"
+        and ([.latestReviews[]?.state] | index("CHANGES_REQUESTED") | not) then "now" else "wait" end'
     exit
 fi
 
@@ -78,7 +80,7 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     gh pr ready "$request" >/dev/null 2>&1
     if ! gh pr merge "$request" --auto --squash >/dev/null 2>&1; then
         # GitHub lets nobody pass the owner's review, and this merges only what has nothing left to wait for.
-        [ "$(gh pr view "$request" --json mergeStateStatus | Scripts/check merging)" = now ] ||
+        [ "$(gh pr view "$request" --json mergeStateStatus,reviewDecision,latestReviews | Scripts/check merging)" = now ] ||
             { echo "GitHub would not set #$request to merge: see gh pr view $request."; exit 1; }
         gh pr merge "$request" --squash >/dev/null
         echo "merged    #$request passed both checks on its newest commit, and had nobody left to answer"
