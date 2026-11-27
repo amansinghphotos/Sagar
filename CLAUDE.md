@@ -30,10 +30,12 @@ He writes in plain words, in any chat, without naming a file or an issue. Find i
 - **A fault** ("X is broken"). If a build of that app is waiting on him, his words are his answer to
   it: `Scripts/release <App> <version> withdraw`, then the fault is the next slice. Otherwise find or
   open an issue in the app's milestone, quoting only what he said about the
-  app, and take it as the next slice.
+  app, and take it as the next slice. A fault in a shipped app that `NOW` does not name is mended
+  beside the app in work, as `SPEC.md` says under Mending a Shipped App: label the issue `fault`.
 - **A wish** ("I want X"). If a must-have in `spec/<app>.md` names that behaviour, open an issue for
   it, quoted the same way. If none does, it is a change to the spec: one pull request for him to approve, before any code.
 - **Another app than the one in `NOW`.** Tell him in a line what is in work, and ask which comes first.
+  A fault in a shipped app is no such question: tell him in a line that its mend has started.
 - **A question.** Answer it, and change nothing.
 - **His answer to a pull request** is its review on GitHub: an approval, or a request for changes in
   his words. The session start prints it. After a request for changes on a release:
@@ -60,7 +62,7 @@ pictures. The download page is built with `design-taste-frontend`.
    honestly. 400 changed lines at most, naming one issue. Whatever he must read, decide or see is
    inside the owner's part, with no link away: a changed spec's must-haves, each changed picture.
 5. **Review,** once, when the change is finished. Give the `reviewer` agent the diff, the commit
-   messages, the issue and the description. Post its reply on the pull request as a comment that
+   messages, the issue, the description and any review of his. Post its reply on the pull request as a comment that
    names the commit it read, folded inside `<details>`. Mend what it says must be mended, in one
    commit; a nit is yours to take or leave. Only a change to the change itself needs a new reading.
    Mend the description's words on GitHub, which costs no commit.
@@ -83,7 +85,8 @@ Stop and ask the owner, as one pull request he can approve, before any of these:
 - A change to any path that `.github/CODEOWNERS` gives an owner: a spec, `NOW`, a picture, a release,
   a key, a dependency, a permission. GitHub will not merge it without him.
 - A new dependency, a new key or account, a new permission an app asks for.
-- Work on an app that `NOW` does not name, or on an app with a release waiting.
+- Work on an app that `NOW` does not name, but for mending a fault in one that has shipped, or on an
+  app with a release waiting.
 - Anything that would put a window, dialog, sound or prompt on his screen.
 
 Never, whatever the reason:

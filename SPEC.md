@@ -9,8 +9,8 @@ the rules below.
 
 | What It Prevents | The guard | Held by |
 |---|---|---|
-| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails. Look's shared parts are not an app. | A check, and his approval to change `NOW` |
-| More builds waiting than he can try | A release waiting for him locks its app: its other pull requests fail until he answers. | A check |
+| Several apps in work at once | One app in work, named in `NOW`. A pull request that touches another app fails, unless it mends a fault in a shipped app. Look's shared parts are not an app. | A check, and his approval to change `NOW` |
+| More builds waiting than he can try | One build waits for him at a time. It locks its app: its other pull requests fail until he answers. | A check |
 | Home-made tools where standard ones exist | Standard tools only: Xcode, Swift Testing, XCUITest, GitHub issues, pull requests and Actions, Sparkle. | His approval of any dependency |
 | Work scattered, with no one record | Every change is a pull request of 400 changed lines at most that names one issue. Branches are deleted on merge. Status is the milestone page. | GitHub settings and a check |
 | The look changing unseen | The token file and the approved pictures change only with his approval. The Gallery's pictures are checked against Search's instead. | His approval |
@@ -85,7 +85,10 @@ screen is pictured narrow, default and wide.
 6. **Merge** with green checks, squashed, branch deleted.
 7. **Try.** When a milestone is complete, `Scripts/release <App> <version>` installs one signed and
    notarised build on his Mac, holds the same file as a draft release, and opens the release pull
-   request. He is told what to try in three lines. The app is now locked.
+   request. If the app was open, it is quit and opened again, and shows what is new (section 5)
+   without taking his keyboard. If it was closed, or will not quit, it shows that when he next opens
+   it. That reopening is the one window a release puts on his screen, by his choice. He is told what
+   to try in three lines. The app is now locked.
 8. **Ship.** He approves the release pull request, and that is all. GitHub merges it, makes that same
    file public, and on a clean Mac installs the previous release and watches it take the update. If he
    reports a fault instead, the release is withdrawn, the fault is fixed, and step 7 repeats under the
@@ -104,17 +107,38 @@ first of them, and a release will not start while its own has a box unticked.
   converting them, or drops a must-have. That is his call each time.
 - There is no third number: every copy is offered each update, so no old version is ever mended. Under the
   version each build carries its commit's date and time, which always rises and is what Sparkle compares.
-- One waiting build per app, and one app in work.
-- Each GitHub release carries three plain lines: New, Better, Fixed.
+- One build waiting for him at a time, and one app in work.
+- Each GitHub release carries up to three plain lines: New, Better, Fixed. A line with nothing to say is
+  left out, never filled. A release has at least one. The request that asks him to try it gives its reason
+  from the first line that is there: what is new, else what is better, else what is mended.
 - A fault he describes becomes an issue, and the release that mends it says so in plain words. An
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
 - An update is always offered and never forced or silent: the app shows what is new and the person
   chooses to install it, to be reminded later, or to skip that version.
+- The first time an app's window opens on a new build, it shows Look's card for what is new, once,
+  with that release's lines. On his Mac it tells him a build to try is in place and what to
+  look for. For everyone else it follows the update. A mended build under the same number shows it
+  again. An app's very first open shows its welcome instead.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
   good code is released again, under the next number.
 - Before a release an agent confirms it opens the files the previous release wrote, and ticks that
   in the Release issue. After his approval GitHub's Mac installs the previous release and watches it
   take the update.
+
+### Mending a Shipped App
+
+A fault in a shipped app is mended beside the app in work, and `NOW` stays as it is. (`Scripts/check`
+scope)
+
+- His report is enough to start. The fault becomes an issue marked `fault`, in the milestone for the
+  app's next number. Only its branch may touch the shipped app. (`Scripts/check` scope)
+- That milestone holds faults only. Nothing new reaches a shipped app until `NOW` names it again.
+  (`Scripts/check` scope and `Scripts/release`)
+- The mend is made on `main`, like any slice. GitHub's Mac tours that app too, as well as the app in
+  work. (`Scripts/check` tour)
+- Its release is tried and shipped like any other. It waits only while another build waits for him.
+  (`Scripts/release`)
+- It locks only the app it mends, so the app in work never waits for it. (`Scripts/check` lock)
 
 ## 6. Keys
 
@@ -191,8 +215,7 @@ usual calls and cannot see every way to fetch a file.
 ## 11. Written When the First App Needs It
 
 Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The three lines of
-notes shown once inside an app after it updates.
+window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
