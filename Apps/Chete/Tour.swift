@@ -15,6 +15,10 @@ final class CheteTour: XCTestCase {
         app.launch()
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
-        try app.performAccessibilityAudit(for: .all.subtracting(.contrast))
+        // Each finding is kept with the element it is about, so a failure says where to look.
+        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
+            self.add(XCTAttachment(string: "\(issue.compactDescription)\n\(issue.element?.debugDescription ?? "")"))
+            return false
+        }
     }
 }
