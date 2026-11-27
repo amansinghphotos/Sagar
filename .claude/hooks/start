@@ -63,10 +63,11 @@ plugins='agent-skills@addy-agent-skills=addyosmani/agent-skills taste-skill@tast
 on_drive() { [ "$(stat -f %d "$shared")" != "$(stat -f %d "$HOME")" ]; }
 
 ready() { # Checklists/Build Mac.md, as what can be seen without asking the keychain or the network.
-    local wanted have plugin
+    local wanted have='' plugin
     on_drive || echo "The project on its own drive, off the disk that holds the home folder"
     wanted=$(sed -n 's|.*Xcode_\([0-9.]*\)\.app.*|\1|p' .github/workflows/check.yml 2>/dev/null | head -1)
-    have=$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }')
+    # Asking xcodebuild on a Mac without Xcode would put macOS's install dialog on the owner's screen.
+    ! xcode-select -p >/dev/null 2>&1 || have=$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }')
     [ -z "$wanted" ] || [ "$have" = "$wanted" ] || echo "Xcode $wanted, opened once (this Mac has ${have:-none})"
     command -v gh >/dev/null || echo "GitHub's gh, in ~/.local/bin"
     [ -d "$private/.git" ] || echo "The private notes, cloned beside the repository as '$(basename "$private")'"
@@ -153,9 +154,9 @@ echo "Checkout: $(git status -sb | head -1)$(git status --porcelain | sed -n '1s
     echo "This is the shared folder, where every chat opens. Change nothing here: move into your own copy first (EnterWorktree), from origin/main. It stays on clean main, for Scripts/release alone."
 # Copies of finished work are what piles up: archiving a chat removes its copy, and this shows any left behind.
 merged=$(gh pr list --state merged --limit 1000 --json headRefOid --jq '.[].headRefOid' 2>/dev/null)
-leftover=$(git worktree list --porcelain | awk '/^worktree /{copy = substr($0, 10)} /^HEAD /{print $2, copy}' |
-    while read -r head copy; do
-        grep -qx "$head" <<<"$merged" && [ -z "$(git -C "$copy" status --porcelain)" ] && basename "$copy"
+leftover=$(git worktree list --porcelain | awk '/^worktree /{copy = substr($0, 10)} /^HEAD /{print $2, copy}' | sed 1d |
+    while read -r head copy; do # the first is the shared folder itself
+        [ -d "$copy" ] && grep -qx "$head" <<<"$merged" && [ -z "$(git -C "$copy" status --porcelain)" ] && basename "$copy"
     done | tr '\n' ' ')
 [ -z "$leftover" ] || echo "Copies whose work has merged, which archiving their chats removes: $leftover"
 echo "Branches besides main: $(git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' ')"
