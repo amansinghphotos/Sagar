@@ -1,0 +1,55 @@
+import Foundation
+import Keep
+
+/// One thing you copied: what it holds, when you copied it, and the app it came from.
+nonisolated package struct Clip: Codable, Equatable, Identifiable, Sendable {
+    /// One kind of data a copy can hold. A copy may hold several, as a link is also text.
+    package enum Kind: Codable, Equatable, Sendable {
+        case text(String)
+    }
+
+    package let id: UUID
+    package let kinds: [Kind]
+    package let copied: Date
+    /// The bundle identifier of the app it was copied in, when macOS says.
+    package let app: String?
+
+    package init(id: UUID = UUID(), kinds: [Kind], copied: Date, app: String?) {
+        self.id = id
+        self.kinds = kinds
+        self.copied = copied
+        self.app = app
+    }
+}
+
+/// Your history: every clip, each sealed in a file of its own in Chete's folder.
+nonisolated package struct Clips: Sendable {
+    /// The name of Chete's key in the login keychain. Tests use names of their own.
+    package static let keyName = "Chete · Clip Key"
+
+    private let store: Store
+    private let seal: Seal
+
+    /// The history in a folder, sealed by the key kept under a name.
+    package init(folder: URL, keyName: String) throws {
+        store = Store(folder: folder)
+        seal = try Seal(named: keyName)
+    }
+
+    /// The history on this Mac, in Chete's own folder and sealed by its own key.
+    package static func onThisMac() throws -> Clips {
+        try Clips(folder: .applicationSupportDirectory.appending(path: "Chete/Clips"), keyName: keyName)
+    }
+
+    /// Keeps a clip.
+    package func keep(_ clip: Clip) throws {
+        try store.write(clip, named: clip.id.uuidString, sealedBy: seal)
+    }
+
+    /// Every clip, newest first.
+    package func all() throws -> [Clip] {
+        try store.sealedNames()
+            .compactMap { try store.read(Clip.self, named: $0, sealedBy: seal) }
+            .sorted { $0.copied > $1.copied }
+    }
+}
