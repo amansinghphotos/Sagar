@@ -25,7 +25,7 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
 case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words [<file>…] | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -191,17 +191,17 @@ fi
 
 failed=0
 nothing=77 # what a rule returns when it had nothing to judge, so that silence is never read as a pass
-rule() { # rule <name>: run the function of that name, print one line, show its words if it fails
+rule() { # rule <name>: run the function of that name, print one line with its seconds, show its words if it fails
     local out
-    local status=0
+    local status=0 started=$SECONDS
     out=$("$1" 2>&1) || status=$?
     if [ "$status" -eq 0 ]; then
-        printf 'ok    %s\n' "$1"
+        printf 'ok    %-9s %4d s\n' "$1" "$((SECONDS - started))"
         printf '%s\n' "$out" | sed -n 's/^note: /        /p'
     elif [ "$status" -eq "$nothing" ]; then
         printf -- '--    %s (nothing to judge here)\n' "$1"
     else
-        printf 'FAIL  %s\n' "$1"
+        printf 'FAIL  %-9s %4d s\n' "$1" "$((SECONDS - started))"
         printf '%s\n' "$out" | tail -n 40 | sed 's/^/        /'
         failed=$((failed + 1))
     fi
@@ -220,11 +220,14 @@ words_only() { # true when the branch changes only words: documents, specs, feed
     [ -n "$base" ] && [ -n "$(changed)" ] && ! changed | grep -qx 'CONSTRAINTS.md' &&
         ! changed | grep -qvE '^(docs|spec|Checklists|Decisions)/|^[^/]+\.md$|^\.github/(ISSUE_TEMPLATE/|rulesets/|CODEOWNERS$|pull_request_template\.md$)'
 }
-if [ "${1:-}" = words ]; then # Scripts/check words <file>…: says whether a change to these files is words only
+if [ "${1:-}" = words ]; then # Scripts/check words [<file>…]: says whether a change to these files, or with none
+    # named this branch's own change, is words only. GitHub asks it first, to choose the machine the check runs on.
     shift
-    base=given
-    files=("$@")
-    changed() { printf '%s\n' "${files[@]}"; }
+    if [ $# -gt 0 ]; then
+        base=given
+        files=("$@")
+        changed() { printf '%s\n' "${files[@]}"; }
+    fi
     words_only && echo yes || echo no
     exit
 fi
@@ -530,6 +533,7 @@ secrets() {
 }
 
 format() {
+    ! words_only || return $nothing
     local folders=()
     for folder in Apps Sources Tests; do [ -d "$folder" ] && folders+=("$folder"); done
     swift format lint --strict --recursive ${folders[@]+"${folders[@]}"} Package.swift
