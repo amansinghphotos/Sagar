@@ -3,7 +3,8 @@ import ApplicationServices
 import Shell
 import SwiftUI
 
-/// The first-open pages in a window of their own, shown as Chete opens until they are finished or skipped.
+/// The first-open pages in a window of their own, opened at launch over Chete's own window until they are
+/// finished or skipped.
 struct FirstOpenWindow: Scene {
     var body: some Scene {
         Window("Welcome to Chete", id: "first-open") {
@@ -24,7 +25,7 @@ private struct FirstOpenContent: View {
             act: .onThisMac(folder: Copies.folderOnThisMac, keyName: Clips.keyName),
             finish: {
                 try? FirstOpen.done(in: Copies.folderOnThisMac)
-                // The pages came first at launch, in place of Chete's own window, which opens now.
+                // Chete's own window comes forward, or opens again if it was closed meanwhile.
                 openWindow(id: "chete")
                 dismissWindow(id: "first-open")
             }

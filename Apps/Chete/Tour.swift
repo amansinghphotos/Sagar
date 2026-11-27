@@ -22,7 +22,7 @@ final class CheteTour: XCTestCase {
         welcome.buttons["Continue"].click()
         welcome.buttons["Start"].click()
         XCTAssert(welcome.waitForNonExistence(timeout: 5), "The first open did not close.")
-        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete's window did not follow the first open.")
+        XCTAssert(app.windows["Chete"].exists, "Chete's own window is not there after the first open.")
         // Once done, it never shows again.
         app.terminate()
         app.launch()
