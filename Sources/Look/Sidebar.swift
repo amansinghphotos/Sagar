@@ -31,50 +31,63 @@ package struct SideItem: View {
 
     package var body: some View {
         HStack(spacing: Space.near.rawValue) {
-            mark
+            Mark(icon: icon, letter: letter, size: 15)
             Text(title)
                 .font(.system(size: 12.5))
-                .foregroundStyle(live ? AnyShapeStyle(Role.ink) : AnyShapeStyle(greys.muted))
+                .foregroundStyle(ink)
                 .lineLimit(1)
-            Spacer(minLength: 0)
-            if hovering, let close {
-                Button(action: close) {
-                    Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
-                        .frame(width: 16, height: 16)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(greys.muted)
-                .transition(.opacity)
-            }
         }
         .padding(.horizontal, Space.gap.rawValue)
-        .frame(height: 28)
+        .frame(maxWidth: .infinity, minHeight: 28, maxHeight: 28, alignment: .leading)
+        // The title keeps its length under the pointer and fades out before the close button, so its end stays put.
+        .mask { fade }
+        .overlay(alignment: .trailing) { closer }
         .contentShape(shape)
         .background { ground.animation(motion.quick, value: live) }
         .overlay {
-            if selected { shape.strokeBorder(Role.ink.opacity(0.35), lineWidth: 1) }
+            if selected { shape.strokeBorder(Role.ink.opacity(0.35), lineWidth: 1).allowsHitTesting(false) }
         }
         .animation(nil, value: hovering)
         .onHover { hovering = $0 }
         .transition(.scale(scale: 0.94, anchor: .leading).combined(with: .opacity))
     }
 
+    /// Ink for the one in front, a little darker under the pointer, quiet otherwise.
+    private var ink: AnyShapeStyle {
+        if live { return AnyShapeStyle(Role.ink) }
+        return hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.muted)
+    }
+
+    /// All of the row, but for the room the close button takes while it shows.
+    private var fade: some View {
+        HStack(spacing: 0) {
+            Rectangle()
+            if hovering && close != nil {
+                LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing).frame(width: 16)
+                Color.clear.frame(width: 26)
+            }
+        }
+    }
+
+    /// A small cross in a faint circle, reachable a little beyond what it draws.
+    @ViewBuilder private var closer: some View {
+        if hovering, let close {
+            Button(action: close) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Role.muted)
+                    .frame(width: 15, height: 15)
+                    .background(Role.ink.opacity(0.07), in: Circle())
+                    .frame(width: 29, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .transition(.opacity)
+        }
+    }
+
     /// The row's fill: washed when in front or chosen, a lighter grey under the pointer, else clear.
     private var ground: some View {
         shape.fill(live || selected ? greys.wash : greys.hover.opacity(hovering ? 1 : 0))
-    }
-
-    /// The icon if there is one, else the letter, in a small tile.
-    @ViewBuilder private var mark: some View {
-        if let icon {
-            icon.resizable().scaledToFit().frame(width: 15, height: 15)
-        } else {
-            Text(letter)
-                .font(.system(size: 8.5, weight: .medium))
-                .foregroundStyle(greys.muted)
-                .frame(width: 15, height: 15)
-                .background(Role.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
-        }
     }
 }
