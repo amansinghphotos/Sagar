@@ -5,9 +5,9 @@ import Testing
 
 @testable import Look
 
-/// The second of four pages of Search's welcome: a heading, two choices in a card, and the foot with its dots,
-/// Back, Skip and Continue. The same page was pictured from Search's own code at commit c92ea7c, lifted out of
-/// its welcome by a scratch copy that uses this repository's picture harness, into
+/// Search's welcome frame, heading, foot, big button and choice rows, on a stand-in page: a heading and two
+/// choices in a card, on the second of four pages. The same stand-in page, built from Search's own code for those
+/// parts at commit c92ea7c by a scratch copy that uses this repository's picture harness, was pictured into
 /// `Fixtures/Search Welcome Light.png` and `Dark.png`.
 private struct Showcase: View {
     @State var a = true

@@ -1,7 +1,7 @@
 import Look
 import SwiftUI
 
-/// The States page: the first-open pages, as Search's welcome has them.
+/// The States page: the first-open pages, built from Search's welcome, on a stand-in page.
 struct States: View {
     @State private var keep = true
     @State private var login = false
