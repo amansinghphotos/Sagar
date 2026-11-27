@@ -26,8 +26,10 @@ esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule. The commands
 # are the words this script answers below, each where it tests "${1:-}" against it: a new one is written there alone,
 # and no shared line lists them, so two pieces of work that add one never change the same line.
-commands=$(grep -oE '"[$][{]1:-[}]" !?= [a-z]+ []]' Scripts/check | cut -d' ' -f3 | sort -u)
-if [ -n "${1:-}" ] && ! grep -qx -- "$1" <<<"$commands"; then
+commands=$(LC_ALL=C grep -oE '"[$][{]1:-[}]" !?= [a-z]+ []]' Scripts/check | cut -d' ' -f3 | LC_ALL=C sort -u)
+known=no
+for command in $commands; do [ "$command" != "${1:-}" ] || known=yes; done # word for word, never a pattern
+if [ -n "${1:-}" ] && [ $known = no ]; then
     echo "Usage: Scripts/check [$(paste -sd '|' - <<<"$commands" | sed 's/|/ | /g')]"
     echo "Each is described where Scripts/check answers it."
     exit 2

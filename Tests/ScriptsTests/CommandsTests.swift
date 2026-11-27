@@ -70,11 +70,13 @@ private struct Commands {
     #expect(try commands.check("omega").said == "omega answered\n")
 }
 
-/// A word the script does not answer is a mistake: it stops with the usage, never running every rule.
-@Test func anUnknownCommandStopsWithTheUsage() throws {
+/// A word the script does not answer is a mistake, even one that reads as a pattern: it stops with the usage, never
+/// running every rule.
+@Test(arguments: ["tours", ".*", "w.*", "words\nsize", "Words"])
+func anUnknownCommandStopsWithTheUsage(word: String) throws {
     let commands = try Commands()
     defer { try? FileManager.default.removeItem(at: commands.folder) }
-    let answer = try commands.check("tours")
+    let answer = try commands.check(word)
     #expect(answer.status == 2)
     #expect(answer.said.hasPrefix("Usage: Scripts/check"))
     #expect(answer.said.contains("| words"))
