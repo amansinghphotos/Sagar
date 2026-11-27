@@ -28,10 +28,10 @@ package struct ClipList: View {
             Hunt(text: $typed, prompt: "Find a clip", focus: $finding)
                 .padding(Space.page.rawValue)
             if clips.isEmpty {
-                Key("⌘ C", "Copy anything, in any app, and it appears here.")
+                Key("⌘ C", "Copy something, and it shows up here.")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if found.isEmpty {
-                Text("Nothing you copied holds “\(typed)”.")
+                Text("No clips match “\(typed)”.")
                     .type(.body)
                     .foregroundStyle(Role.muted)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -191,5 +191,11 @@ package final class Shelf {
     package func add(_ clip: Clip) {
         clips.removeAll { $0.id == clip.id }
         clips.insert(clip, at: 0)
+    }
+
+    /// Takes away clips just deleted. One copied again since is a newer clip, and stays.
+    package func remove(_ deleted: [Clip]) {
+        let copied = Dictionary(deleted.map { ($0.id, $0.copied) }) { first, _ in first }
+        clips.removeAll { copied[$0.id] == $0.copied }
     }
 }
