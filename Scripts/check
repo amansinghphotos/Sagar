@@ -34,8 +34,8 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     head=$(gh pr view "$request" --json headRefOid --jq .headRefOid)
     # A pull request that clashes with main would need a new push after his approval, which undoes it.
     git fetch -q origin main "$branch"
-    clashing=$("$0" clashes "$head") ||
-        { [ -n "$clashing" ] && echo "#$request clashes with main in $(echo $clashing). Bring it up to date with main first." ||
+    clashing=$(Scripts/check clashes "$head") ||
+        { [ -n "$clashing" ] && echo "#$request clashes with main in $(paste -sd ' ' - <<<"$clashing"). Bring it up to date with main first." ||
             echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
     # Two checks count. The code's ran on the newest commit. The words' ran after the description last changed.
     edited=$(gh api graphql -F owner="${repository%/*}" -F name="${repository#*/}" -F number="$request" -f query='
