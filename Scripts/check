@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | request | size | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | request | size | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | request | size | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | request | size | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -33,12 +33,24 @@ if [ "${1:-}" = folder ]; then # Scripts/check folder: the commit gate's first r
     exit 1
 fi
 
+if [ "${1:-}" = clashes ]; then # Scripts/check clashes <commit>: the files where <commit> and main, as GitHub has it,
+    # changed the same lines. Git's own merge, made in memory: nothing in the folder changes.
+    git rev-parse -q --verify "${2:?Scripts/check clashes <commit>}^{commit}" >/dev/null || exit 2 # git says 1 for this too
+    out=$(git merge-tree --write-tree --name-only --no-messages origin/main "$2")
+    case $? in 0) exit 0 ;; 1) printf '%s\n' "$out" | sed '1d; /^$/d'; exit 1 ;; *) exit 2 ;; esac
+fi
+
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
     set -e
     request=${2:?Scripts/check ready <number>}
     repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
     branch=$(gh pr view "$request" --json headRefName --jq .headRefName)
     head=$(gh pr view "$request" --json headRefOid --jq .headRefOid)
+    # A pull request that clashes with main would need a new push after his approval, which undoes it.
+    git fetch -q origin main "$branch"
+    clashing=$(Scripts/check clashes "$head") ||
+        { [ -n "$clashing" ] && echo "#$request clashes with main in $(paste -sd ' ' - <<<"$clashing"). Bring it up to date with main first." ||
+            echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
     # Two checks count. The code's ran on the newest commit. The words' ran after the description last changed.
     edited=$(gh api graphql -F owner="${repository%/*}" -F name="${repository#*/}" -F number="$request" -f query='
         query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
