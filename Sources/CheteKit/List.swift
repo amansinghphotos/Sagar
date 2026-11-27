@@ -192,4 +192,10 @@ package final class Shelf {
         clips.removeAll { $0.id == clip.id }
         clips.insert(clip, at: 0)
     }
+
+    /// Takes away clips just deleted. One copied again since is a newer clip, and stays.
+    package func remove(_ deleted: [Clip]) {
+        let copied = Dictionary(deleted.map { ($0.id, $0.copied) }) { first, _ in first }
+        clips.removeAll { copied[$0.id] == $0.copied }
+    }
 }
