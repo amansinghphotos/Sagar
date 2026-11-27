@@ -1,46 +1,26 @@
-import AppKit
 import SwiftUI
 
-/// An app's item in the menu bar, for an app that lives there and has no Dock icon, and so shows no
-/// menus of its own. Its menu opens the app's window over whatever app is in front, offers Check for
-/// Updates…, and quits.
-package struct MenuBarItem: Scene {
+/// An app's item in the menu bar, for an app that lives there and has no Dock icon. Clicking it drops the
+/// card the app hands over, as Control Center's items do.
+package struct MenuBarItem<Card: View>: Scene {
     let app: String
     let symbol: String
-    let window: String
+    let card: () -> Card
 
-    /// The item for an app, drawn as an SF Symbol, whose Open item opens the window with that id.
-    package init(app: String, symbol: String, window: String) {
+    /// The item for an app, drawn as an SF Symbol, and the card it drops.
+    package init(app: String, symbol: String, @ViewBuilder card: @escaping () -> Card) {
         self.app = app
         self.symbol = symbol
-        self.window = window
+        self.card = card
     }
 
     package var body: some Scene {
         MenuBarExtra {
-            MenuBarMenu(app: app, window: window)
+            card()
         } label: {
             // Named for the app, so VoiceOver says the app, not what the symbol shows.
             Image(systemName: symbol).accessibilityLabel(app)
         }
-    }
-}
-
-private struct MenuBarMenu: View {
-    let app: String
-    let window: String
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some View {
-        Button("Open \(app)") {
-            openWindow(id: window)
-            NSApplication.shared.activate()
-        }
-        Divider()
-        Button("Check for Updates…") { Updates.shared?.check() }
-            .disabled(Updates.shared == nil)
-        Divider()
-        Button("Quit \(app)") { NSApplication.shared.terminate(nil) }
-            .keyboardShortcut("q")
+        .menuBarExtraStyle(.window)
     }
 }

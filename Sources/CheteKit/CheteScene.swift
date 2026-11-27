@@ -22,7 +22,7 @@ public struct CheteScene: Scene {
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         .commands { UpdateCommands() }
-        MenuBarItem(app: "Chete", symbol: "list.clipboard", window: "chete")
+        MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
     /// The clips the window shows. Picking one copies it, until pasting for you comes with the panel.
