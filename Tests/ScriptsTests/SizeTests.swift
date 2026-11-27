@@ -72,6 +72,13 @@ private struct Merging {
     #expect(try merging.size().hasPrefix("ok    size"))
 }
 
+/// Each rule says how many seconds it took, so that where a check's minutes go is always on its page.
+@Test func aRuleSaysItsSeconds() throws {
+    let merging = try Merging(own: 3)
+    defer { try? FileManager.default.removeItem(at: merging.folder) }
+    #expect(try merging.size().split(separator: "\n").first?.wholeMatch(of: /ok    size +\d+ s/) != nil)
+}
+
 @Test func aBranchTooLargeOfItsOwnStillFailsWhileMergingMain() throws {
     let merging = try Merging(own: 15)
     defer { try? FileManager.default.removeItem(at: merging.folder) }

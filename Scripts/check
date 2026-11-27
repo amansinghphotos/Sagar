@@ -208,17 +208,17 @@ fi
 
 failed=0
 nothing=77 # what a rule returns when it had nothing to judge, so that silence is never read as a pass
-rule() { # rule <name>: run the function of that name, print one line, show its words if it fails
+rule() { # rule <name>: run the function of that name, print one line with its seconds, show its words if it fails
     local out
-    local status=0
+    local status=0 started=$SECONDS
     out=$("$1" 2>&1) || status=$?
     if [ "$status" -eq 0 ]; then
-        printf 'ok    %s\n' "$1"
+        printf 'ok    %-9s %4d s\n' "$1" "$((SECONDS - started))"
         printf '%s\n' "$out" | sed -n 's/^note: /        /p'
     elif [ "$status" -eq "$nothing" ]; then
         printf -- '--    %s (nothing to judge here)\n' "$1"
     else
-        printf 'FAIL  %s\n' "$1"
+        printf 'FAIL  %-9s %4d s\n' "$1" "$((SECONDS - started))"
         printf '%s\n' "$out" | tail -n 40 | sed 's/^/        /'
         failed=$((failed + 1))
     fi
