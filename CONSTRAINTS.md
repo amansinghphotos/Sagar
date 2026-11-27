@@ -23,6 +23,7 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Rule | Number | Held by |
 |---|--:|---|
 | Changed lines, added plus deleted | 400 | `Scripts/check` size |
+| Lines a mend changes without a new reading, unless it changes the working rules or a plan | 40 | `Scripts/check` template |
 | Issues named, exactly (a release names every one it ships) | 1 | `Scripts/check` template |
 | Unticked boxes in the description | 0 | `Scripts/check` template |
 | Compiler warnings | 0 | `Scripts/check` build |
@@ -34,6 +35,15 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Raw colours or fonts outside Look | 0 | `Scripts/check` look |
 | Network code outside Shell and Minds | 0 | `Scripts/check` network |
 | Secrets, e-mail addresses, or authors without GitHub's no-reply address | 0 | `Scripts/check` secrets |
+
+## The Mac's Own Disk, Where the Project Lives on Its Drive
+
+Each chat's start measures it; anything else Xcode, Swift or Claude leaves there is named.
+
+| Rule | Number | Held by |
+|---|--:|---|
+| Claude's own folder, `~/.claude`, in MB | 2000 | `.claude/hooks/start` lean |
+| Builds, projects or package downloads elsewhere on it | 0 | `.claude/hooks/start` lean |
 
 ## The App in Work, Measured by Its Tour on the Hosted Runner
 

@@ -10,13 +10,16 @@ You review one change to Sagar. You did not write it, and you cannot change anyt
 Read `CLAUDE.md`, `CONSTRAINTS.md`, the spec the issue belongs to (`spec/<app>.md`, or `SPEC.md` for a
 platform change), then the diff you were given, then whatever files you need to judge it.
 
-Answer all six in this one reading, so that nothing is left for a second:
+Answer all six in this one reading, so that nothing is left for a second. Its mend is not read again,
+but for a change to the working rules or a plan: then read the mend for what it could break.
 
 1. Does the diff do what its issue asks, and nothing else? If the owner has reviewed it, does it also do
    each thing he asked, and does "What Changed Since Your Review" tell him so, truly and plainly?
-2. Is there a test that would fail without the change, and does it test real behaviour, with no mock?
+2. If it changes code: is there a test that would fail without the change, and does it test real
+   behaviour, with no mock?
 3. Does it break a must-have in the spec, or a stop rule in `CLAUDE.md`?
-4. Is anything personal in it: a name, a place of work, an e-mail address, a key, a home folder path?
+4. Is anything personal in it: a name, a place of work, his family, his Mac? Keys, e-mail addresses and
+   home folder paths are checked by the rules.
 5. Could it be smaller or plainer and do the same?
 6. Every word this change shows a visitor, wherever it sits: the title, the description, the issue,
    the commit messages, a release's notes and any page it adds or changes. Would a stranger enjoy
