@@ -345,12 +345,13 @@ change_of() { # change_of <commit>: a mark of what its branch changes, whatever 
     from=$(git merge-base origin/main "$1" 2>/dev/null) || return 1
     git diff "$from" "$1" | git patch-id --stable | cut -d' ' -f1
 }
+number() { awk -F'|' -v row="$1" '$2 ~ row { gsub(/[^0-9.]/, "", $3); print $3; exit }' CONSTRAINTS.md; }
 files_of() { # files_of <commit>: the files its branch changes, whatever main has become since
     git diff --name-only "$(git merge-base origin/main "$1")" "$1"
 }
 reviewed() { # reviewed <commit>: reads GitHub's list of a pull request's comments. True if a folded reply from the
     # agents' app says the reviewer read this change as it now stands, whatever main has become since: "read
-    # <commit>". Its one mend, the only commit since and in files the reading saw, is answered there and not read
+    # <commit>". Its one small mend, the only commit since and in files the reading saw, is answered there and not read
     # again ("answered at <commit>"), but for a change to the working rules or a plan, whose mend is read again.
     [ "${#1}" -ge 7 ] || return 1
     local mark reply read answered seen mend
@@ -369,7 +370,9 @@ reviewed() { # reviewed <commit>: reads GitHub's list of a pull request's commen
                 same "$answered" || continue
                 mend=$(git rev-list --no-merges "$answered" "^$read" ^origin/main 2>/dev/null) || continue
                 [ "$(wc -l <<<"$mend")" -eq 1 ] && [ -n "$mend" ] || continue
-                git diff-tree --no-commit-id --name-only -r "$mend" | grep -qvxF -- "$seen" || return 0
+                git diff-tree --no-commit-id --name-only -r "$mend" | grep -qvxF -- "$seen" && continue
+                [ "$(git diff-tree --no-commit-id --numstat -r "$mend" | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')" \
+                    -le "$(number 'Lines a mend changes' || true)" ] 2>/dev/null && return 0
             done
         done
     done < <(jq -r '.[] | select(.user.login == "sagar-agent[bot]" and (.body | contains("<details"))) |
@@ -377,7 +380,6 @@ reviewed() { # reviewed <commit>: reads GitHub's list of a pull request's commen
     return 1
 }
 [ "${1:-}" != reviewed ] || { reviewed "${2:-}" && echo yes || echo no; exit; }
-number() { awk -F'|' -v row="$1" '$2 ~ row { gsub(/[^0-9.]/, "", $3); print $3; exit }' CONSTRAINTS.md; }
 search() { # search <pattern> <allowed folders pattern>: lines in Apps and Sources outside those folders
     grep -rnE --include='*.swift' "$1" Apps Sources 2>/dev/null | grep -vE "^($2)" || true
 }

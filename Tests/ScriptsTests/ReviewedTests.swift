@@ -54,6 +54,8 @@ private struct Branch {
             at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
         try git("init", "-q", "-b", "main")
+        try write(
+            "| Rule | Number |\n|---|--:|\n| Lines a mend changes without a new reading | 40 |\n", to: "CONSTRAINTS.md")
         try write("one", to: "kept.txt")
         try commit("The first page")
         try git("update-ref", "refs/remotes/origin/main", "HEAD")
@@ -188,6 +190,15 @@ func theOneMendCountsAsTheRepliesSaidIt(reply: String) throws {
     var branch = try Branch()
     defer { try? FileManager.default.removeItem(at: branch.folder) }
     let mend = try branch.mend("a new page", to: "new.txt")
+    let reply = "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(mend.prefix(7))</summary>"
+    #expect(try branch.countsAsRead(reply) == "no")
+}
+
+/// A mend larger than the number allows is a change to the change, however few files it touches.
+@Test func aLargeMendInAFileTheReadingSawNeedsANewReading() throws {
+    var branch = try Branch()
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend((1...41).map { "line \($0)\n" }.joined())
     let reply = "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(mend.prefix(7))</summary>"
     #expect(try branch.countsAsRead(reply) == "no")
 }
