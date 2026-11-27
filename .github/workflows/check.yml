@@ -1,0 +1,43 @@
+# The check of the code. It runs every rule but the request's own words on a clean Mac: once for each
+# change to a pull request's code, and once for main as it stands after each merge. Editing a request's
+# words or its label starts words.yml instead, which takes seconds.
+name: check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Use the same Xcode as the owner's Mac
+        run: sudo xcode-select --switch /Applications/Xcode_27.2.app
+      - name: Every rule
+        run: Scripts/check
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Keep the pictures and the tour's record
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pictures-and-tour
+          path: |
+            .build/Tour.xcresult
+            .build/Pictures
+          if-no-files-found: ignore

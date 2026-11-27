@@ -1,0 +1,35 @@
+#!/bin/bash
+# One app, built and signed the way it ships. Usage: Scripts/build <App> [version]
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+app=${1:?Usage: Scripts/build <App> [version]}
+version=${2:-0}
+number=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y%m%d%H%M)
+out=.build/Release/$app
+
+rm -rf "$out"
+mkdir -p "$out"
+quietly() { "$@" >>"$out/build.log" 2>&1 || { tail -n 30 "$out/build.log"; exit 1; }; }
+quietly xcodebuild -project Sagar.xcodeproj -scheme "$app" -derivedDataPath .build/Xcode \
+    -destination generic/platform=macOS -archivePath "$out/$app.xcarchive" archive \
+    MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$number"
+quietly xcodebuild -exportArchive -archivePath "$out/$app.xcarchive" \
+    -exportOptionsPlist Config/Export.plist -exportPath "$out"
+
+# Check that the signature holds through every nested part, with the hardened runtime and a timestamp.
+codesign --verify --deep --strict "$out/$app.app" || { echo "The signature does not verify."; exit 1; }
+details=$(codesign --display --verbose=2 "$out/$app.app" 2>&1)
+for proof in 'Authority=Developer ID Application' 'flags=.*runtime' '^Timestamp='; do
+    grep -q "$proof" <<<"$details" || { echo "Not signed as it must be: no $proof."; exit 1; }
+done
+
+# The update key this Mac signs with must be the one the app trusts, or no installed copy could ever update.
+tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
+trusted=$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$out/$app.app/Contents/Info.plist" 2>/dev/null || true)
+if [ -n "$trusted" ]; then
+    [ "$("$tools/generate_keys" -p 2>/dev/null | tail -1)" = "$trusted" ] ||
+        { echo "This Mac's update key is not the one $app trusts."; exit 1; }
+fi
+
+echo "signed    $out/$app.app, version $version ($number)"

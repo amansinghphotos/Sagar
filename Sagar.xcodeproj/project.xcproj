@@ -1,0 +1,41 @@
+{
+  "default-configuration": "Release",
+  "configurations": [
+    { "name": "Release", "file": "Config/Shared.xcconfig" },
+  ],
+  "localizations": { "development": "en" },
+  "packages": [
+    { "kind": "local", "path": "." },
+  ],
+  "files": [
+    { "kind": "group", "path": "Config", "children": [ { "path": "Shared.xcconfig" } ] },
+    {
+      "kind": "group",
+      "path": "Tests",
+      "children": [
+        {
+          "kind": "group",
+          "path": "UpdateTour",
+          "children": [ { "path": "UpdateTour.swift", "target-membership": [ "UpdateTour/compile-sources" ] } ],
+        },
+      ],
+    },
+    {
+      "kind": "group",
+      "name": "Products",
+      "children": [
+        { "path": "<PRODUCTS>/UpdateTour.xctest" },
+      ],
+    },
+  ],
+  "targets": [
+    {
+      "name": "UpdateTour",
+      "id": "0000000000000000000000FF",
+      "product": "Products/UpdateTour.xctest",
+      "product-type": "bundle.ui-testing",
+      "build-phases": [ "compile-sources", "frameworks", "resources" ],
+      "build-settings": { "INFOPLIST_FILE": "", "SWIFT_DEFAULT_ACTOR_ISOLATION": "nonisolated" },
+    },
+  ],
+}

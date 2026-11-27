@@ -1,0 +1,402 @@
+#!/bin/bash
+# Every rule, as one command. Run before each commit, and by GitHub on each pull request.
+# The numbers come from CONSTRAINTS.md. GitHub also sets PR_NUMBER and PR_BRANCH.
+set -u
+cd "$(dirname "$0")/.." || exit 1
+# Anything else on the command line is a mistake, and must never fall through to running every rule.
+case ${1:-} in "" | request | words | apps | plain | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [request | ready <number> | words <file>… | apps <file>… | plain < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+    exit 2 ;;
+esac
+export LC_ALL=C
+
+if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
+    set -e
+    request=${2:?Scripts/check ready <number>}
+    repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+    branch=$(gh pr view "$request" --json headRefName --jq .headRefName)
+    head=$(gh pr view "$request" --json headRefOid --jq .headRefOid)
+    # Two checks count. The code's ran on the newest commit. The words' ran after the description last changed.
+    edited=$(gh api graphql -F owner="${repository%/*}" -F name="${repository#*/}" -F number="$request" -f query='
+        query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
+            pullRequest(number: $number) { createdAt lastEditedAt } } }' \
+        --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt] | map(select(. != null)) | max')
+    passed() { # passed <check> <since>: its newest run on the newest commit, started no earlier than <since>, passed
+        local run=""
+        for _ in $(seq 30); do
+            run=$(gh run list --workflow "$1" --branch "$branch" --limit 10 --json databaseId,createdAt,headSha \
+                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty")
+            [ -z "$run" ] || break
+            sleep 10
+        done
+        [ -n "$run" ] || { echo "No $1 has run on the newest commit of #$request since its last change. Nobody was asked."; exit 1; }
+        gh run watch "$run" --exit-status >/dev/null 2>&1 || { echo "The $1 on #$request failed. Nobody was asked."; exit 1; }
+    }
+    passed check ""
+    passed words "$edited"
+    gh pr ready "$request" >/dev/null 2>&1
+    gh pr merge "$request" --auto --squash >/dev/null
+    # If the owner answered before, he is asked again: GitHub does not do that by itself.
+    owner=${repository%/*}
+    if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
+        gh pr edit "$request" --add-reviewer "$owner" >/dev/null
+    fi
+    echo "ready     #$request passed both checks on its newest commit, and merges once whoever must answer has"
+    exit
+fi
+
+failed=0
+nothing=77 # what a rule returns when it had nothing to judge, so that silence is never read as a pass
+rule() { # rule <name>: run the function of that name, print one line, show its words if it fails
+    local out
+    local status=0
+    out=$("$1" 2>&1) || status=$?
+    if [ "$status" -eq 0 ]; then
+        printf 'ok    %s\n' "$1"
+        printf '%s\n' "$out" | sed -n 's/^note: /        /p'
+    elif [ "$status" -eq "$nothing" ]; then
+        printf -- '--    %s (nothing to judge here)\n' "$1"
+    else
+        printf 'FAIL  %s\n' "$1"
+        printf '%s\n' "$out" | tail -n 40 | sed 's/^/        /'
+        failed=$((failed + 1))
+    fi
+}
+
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+now=$(tr -d '[:space:]' <NOW)
+base=$(git merge-base origin/main HEAD 2>/dev/null || true)
+[ -n "$base" ] || [ -z "${CI:-}" ] || { echo "origin/main is missing, so the pull request cannot be judged."; exit 1; }
+branch=${PR_BRANCH:-$(git branch --show-current)}
+changed() { # changed [filter]: files this branch adds, changes or removes; a moved file counts on both sides
+    [ -z "$base" ] || git -c core.quotePath=false diff --no-renames --name-only ${1:+--diff-filter=$1} "$base"
+}
+words_only() { # true when the branch changes only words: documents, specs, feeds, GitHub's templates.
+    # CONSTRAINTS.md is not words: the tour reads its numbers. Nor is a file inside Apps, Sources or Tests.
+    [ -n "$base" ] && [ -n "$(changed)" ] && ! changed | grep -qx 'CONSTRAINTS.md' &&
+        ! changed | grep -qvE '^(docs|spec|Checklists|Decisions)/|^[^/]+\.md$|^\.github/(ISSUE_TEMPLATE/|rulesets/|CODEOWNERS$|pull_request_template\.md$)'
+}
+if [ "${1:-}" = words ]; then # Scripts/check words <file>…: says whether a change to these files is words only
+    shift
+    base=given
+    files=("$@")
+    changed() { printf '%s\n' "${files[@]}"; }
+    words_only && echo yes || echo no
+    exit
+fi
+by_xcode_alone() { # true when the branch touches what only the app build compiles: an app's own files, the
+    # settings, the project, the package. Everything else is compiled by the tests on this Mac already.
+    changed | grep -qE '^(Apps|Config|Sagar\.xcodeproj)/|^Package\.(swift|resolved)$'
+}
+if [ "${1:-}" = apps ]; then # Scripts/check apps <file>…: says whether a change to these files builds the apps here
+    shift
+    files=("$@")
+    changed() { printf '%s\n' "${files[@]}"; }
+    by_xcode_alone && echo yes || echo no
+    exit
+fi
+# What must never be shown to a visitor, in a file or in a request's own words.
+key='-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-ant-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}'
+mail='[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[a-z]{2,}'
+home='/Users/[a-z]'
+allowed='@users\.noreply\.github\.com$|@example\.(com|org)$|@[0-9]x\.[a-z]+$'
+plain_words() { # reads a pull request's description: true if it opens with the four answers for the owner,
+    # and holds no key, e-mail address or home folder path anywhere
+    local whole part label
+    whole=$(tr -d '\r')
+    ! printf '%s\n' "$whole" | grep -oE -- "$key|$mail|$home" | grep -qvE "$allowed" || return 1
+    part=$(printf '%s\n' "$whole" | awk '/^## For the Owner/ { on = 1; next } /^## |^<details/ { on = 0 } on' |
+        awk '/<!--/ { hidden = 1 } !hidden; /-->/ { hidden = 0 }' | grep -v '^[[:space:]]*$')
+    for label in 'What This Does:' 'Why:' 'Does It Change Your Apps?' 'What to Do:'; do # each asked, each answered
+        printf '%s\n' "$part" | awk -v label="**$label**" 'at = index($0, label) {
+            if (substr($0, at + length(label)) ~ /[^[:space:]]/) answered = 1 } END { exit !answered }' || return 1
+    done
+    ! printf '%s\n' "$part" |
+        grep -qE '`|(Sources|Scripts|Tests|Apps|docs|Config|spec|Checklists|Decisions|\.github|\.claude)/|\.(swift|md|yml|xml|json|xcconfig|plist)\b'
+}
+[ "${1:-}" != plain ] || { plain_words && echo yes || echo no; exit; }
+title_case() { # Apple's title style: the first word, and every word of four letters or more, has a capital
+    printf '%s\n' "$1" | tr -- '-' ' ' | awk '{
+        for (word = 1; word <= NF; word++) {
+            plain = $word
+            sub(/^[^A-Za-z0-9]+/, "", plain)
+            if ((word == 1 || length(plain) > 3) && plain ~ /^[a-z]/ && plain !~ /[A-Z]/) exit 1
+        } }
+        END { if (NR == 0 || NF == 0) exit 1 }'
+}
+[ "${1:-}" != title ] || { title_case "${2:-}" && echo yes || echo no; exit; }
+fastest_launch() { # reads a tour's record of its launches; prints the fastest and is true if that is within the limit
+    # On a shared Mac a busy moment can only add time, so the fastest of the launches is the truest.
+    local fastest
+    fastest=$(jq '[.[].testRuns[].metrics[] | select(.identifier | test("ApplicationLaunch")) | .measurements[]] | min')
+    printf '%s\n' "$fastest"
+    awk -v fastest="$fastest" -v most="$1" 'BEGIN { exit !(fastest > 0 && fastest <= most) }'
+}
+if [ "${1:-}" = launch ]; then
+    fastest=$(fastest_launch "${2:-0}") && echo "yes $fastest" || echo "no $fastest"
+    exit
+fi
+change_of() { # change_of <commit>: a mark of what its branch changes, whatever main has become since
+    local from
+    from=$(git merge-base origin/main "$1" 2>/dev/null) || return 1
+    git diff "$from" "$1" | git patch-id --stable | cut -d' ' -f1
+}
+reviewed() { # reviewed <commit>: reads GitHub's list of a pull request's comments. True if the agents' app posted
+    # a folded reply that names that commit, or one since which the change itself is the same: bringing a branch
+    # up to date, or editing a request's words, asks for no second reading.
+    [ "${#1}" -ge 7 ] || return 1
+    local named commit mark
+    named=$(jq -r '.[] | select(.user.login == "sagar-agent[bot]" and (.body | contains("<details"))) | .body' |
+        grep -oE '\b[0-9a-f]{7,40}\b' | sort -u)
+    ! grep -q "^${1:0:7}" <<<"$named" || return 0
+    mark=$(change_of "$1") && [ -n "$mark" ] || return 1
+    for commit in $named; do
+        git cat-file -e "$commit^{commit}" 2>/dev/null && [ "$(change_of "$commit")" = "$mark" ] && return 0
+    done
+    return 1
+}
+[ "${1:-}" != reviewed ] || { reviewed "${2:-}" && echo yes || echo no; exit; }
+number() { awk -F'|' -v row="$1" '$2 ~ row { gsub(/[^0-9.]/, "", $3); print $3; exit }' CONSTRAINTS.md; }
+search() { # search <pattern> <allowed folders pattern>: lines in Apps and Sources outside those folders
+    grep -rnE --include='*.swift' "$1" Apps Sources 2>/dev/null | grep -vE "^($2)" || true
+}
+
+size() {
+    [ -n "$base" ] || return $nothing
+    local most total
+    most=$(number 'Changed lines')
+    total=$(git diff --numstat "$base" | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
+    [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
+}
+
+scope() {
+    [ -n "$base" ] || return $nothing
+    local bad=0 file app
+    while IFS= read -r file; do
+        case $file in
+            Apps/*/*) app=${file#Apps/} app=${app%%/*} ;;
+            Sources/*Kit/* | Tests/*KitTests/*) app=${file#*/} app=${app%%Kit*} ;;
+            Config/Shared.xcconfig) continue ;;
+            Config/*.xcconfig) app=${file#Config/} app=${app%.xcconfig} ;;
+            docs/*/appcast.xml) app=${file#docs/} app=${app%%/*} ;;
+            *) continue ;;
+        esac
+        [ "$(lower "$app")" = "$(lower "$now")" ] || { echo "$file belongs to $app; NOW names $now."; bad=1; }
+    done < <(changed)
+    return $bad
+}
+
+lock() {
+    [ -n "$base" ] || return $nothing
+    local feeds waiting other
+    feeds=$(changed M | grep -E '^docs/.*/appcast\.xml$' || true)
+    if [ -n "$feeds" ] && [[ $branch != release/* ]]; then
+        echo "Only a release/<app>-<version> branch may change a feed: $feeds"
+        return 1
+    fi
+    other=$(changed | grep -vE '^docs/(.*/appcast\.xml|index\.html)$' || true)
+    if [[ $branch == release/* ]] && [ -n "$other" ]; then
+        echo "A release branch changes only its feed and the page, not: $other"
+        return 1
+    fi
+    changed | grep -qE '^(Apps|Sources|Tests)/' || return 0
+    if ! waiting=$(gh pr list --state open --json headRefName --jq '.[].headRefName' 2>&1); then
+        [ -n "${CI:-}" ] || return $nothing
+        echo "Could not ask GitHub which releases are waiting: $waiting"
+        return 1
+    fi
+    waiting=$(printf '%s\n' "$waiting" | grep -i "^release/$now-" | grep -vFx "$branch" || true)
+    [ -z "$waiting" ] || { echo "$now is locked: $waiting is waiting on the owner."; return 1; }
+}
+
+template() {
+    [ -n "${PR_NUMBER:-}" ] || return $nothing
+    local bad=0 closes line issue PR_BODY title head
+    PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq .body) || { echo "Could not read the description."; return 1; }
+    title=$(gh pr view "$PR_NUMBER" --json title --jq .title)
+    if changed | grep -qE '^(Scripts|\.github|\.claude|\.githooks|Checklists|Decisions|Tests/(UpdateTour|Pictures|ScriptsTests))/|^(SPEC|CLAUDE|CONSTRAINTS)\.md$|^\.(swift-format|gitattributes|gitignore)$'; then
+        gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' | grep -qx rules ||
+            { echo "This changes the working rules, so it needs the label: gh pr edit $PR_NUMBER --add-label rules"; bad=1; }
+    fi
+    title_case "$title" || { echo "The title is not in Title Case: $title"; bad=1; }
+    closes=$(printf '%s\n' "$PR_BODY" | grep -oiE '\b(for|close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' |
+        grep -oE '[0-9]+$' | sort -u | wc -l)
+    [[ $branch == release/* ]] || [ "$closes" -eq 1 ] ||
+        { echo "The description must name exactly one issue: Closes #<number>, or For #<number> if it is in a milestone."; bad=1; }
+    printf '%s\n' "$PR_BODY" | plain_words ||
+        { echo "The description must open with '## For the Owner' and its four answers, with no code or file names,"
+          echo "and hold no key, e-mail address or home folder path anywhere."; bad=1; }
+    issue=$(printf '%s\n' "$PR_BODY" | grep -oiE '\b(for|close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' | grep -oE '[0-9]+$' | head -1)
+    # A to-do in a milestone stays open until the owner approves the release that holds its fix.
+    if [[ $branch != release/* ]]; then
+        local milestone closing=no
+        milestone=$(gh issue view "${issue:-0}" --json milestone --jq '.milestone.title // ""') ||
+            { echo "Could not read issue #${issue:-?}."; bad=1; }
+        ! printf '%s\n' "$PR_BODY" | grep -qiE '\b(close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' || closing=yes
+        if [ -n "$milestone" ] && [ "$closing" = yes ]; then
+            echo "Issue #$issue is in a milestone, so its release closes it: write For #$issue, not Closes."
+            bad=1
+        elif [ -z "$milestone" ] && [ "$closing" = no ]; then
+            echo "Issue #$issue is in no milestone, so nothing else will close it: write Closes #$issue."
+            bad=1
+        fi
+    fi
+    [ "$(gh issue view "${issue:-0}" --json state --jq .state 2>/dev/null)" = OPEN ] ||
+        { echo "Issue #${issue:-?} is not an open issue here."; bad=1; }
+    title_case "$(gh issue view "${issue:-0}" --json title --jq .title 2>/dev/null)" ||
+        { echo "Issue #${issue:-?}'s title is not in Title Case."; bad=1; }
+    while IFS= read -r line; do
+        printf '%s\n' "$PR_BODY" | tr -d '\r' | grep -qiFx -- "- [x] ${line#- \[ \] }" ||
+            { echo "Not ticked: ${line#- \[ \] }"; bad=1; }
+    done < <(grep -E '^- \[ \] ' .github/pull_request_template.md)
+    # The box for the reviewer is not taken on trust: its reply must be here, and be about the change as it stands.
+    head=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
+    gh api "repos/{owner}/{repo}/issues/$PR_NUMBER/comments?per_page=100" | reviewed "$head" || {
+        echo "The reviewer has not read this change as it now stands. Post its reply as a comment, folded in"
+        echo "<details>, that names ${head:0:7}, then edit the description, which runs the words check again."
+        bad=1
+    }
+    return $bad
+}
+
+budget() {
+    local bad=0 dir module most lines file
+    for dir in Sources/*/; do
+        [ -d "$dir" ] || continue
+        module=$(basename "$dir")
+        most=$(number "^ *$module *\$")
+        lines=$(find "$dir" -name '*.swift' -exec cat {} + | wc -l | tr -d ' ')
+        if [ -z "$most" ]; then
+            echo "$module has no line budget in CONSTRAINTS.md."
+            bad=1
+        elif [ "$lines" -gt "$most" ]; then
+            echo "$module is $lines lines; its budget is $most."
+            bad=1
+        fi
+    done
+    most=$(number 'Main.swift')
+    for file in Apps/*/*.swift; do
+        [ -f "$file" ] || continue
+        lines=$(wc -l <"$file" | tr -d ' ')
+        case $file in
+            */Tour.swift) ;;
+            */Main.swift) [ "$lines" -le "$most" ] || { echo "$file is $lines lines; at most $most."; bad=1; } ;;
+            *) echo "$file: an app holds only Main.swift and Tour.swift; the rest belongs in its Kit."; bad=1 ;;
+        esac
+    done
+    return $bad
+}
+
+imports() {
+    local found
+    found=$(search '\bimport +((class|struct|enum|protocol|func|var|let|typealias) +)?(AppKit|Cocoa|Carbon)\b' \
+        'Sources/(Shell|Taps)/|Sources/[A-Za-z]+Kit/Mac/')
+    [ -z "$found" ] || { echo "AppKit belongs only in Shell, Taps and a Kit's Mac folder:"; echo "$found"; return 1; }
+}
+
+look() {
+    local found
+    found=$(search '\b(NS|UI)?(Color|Font)\b|#colorLiteral|\.font\(|\.(foreground(Style|Color)|tint|background|fill|stroke|border)\(\.[a-z]' \
+        'Sources/Look/|Apps/[A-Za-z]+/Tour\.swift')
+    [ -z "$found" ] || { echo "A colour or font named outside Look, which gives screens their roles:"; echo "$found"; return 1; }
+}
+
+network() {
+    local found
+    found=$(search '\bURLSession\b|\bURLRequest\b|\bAsyncImage\b|\bNW(Connection|Listener|Browser)\b|import +(Network|Sparkle|WebKit|CFNetwork)\b' \
+        'Sources/(Shell|Minds)/')
+    [ -z "$found" ] || { echo "Network code belongs only in Shell and Minds:"; echo "$found"; return 1; }
+}
+
+secrets() {
+    local bad=0 found
+    found=$(git ls-files -co --exclude-standard -z | xargs -0 grep -nIE -- '^(<{7}|>{7}) |^={7}$' 2>/dev/null | cut -c1-120 || true)
+    [ -z "$found" ] || { echo "A merge was left unfinished:"; echo "$found"; bad=1; }
+    found=$(git ls-files -co --exclude-standard -z | xargs -0 grep -nIoE -- "$key|$mail|$home" 2>/dev/null |
+        grep -vE "$allowed" || true)
+    [ -z "$found" ] || { echo "A key, an e-mail address or a home folder path:"; echo "$found"; bad=1; }
+    if [ -n "$base" ]; then
+        found=$(git log --no-merges --format='%ae%n%ce' "$base"..HEAD | sort -u |
+            grep -vE '@users\.noreply\.github\.com$|^noreply@github\.com$' || true)
+        [ -z "$found" ] || { echo "A commit without GitHub's no-reply address: $found"; bad=1; }
+    fi
+    return $bad
+}
+
+format() {
+    local folders=()
+    for folder in Apps Sources Tests; do [ -d "$folder" ] && folders+=("$folder"); done
+    swift format lint --strict --recursive ${folders[@]+"${folders[@]}"} Package.swift
+}
+
+build() {
+    [ -d Sources ] || [ -d Tests ] || return $nothing
+    ! words_only || return $nothing
+    local app
+    compile swift build --build-tests || return 1
+    for app in Apps/*/; do
+        [ -d "$app" ] || continue
+        # GitHub's Mac builds every app. This Mac does only when the change touches what nothing else here compiles.
+        [ -n "${CI:-}" ] || by_xcode_alone || { echo "note: the apps are built on GitHub's Mac"; break; }
+        compile xcodebuild -project Sagar.xcodeproj -scheme "$(basename "$app")" -derivedDataPath .build/Xcode \
+            -quiet build CODE_SIGNING_ALLOWED=NO || return 1
+    done
+}
+
+compile() { # run a build; any warning or error fails it, and only those lines are shown
+    local log status problems
+    log=$("$@" 2>&1)
+    status=$?
+    problems=$(printf '%s\n' "$log" | sed $'s/\x1b\\[[0-9;]*m//g' | grep -E '^[^ ].*: (error|warning): ' | cut -c 1-300 | sort -u)
+    [ -z "$problems" ] || { echo "$problems"; return 1; }
+    [ "$status" -eq 0 ] || { printf '%s\n' "$log" | tail -n 15 | cut -c 1-300; return 1; }
+}
+
+tests() {
+    [ -d Tests ] || return $nothing
+    ! words_only || return $nothing
+    swift test --quiet 2>&1
+}
+
+tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
+    [ -n "${CI:-}" ] && [ -f "Apps/$now/Tour.swift" ] || return $nothing
+    ! words_only || return $nothing
+    local log launch before after
+    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${now}Tour" -derivedDataPath .build/Xcode \
+        -resultBundlePath .build/Tour.xcresult test \
+        CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) || {
+        xcrun xcresulttool get test-results summary --path .build/Tour.xcresult |
+            jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
+        return 1
+    }
+
+    # Launch, by Apple's own launch metric, which the tour must take.
+    launch=$(xcrun xcresulttool get test-results metrics --path .build/Tour.xcresult |
+        fastest_launch "$(number 'Launch to first frame')") ||
+        { echo "The tour's fastest launch was $launch s."; return 1; }
+    echo "note: fastest of its launches $launch s"
+
+    # At rest: opened hidden, left alone, and measured from outside.
+    used() {
+        ps -xo cputime=,comm= | awk -v app="/$now.app/Contents/MacOS/$now" \
+            'index($0, app) { split($1, part, ":"); print part[1] * 60 + part[2] }'
+    }
+    open -g -j ".build/Xcode/Build/Products/Release/$now.app" && sleep 5
+    before=$(used) && sleep 10 && after=$(used)
+    pkill -f "/$now.app/Contents/MacOS/$now"
+    [ -n "$before" ] && [ -n "$after" ] || { echo "$now did not stay open."; return 1; }
+    awk -v before="$before" -v after="$after" -v most="$(number 'Processor time while')" 'BEGIN {
+        percent = (after - before) * 10
+        printf "note: hidden for 10 s it used %.1f%% of a processor\n", percent
+        exit !(percent <= most)
+    }'
+}
+
+# A request's words and label are judged by themselves, in seconds, whenever they change. Everything
+# else is judged once for each change to the code.
+[ "${1:-}" = request ] && rules="template" || rules="size scope lock template budget imports look network secrets format build tests tour"
+for name in $rules; do
+    rule "$name"
+done
+[ "$failed" -eq 0 ] && echo "All rules hold." || echo "$failed rules failed."
+exit "$((failed > 0))"

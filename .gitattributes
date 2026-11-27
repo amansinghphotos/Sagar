@@ -1,0 +1,2 @@
+# A signed feed must reach people byte for byte as it was signed.
+docs/**/appcast.xml -text

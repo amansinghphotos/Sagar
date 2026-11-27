@@ -1,0 +1,24 @@
+# The owner approves his decisions, and only those. Everything else merges once GitHub's check is
+# green and the reviewer is answered; a change to the working rules carries the label "rules".
+
+# What an app must do, and which app is in work.
+/spec/                    @amansinghphotos
+/NOW                      @amansinghphotos
+
+# How a screen looks, and an app's icon.
+/Tests/*/Pictures/        @amansinghphotos
+/Sources/Look/Tokens*     @amansinghphotos
+*.xcassets/               @amansinghphotos
+
+# Each release, and everything people are served: the download page, the feeds, the address.
+/docs/                    @amansinghphotos
+
+# Money, keys and outside dependencies: signing, the update key, a new package, a new permission.
+/Config/                  @amansinghphotos
+/Package.swift            @amansinghphotos
+Package.resolved          @amansinghphotos
+/Sagar.xcodeproj/         @amansinghphotos
+*.entitlements            @amansinghphotos
+
+# This list itself.
+/.github/CODEOWNERS       @amansinghphotos

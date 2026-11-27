@@ -1,0 +1,14 @@
+#!/bin/bash
+# Runs before every shell command an agent makes. Nobody is asked about a pull request before it is
+# ready: it is opened as a draft, and only Scripts/check ready, which waits for the check, marks it ready.
+# Each command on the line is judged on its own, so one good command cannot cover for another.
+jq -r '.tool_input.command // ""' | tr ';&|\n' '\n\n\n\n' | while IFS= read -r part; do
+    if grep -qE '(^|[^[:alnum:]])gh +pr +create' <<<"$part" && ! grep -q -- '--draft' <<<"$part"; then
+        echo "Open it as a draft: gh pr create --draft …" >&2
+        exit 2
+    fi
+    if grep -qE '(^|[^[:alnum:]])gh +pr +ready' <<<"$part" && ! grep -q -- '--undo' <<<"$part"; then
+        echo "Do not mark it ready by hand: Scripts/check ready <number> does it once the check has passed." >&2
+        exit 2
+    fi
+done

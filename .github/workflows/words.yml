@@ -1,0 +1,32 @@
+# The check of a request's words: its title, its four answers, its issue, its label, its ticked boxes
+# and the reviewer's reply. It builds nothing, so it takes seconds, and it runs again whenever the
+# description or a label changes. The code is checked by check.yml, once.
+name: words
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: words-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  words:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The rules about a request's words
+        run: Scripts/check request
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.head_ref }}
+          GH_TOKEN: ${{ github.token }}

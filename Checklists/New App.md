@@ -1,0 +1,14 @@
+# A New App
+
+- [ ] One pull request, approved by the owner, holds every line below but the last.
+- [ ] `spec/<app>.md`: what it is for, its must-haves, what it needs from the network, out of scope.
+- [ ] Its name, and its identifier `com.amansingh.<app>`, which never changes after the first release.
+- [ ] Each permission it will ask for, beside the must-have that needs it.
+- [ ] Its must-haves include the first open on a new Mac: earlier work, permissions, the Claude key.
+- [ ] Its offline line: "works offline", or exactly what it fetches and why.
+- [ ] `NOW` names it. The previous app has no open slice and no release waiting.
+- [ ] `CONSTRAINTS.md` has a line budget for `<App>Kit`.
+- [ ] `Config/<App>.xcconfig`, its two targets in `Sagar.xcodeproj`, its targets in `Package.swift`.
+- [ ] The empty app builds and its tour passes: one window, one test, `Scripts/check` green.
+- [ ] `docs/<app>/appcast.xml`, with no release in it, and its entry on the page, `docs/index.html`.
+- [ ] After it merges: a milestone `<App> 1.0` with one issue per slice, each naming its must-have.

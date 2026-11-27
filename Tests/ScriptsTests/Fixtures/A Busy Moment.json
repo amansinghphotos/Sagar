@@ -1,0 +1,37 @@
+[
+  {
+    "testIdentifier" : "Tour/testItLaunchesQuickly()",
+    "testIdentifierURL" : "test://com.apple.xcode/Sagar/BoloTour/Tour/testItLaunchesQuickly",
+    "testRuns" : [
+      {
+        "device" : {
+          "deviceId" : "cfeae5b900ee3df80df915dabad1652f6cb36814",
+          "deviceName" : "My Mac"
+        },
+        "metrics" : [
+          {
+            "baselineAverage" : 0,
+            "baselineName" : "",
+            "displayName" : "Duration (ApplicationLaunch)",
+            "identifier" : "com.apple.dt.XCTMetric_ApplicationLaunch-ApplicationLaunch.duration",
+            "maxPercentRegression" : 10,
+            "maxPercentRelativeStandardDeviation" : 10,
+            "maxRegression" : 0,
+            "maxStandardDeviation" : 10,
+            "measurements" : [
+              2.078599417,
+              2.951324458,
+              1.234094292
+            ],
+            "polarity" : "prefers smaller",
+            "unitOfMeasurement" : "s"
+          }
+        ],
+        "testPlanConfiguration" : {
+          "configurationId" : "1",
+          "configurationName" : "Test Scheme Action"
+        }
+      }
+    ]
+  }
+]

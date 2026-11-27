@@ -1,0 +1,104 @@
+#!/bin/bash
+# Runs when a session starts: prints where things stand and the Start checklist, and gives the session
+# the agents' GitHub identity. Two more uses, both plain shell that any tool can call:
+#   .claude/hooks/start token               prints a fresh GitHub token for the agents' app
+#   .claude/hooks/start setup [key file]    a new Mac: stores the app's key, points git at it
+set -u
+here=$(cd "$(dirname "$0")/../.." && pwd)
+cd "$here" || exit 0
+
+# The agents' GitHub App. None of this is secret; the key is in the login keychain.
+client=Iv23liG69KshMKWCxVzO
+author='361690794+sagar-agent[bot]'
+
+token() {
+    local cache=${TMPDIR:-/tmp}/sagar-agent-token key now head body signature where installation fresh
+    if [ -n "$(find "$cache" -mmin -30 -size +0 2>/dev/null)" ]; then cat "$cache"; return; fi
+    key=$(security find-generic-password -s Sagar.Agent -a key -w 2>/dev/null | base64 -d) && [ -n "$key" ] || return 1
+    encode() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+    now=$(date +%s)
+    head=$(printf '{"alg":"RS256","typ":"JWT"}' | encode)
+    body=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 300)) "$client" | encode)
+    signature=$(printf '%s.%s' "$head" "$body" | openssl dgst -sha256 -sign <(printf '%s\n' "$key") | encode)
+    # Where the app is installed is asked, never written down: GitHub gives a new number each time.
+    where=$(git -C "$here" remote get-url origin 2>/dev/null | sed -E 's|^.*github\.com[:/]||; s|\.git$||')
+    installation=$(curl -fsS -H "Authorization: Bearer $head.$body.$signature" \
+        "https://api.github.com/repos/$where/installation" 2>/dev/null | jq -er .id) || return 1
+    fresh=$(curl -fsS -X POST -H "Authorization: Bearer $head.$body.$signature" \
+        "https://api.github.com/app/installations/$installation/access_tokens" | jq -er .token) && [ -n "$fresh" ] || return 1
+    (umask 077 && printf '%s\n' "$fresh" >"$cache")
+    printf '%s\n' "$fresh"
+}
+
+answers() { # answers <owner>: reads GitHub's reply about the open pull requests, prints where each one stands.
+    # The repository is public, so anyone may write on it: only its owner's review and words are his answer.
+    jq -r --arg owner "$1" '
+    def his: select(.author.login == $owner);
+    .[] | ([.reviews[] | his | select(.state != "COMMENTED" and .state != "PENDING")] | last) as $answer
+    | (([.statusCheckRollup[] | select(.name == "check")] | last | .conclusion) == "SUCCESS") as $green
+    | "  #\(.number) \(.title): "
+      + (if .isDraft and $green then "Draft with a green check: run Scripts/check ready \(.number); "
+         elif .isDraft then "draft, not yet shown to anyone; "
+         elif .autoMergeRequest == null then "Ready but not set to merge: run Scripts/check ready \(.number); " else "" end) + (
+        if $answer == null then "no answer yet"
+        elif $answer.state == "APPROVED" then "approved"
+        elif $answer.state == "DISMISSED" then "His approval was undone by a later push: Scripts/check ready \(.number) asks him again"
+        elif .headRefName | startswith("release/") then
+            "Changes asked for on a release: Scripts/release \(.title | ltrimstr("Release ")) withdraw, mend it, "
+            + "then the same number again; see \(.url)"
+        else "Changes asked for: see \(.url)" end),
+      (.reviews[], .comments[] | his | select(.body != "") | "      \(.author.login) wrote: \(.body)")'
+}
+
+case ${1:-} in
+    "") ;;
+    token) token; exit ;;
+    answers) answers "${2:?}"; exit ;;
+    setup)
+        [ -z "${2:-}" ] || security add-generic-password -U -s Sagar.Agent -a key -w "$(base64 -i "$2")"
+        git config core.hooksPath .githooks
+        git config user.name 'sagar-agent[bot]'
+        git config user.email "$author@users.noreply.github.com"
+        git config --replace-all credential.https://github.com.helper ''
+        git config --add credential.https://github.com.helper \
+            "!f() { test \"\$1\" = get && printf 'username=x-access-token\npassword=%s\n' \"\$('$here/.claude/hooks/start' token)\"; }; f"
+        token >/dev/null && echo "The agents' identity works." || echo "No token: is the key in the keychain?"
+        exit ;;
+    *) echo "Usage: .claude/hooks/start [token | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
+esac
+
+# With no agents' token, gh must fail, never fall back to a person's own sign-in.
+git config core.hooksPath .githooks # the commit gate, Scripts/check, is git's own hook
+git fetch -q --prune origin 2>/dev/null # then drop local branches whose pull request has merged
+for gone in $(git branch --format='%(refname:short) %(upstream:track)' | awk '$2 == "[gone]" { print $1 }'); do
+    # Only if GitHub merged exactly the commit this branch ends on: nothing unpushed can be lost.
+    merged=$(GH_TOKEN=$(token || echo no-agent-token) gh pr view "$gone" --json state,headRefOid \
+        --jq 'select(.state == "MERGED") | .headRefOid' 2>/dev/null)
+    [ "$merged" != "$(git rev-parse "$gone")" ] || git branch -q -D "$gone"
+done
+[ -z "${CLAUDE_ENV_FILE:-}" ] ||
+    echo "export GH_TOKEN=\"\$('$here/.claude/hooks/start' token || echo no-agent-token)\"" >>"$CLAUDE_ENV_FILE"
+GH_TOKEN=$(token || echo no-agent-token)
+export GH_TOKEN
+
+echo "Sagar. The app in work: $(cat NOW)"
+echo "Checkout: $(git status -sb | head -1)$(git status --porcelain | sed -n '1s/.*/, with uncommitted changes/p')"
+echo "Branches besides main: $(git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' ')"
+repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)
+owner=${repository%/*}
+echo "Open pull requests, and what the owner has answered on each. Act on his words before anything else:"
+replies=$(gh pr list --limit 100 --json number,title,url,headRefName,isDraft,autoMergeRequest,statusCheckRollup,reviews,comments) &&
+    answers "$owner" <<<"$replies" || echo "  Could not read the pull requests: look on GitHub before doing anything."
+for number in $(gh pr list --limit 100 --json number --jq '.[].number' 2>/dev/null); do # words left beside a line
+    gh api "repos/$repository/pulls/$number/comments" --jq '.[] | select(.user.login == "'"$owner"'")
+        | "      #'"$number"' \(.user.login) wrote beside \(.path): \(.body)"' 2>/dev/null
+done
+[ "$(gh run list --workflow release --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null)" != failure ] ||
+    echo "The last release run failed: read it with gh run view before anything else."
+[ "$(gh run list --workflow check --branch main --event push --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null)" != failure ] ||
+    echo "Main, as it stands, fails its check: read it with gh run view, and mend that before anything else."
+echo "Open issues, from the agents and the owner only:"
+gh issue list --limit 100 --json number,title,milestone,author --jq '.[]
+    | select(.author.login == "app/sagar-agent" or .author.login == "'"$owner"'") | "  #\(.number) \(.title) [\(.milestone.title // "no milestone")]"' 2>/dev/null
+echo
+cat Checklists/Start.md

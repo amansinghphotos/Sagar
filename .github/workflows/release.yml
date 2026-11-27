@@ -1,0 +1,40 @@
+# Runs when the owner's approval merges a release pull request, which changes an app's feed.
+# It makes the file he tried public, then proves on a clean Mac that the previous version takes it.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/*/appcast.xml"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Use the same Xcode as the owner's Mac
+        run: sudo xcode-select --switch /Applications/Xcode_27.2.app
+      - name: Publish, then watch the previous version take the update
+        run: |
+          for feed in $(git diff --name-only HEAD~1 HEAD -- 'docs/*/appcast.xml'); do
+            name=$(basename "$(dirname "$feed")")
+            app=$(ls Apps | grep -ix "$name")
+            version=$(grep -o '<sparkle:shortVersionString>[^<]*' "$feed" | head -1 | sed 's/.*>//')
+            [ -n "$version" ] || continue # a new app's feed, with no release in it yet
+            Scripts/release "$app" "$version" publish
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Keep the update's record
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: update
+          path: .build/Update.xcresult
+          if-no-files-found: ignore

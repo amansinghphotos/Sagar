@@ -1,0 +1,207 @@
+#!/bin/bash
+# One release of one app. The Release issue is its checklist.
+#   printf 'New: …\nBetter: …\nFixed: …\n' | Scripts/release <App> <version>    the try, on the owner's Mac
+#   Scripts/release <App> <version> withdraw    he reported a fault: mend it, then offer the same number again
+#   Scripts/release <App> <version> publish     run by GitHub when his approval merges the pull request
+#   Scripts/release follows <last> <next>       says whether one version may follow another
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+follows() { # follows <last> <next>: yes if <next> is the next second number, or a new first number with .0
+    awk -F. -v last="${1:-0.0}" -v want="$2" 'BEGIN {
+        split(last, was, ".")
+        print (want == was[1] "." was[2] + 1 || want == was[1] + 1 ".0") ? "yes" : "no" }'
+}
+[ "${1:-}" != follows ] || { follows "${2:-}" "${3:-}"; exit; }
+
+app=${1:?Usage: Scripts/release <App> <version> [withdraw|publish]}
+version=${2:?Usage: Scripts/release <App> <version> [withdraw|publish]}
+name=$(printf '%s' "$app" | tr '[:upper:]' '[:lower:]')
+tag=$name-$version
+branch=release/$tag
+out=.build/Release/$app
+feed=docs/$name/appcast.xml
+site=$(sed -n 's|^SAGAR_SITE = ||p' Config/Shared.xcconfig | sed 's|/\$()/|//|')
+repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+files=https://github.com/$repository/releases/download
+stop() { echo "$1"; exit 1; }
+versions() { grep -o '<sparkle:shortVersionString>[^<]*' "$feed" | sed 's/.*>//'; }
+install() { # install <disk image>: the app from the image takes the place of the one in Applications.
+    # The new copy is whole and beside the old one before they swap, so a failure never leaves no app.
+    local mount
+    mount=$(mktemp -d)
+    hdiutil attach -quiet -nobrowse -readonly -mountpoint "$mount" "$1"
+    rm -rf "/Applications/.$app.arriving.app"
+    ditto "$mount/$app.app" "/Applications/.$app.arriving.app"
+    hdiutil detach -quiet "$mount"
+    mkdir -p "$out"
+    rm -rf "$out/Replaced.app"
+    [ ! -e "/Applications/$app.app" ] || mv "/Applications/$app.app" "$out/Replaced.app"
+    mv "/Applications/.$app.arriving.app" "/Applications/$app.app"
+}
+
+case ${3:-} in
+withdraw)
+    held=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo none)
+    [ "$held" != false ] ||
+        stop "$app $version is already published and cannot be withdrawn. Mend it and release the next number."
+    gh pr close "$branch" --delete-branch --comment "Withdrawn to be mended. $app $version will be offered again." >/dev/null 2>&1 || true
+    [ "$held" != true ] || gh release delete "$tag" --yes >/dev/null # only ever a draft
+    git branch -q -D "$branch" 2>/dev/null || true
+    # His Mac goes straight back to the last version he approved, if there is one.
+    shipped=$(git ls-remote --tags origin "refs/tags/$name-*" | sed "s|.*refs/tags/$name-||" | sort -t. -k1,1n -k2,2n | tail -1)
+    here=$(defaults read "/Applications/$app.app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)
+    if [ -n "$shipped" ] && [ "$here" = "$version" ]; then # only if the withdrawn build is what his Mac has
+        mkdir -p "$out"
+        gh release download "$name-$shipped" --pattern "$app-$shipped.dmg" --output "$out/shipped.dmg" --clobber
+        install "$out/shipped.dmg"
+        echo "restored  /Applications/$app.app is $shipped again, the last version he approved"
+    fi
+    echo "withdrawn $app $version; mend it and offer the same number again"
+    exit 0
+    ;;
+publish) # On GitHub's clean Mac: make the tried file public, then be the person who has the previous version.
+    [ "$(versions | head -1)" = "$version" ] || stop "$feed does not lead with $version."
+    gh release edit "$tag" --draft=false >/dev/null
+    mkdir -p "$out"
+    for _ in $(seq 60); do # the page takes a minute or two to follow main
+        curl -fsS "$site/$name/appcast.xml" 2>/dev/null | cmp -s - "$feed" && break
+        sleep 10
+    done
+    curl -fsS "$site/$name/appcast.xml" | cmp -s - "$feed" || stop "The live feed is not the approved one."
+    curl -fsS "$site/" | grep -q "$files/$tag/$app-$version.dmg" || stop "The page does not offer $app $version."
+    curl -fsSL "$files/$tag/$app-$version.dmg" -o "$out/new.dmg"
+    spctl --assess --type open --context context:primary-signature "$out/new.dmg" || stop "Gatekeeper refuses the download."
+    previous=$(versions | sed -n 2p)
+    if [ -z "$previous" ]; then # a first release: the download opens on a clean Mac
+        install "$out/new.dmg"
+        open -g -j "/Applications/$app.app" && sleep 5
+        pkill -f "/$app.app/Contents/MacOS/$app" || stop "$app $version did not stay open."
+    else # an update: the previous download, asked for updates, takes this one
+        curl -fsSL "$files/$name-$previous/$app-$previous.dmg" -o "$out/previous.dmg"
+        install "$out/previous.dmg"
+        TEST_RUNNER_APP=$app TEST_RUNNER_IDENTIFIER=$(defaults read "/Applications/$app.app/Contents/Info" CFBundleIdentifier) \
+            xcodebuild -project Sagar.xcodeproj -scheme UpdateTour -derivedDataPath .build/Xcode \
+            -resultBundlePath .build/Update.xcresult -quiet test \
+            CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= >/dev/null 2>&1 ||
+            stop "$app $previous did not take the update: $(xcrun xcresulttool get test-results summary \
+                --path .build/Update.xcresult | jq -r '[.testFailures[].failureText] | join("; ")')"
+        took=$(defaults read "/Applications/$app.app/Contents/Info" CFBundleShortVersionString)
+        [ "$took" = "$version" ] || stop "After updating, the installed copy is $took, not $version."
+    fi
+    echo "published $app $version: the page offers it, Gatekeeper accepts it${previous:+, and $previous took the update}"
+    exit 0
+    ;;
+esac
+
+profile=${NOTARY_PROFILE:-Theatre}
+tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
+notes=$(cat)
+[ "$(sed 's/: ..*//' <<<"$notes" | tr '\n' ' ')" = "New Better Fixed " ] && ! grep -q '[#`]' <<<"$notes" ||
+    stop "The notes are three plain lines on standard input, New: …, Better: …, Fixed: …, with no issue numbers or code."
+[ -x "$tools/generate_appcast" ] || stop "Sparkle's tools are missing: run swift build first."
+[ "$(git branch --show-current)" = main ] && [ -z "$(git status --porcelain)" ] || stop "Start from a clean main."
+git fetch -q origin main
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || stop "main is not what GitHub has."
+[ -f "$feed" ] && grep -q "data-app=\"$name\"" docs/index.html ||
+    stop "$feed or the page's entry is missing: see Checklists/New App.md."
+[ -z "$(gh pr list --state open --json number --jq '.[].number')" ] || stop "Merge or close every open pull request first."
+issue=$(gh issue list --state open --json number,title \
+    --jq "[.[] | select(.title == \"Release $app $version\")][0].number // empty")
+[ -n "$issue" ] || stop "Open the Release issue titled 'Release $app $version' first."
+! gh issue view "$issue" --json body --jq .body | grep -q '^- \[ \]' ||
+    stop "The Release issue still has a box unticked. Tick each once it is true."
+fixes=$(gh issue list --state open --search "milestone:\"$app $version\"" --json number \
+    --jq "[.[] | select(.number != $issue) | .number] | .[]") || stop "Could not read the milestone '$app $version'."
+for fix in $fixes; do # the release closes these, so each must really have its fix merged
+    merged=$(gh pr list --state merged --search "\"For #$fix\" in:body" --json number --jq length)
+    [ "$merged" -gt 0 ] || stop "Issue #$fix is in the milestone, but no merged pull request says For #$fix."
+done
+# The number: two parts, and the next one after the last version that shipped. A build he sent back
+# is mended and offered again under the same number; its date stamp tells the tries apart.
+last=$(git ls-remote --tags origin "refs/tags/$name-*" | sed "s|.*refs/tags/$name-||" | sort -t. -k1,1n -k2,2n | tail -1)
+next=$(follows "${last:-}" "$version")
+[ "$next" = yes ] || stop "After ${last:-no release} comes the next second number, or a new first number with .0: not $version."
+! gh release view "$tag" >/dev/null 2>&1 || stop "A build of $app $version is already waiting. Withdraw it first."
+
+notarise() { # Apple's check, then its ticket stapled on, so the file opens offline
+    local answer
+    answer=$(xcrun notarytool submit "$1" --keychain-profile "$profile" --wait 2>&1) || true
+    grep -q 'status: Accepted' <<<"$answer" || { echo "$answer"; stop "Apple's notary did not accept $1"; }
+    xcrun stapler staple -q "$2"
+}
+
+# GitHub's Mac has passed main as it stands, tour included, before a build can reach anyone's Mac.
+run=$(gh run list --workflow check --branch main --event push --limit 1 --json databaseId,headSha \
+    --jq ".[0] | select(.headSha == \"$(git rev-parse HEAD)\") | .databaseId")
+[ -n "$run" ] && gh run watch "$run" --exit-status >/dev/null 2>&1 ||
+    stop "GitHub's Mac has not passed main as it stands: see gh run list --workflow check --branch main."
+
+Scripts/build "$app" "$version"
+image=$out/$app-$version.dmg
+ditto -c -k --keepParent "$out/$app.app" "$out/$app.zip"
+notarise "$out/$app.zip" "$out/$app.app"
+folder=$(mktemp -d)
+ditto "$out/$app.app" "$folder/$app.app"
+ln -s /Applications "$folder/Applications"
+hdiutil create -quiet -volname "$app" -srcfolder "$folder" -format UDZO -ov "$image"
+codesign --sign "Developer ID Application" --timestamp "$image"
+notarise "$image" "$image"
+spctl --assess --type open --context context:primary-signature "$image" || stop "Gatekeeper refuses the disk image."
+spctl --assess --type execute "$out/$app.app" || stop "Gatekeeper refuses the app."
+echo "notarised $image"
+
+# From here on things exist outside this folder. If a step fails, take them all back.
+undo() {
+    git switch -q -f main 2>/dev/null
+    "$0" "$app" "$version" withdraw >/dev/null
+    echo "Nothing was released: the branch and the draft are taken back."
+}
+trap undo ERR
+
+# The feed: Sparkle's own tool signs the file and the feed with the update key in the login keychain.
+git switch -q -c "$branch"
+archives=$(mktemp -d)
+cp "$image" "$archives/"
+cp "$feed" "$archives/appcast.xml"
+printf '%s\n' "$notes" >"$archives/$app-$version.txt"
+"$tools/generate_appcast" --download-url-prefix "$files/$tag/" --link "$site/" --embed-release-notes \
+    --maximum-deltas 0 --maximum-versions 0 "$archives" >/dev/null 2>&1
+cp "$archives/appcast.xml" "$feed"
+"$tools/sign_update" --verify "$feed" >/dev/null
+[ "$(versions | head -1)" = "$version" ]
+sed -i '' -E "s|href=\"[^\"]*\"( data-app=\"$name\">)[^<]*|href=\"$files/$tag/$app-$version.dmg\"\\1Download $app $version|" docs/index.html
+grep -q "$files/$tag/$app-$version.dmg" docs/index.html
+
+git add "$feed" docs/index.html
+git commit -q -m "Release $app $version" -m "$notes" >/dev/null
+git push -q -u origin "$branch"
+gh release create "$tag" "$image" --draft --target "$(git rev-parse origin/main)" \
+    --title "$app $version" --notes "$notes" >/dev/null
+new=$(sed -n 's/^New: //p' <<<"$notes")
+request=$(gh pr create --draft --title "Release $app $version" --body "## For the Owner
+
+**What This Does:** Sends $app $version to everyone who has $app. It is in your Applications folder now, for you to try first.
+
+**Why:** $(tr '[:lower:]' '[:upper:]' <<<"${new:0:1}")${new:1}
+
+**Does It Change Your Apps?** Yes: everyone who has $app is offered $version, and chooses when to take it.
+
+**What to Do:** Quit $app if it is open, then open it from your Applications folder and try it. If it is right, approve. If something is wrong, choose Request changes and say what happened.
+
+<details><summary>Checklist for the Agents</summary>
+
+Closes #$issue$(for fix in $fixes; do printf ', closes #%s' "$fix"; done)
+
+$(grep -E '^- \[ \] ' .github/pull_request_template.md)
+
+</details>")
+trap - ERR
+git switch -q main
+
+# Installed whole on this Mac, for him to try: the same file that will ship.
+install "$image"
+echo "installed /Applications/$app.app"
+echo "drafted   $request"
+echo "          Say in its What to Do what he should try. Tick its boxes once each is true."
+echo "          Then: Scripts/check ready <its number>. That asks the owner, and his approval ships it."
