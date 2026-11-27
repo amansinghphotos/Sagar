@@ -7,16 +7,16 @@ belong here.
 ## Line Budget
 
 Swift lines in `Sources/<Module>/`, blank lines and comments included. A module without a row fails.
-Held by `Scripts/check` budget.
+Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scripts/check` order.
 
 | Module | Lines at most |
 |---|--:|
 | Each app's Main.swift, which only starts its Kit | 30 |
-| Keep | 300 |
-| Shell | 600 |
 | CheteKit | 1500 |
-| Look | 6000 |
 | Gallery | 1500 |
+| Keep | 300 |
+| Look | 6000 |
+| Shell | 600 |
 
 ## Every Pull Request
 
