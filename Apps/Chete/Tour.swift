@@ -65,10 +65,11 @@ extension CheteTour {
     }
 }
 
-/// A made-up history, as Export writes it, newest first: two notes with a link between them.
+/// A made-up history, as Export writes it, newest first: two notes with a link between them. It is kept forever,
+/// so that it is never too old to keep, however long after it was written the tour runs.
 private let madeUpHistory = """
     {
-      "settings": {},
+      "settings": { "keeping": "forever" },
       "clips": [
         {
           "id": "00000000-0000-4000-8000-000000000001",
