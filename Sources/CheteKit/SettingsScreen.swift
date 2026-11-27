@@ -35,14 +35,16 @@ package struct SettingsScreen: View {
 
     @Bindable var choices: Choices
     @Binding var opensAtLogin: Bool
+    let shortcut: Shortcut
     @State private var deleting = false
     @State private var exported: ExportedHistory?
     @State private var choosing = false
     @State private var bringing: URL?
 
-    package init(choices: Choices, opensAtLogin: Binding<Bool>) {
+    package init(choices: Choices, opensAtLogin: Binding<Bool>, shortcut: Shortcut = .chete) {
         self.choices = choices
         _opensAtLogin = opensAtLogin
+        self.shortcut = shortcut
     }
 
     package var body: some View {
@@ -80,11 +82,7 @@ package struct SettingsScreen: View {
                     detail: "Replaces your clips and settings with a file you exported."
                 ) { Pill("Bring Back…") { choosing = true } }
             }
-            GroupBlock(title: "General", icon: "gearshape") {
-                SettingRow(icon: "power", title: "Open at login", detail: "Chete’s ready as soon as you log in.") {
-                    Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
-                }
-            }
+            General(choices: choices, opensAtLogin: $opensAtLogin, shortcut: shortcut)
             if let failure = choices.failure {
                 Text(failure).type(.detail).foregroundStyle(Role.unsafe)
             }
@@ -125,6 +123,54 @@ package struct SettingsScreen: View {
             }
         } message: {
             Text("Your clips and settings here will be replaced. Export first to keep them.")
+        }
+    }
+}
+
+/// The shortcut that opens Chete, with a keyboard that lights it, and opening at login. A shortcut that won't do is
+/// refused, and the keyboard says why until another is chosen.
+package struct General: View {
+    @Bindable var choices: Choices
+    @Binding var opensAtLogin: Bool
+    let shortcut: Shortcut
+    /// The keys last tried that won't do, and why, until another shortcut is chosen.
+    @State private var refused: (keys: KeyCombo, why: String)?
+
+    package init(
+        choices: Choices, opensAtLogin: Binding<Bool>, shortcut: Shortcut,
+        refused: (keys: KeyCombo, why: String)? = nil
+    ) {
+        self.choices = choices
+        _opensAtLogin = opensAtLogin
+        self.shortcut = shortcut
+        _refused = State(initialValue: refused)
+    }
+
+    package var body: some View {
+        let keys = Binding {
+            choices.settings.shortcut
+        } set: { new in
+            if let why = shortcut.change(to: new), let new {
+                refused = (new, why)
+            } else {
+                refused = nil
+                choices.settings.shortcut = new
+            }
+        }
+        GroupBlock(title: "General", icon: "gearshape") {
+            SettingRow(icon: "command", title: "Shortcut", detail: "Opens Chete from any app.") {
+                KeyBox(key: keys) { combo in
+                    let why = shortcut.warning(for: combo)
+                    refused = why.map { (combo, $0) }
+                    return why
+                }
+            }
+            Keyboard(shortcut: refused?.keys ?? choices.settings.shortcut, warning: refused?.why)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Space.near.rawValue)
+            SettingRow(icon: "power", title: "Open at login", detail: "Chete’s ready as soon as you log in.") {
+                Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
+            }
         }
     }
 }

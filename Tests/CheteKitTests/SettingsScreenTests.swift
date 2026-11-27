@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Keep
+import Look
 import Pictures
 import SwiftUI
 import Testing
@@ -142,4 +143,17 @@ func theSettingsMatchTheirPicture(dark: Bool) throws {
     let choices = Choices(folder: mac.folder, keyName: mac.keyName, now: { now }, changed: { told += 1 })
     choices.settings.keeping = .week
     #expect(told == 1)
+}
+
+@Test func aShortcutThatWontDoIsShownOnTheKeyboard() throws {
+    let mac = Mac()
+    defer { mac.removed() }
+    let general = General(
+        choices: mac.choices(), opensAtLogin: .constant(false), shortcut: Shortcut(),
+        refused: (KeyCombo("3", shift: true), "Your Mac already uses these keys.")
+    )
+    .padding(Space.page.rawValue)
+    .background(Role.ground)
+    let height = NSHostingView(rootView: general.frame(width: SettingsScreen.width)).fittingSize.height
+    try expectPicture(of: general, width: SettingsScreen.width, height: height, named: "settings-shortcut-warning")
 }
