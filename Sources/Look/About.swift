@@ -9,19 +9,19 @@ package struct NewCard: View {
     private let close: () -> Void
     private let notes: () -> Void
 
+    /// How tall the list grows before it scrolls, so a long one never pushes the panel past the screen.
+    private static let tallest: CGFloat = 470
+
     package init(
-        title: String, rows: [(String, String, Binding<Bool>)], close: @escaping () -> Void,
-        notes: @escaping () -> Void
+        title: String, rows: [(String, String, Binding<Bool>)],
+        close: @escaping () -> Void, notes: @escaping () -> Void
     ) {
-        self.title = title
-        self.rows = rows
-        self.close = close
-        self.notes = notes
+        (self.title, self.rows) = (title, rows)
+        (self.close, self.notes) = (close, notes)
     }
 
     package var body: some View {
         Plate(title, width: 460, close: close) {
-            // A long list scrolls rather than growing the panel past the screen.
             ScrollView {
                 Card {
                     ForEach(rows.indices, id: \.self) { index in
@@ -30,7 +30,7 @@ package struct NewCard: View {
                     }
                 }
             }
-            .frame(maxHeight: 470)
+            .frame(maxHeight: Self.tallest)
             .fixedSize(horizontal: false, vertical: true)
         } foot: {
             HStack {
@@ -38,7 +38,7 @@ package struct NewCard: View {
                     Text(verbatim: "Everything that's new…").type(.row).foregroundStyle(Role.muted)
                 }
                 .buttonStyle(.plain)
-                Spacer(minLength: 0)
+                Spacer()
                 Pill("Close", filled: true, action: close)
             }
         }
@@ -46,12 +46,12 @@ package struct NewCard: View {
 
     /// One new thing: what it is, a line on how it works, and its switch.
     private func row(_ row: (String, String, Binding<Bool>)) -> some View {
-        HStack(spacing: Space.apart.rawValue) {
+        HStack(spacing: Space.page.rawValue) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(row.0).type(.body).foregroundStyle(Role.ink)
                 Text(row.1).type(.detail).foregroundStyle(Role.muted).fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: Space.near.rawValue)
             Switch(on: row.2)
         }
         .padding(.horizontal, Space.wide.rawValue)
@@ -70,20 +70,16 @@ package struct AboutBox: View {
     private let whatsNew: (() -> Void)?
 
     package init(
-        icon: Image, name: String, version: String, copyright: String, credit: String? = nil,
-        whatsNew: (() -> Void)? = nil
+        icon: Image, name: String, version: String, copyright: String,
+        credit: String? = nil, whatsNew: (() -> Void)? = nil
     ) {
-        self.icon = icon
-        self.name = name
-        self.version = version
-        self.copyright = copyright
-        self.credit = credit
-        self.whatsNew = whatsNew
+        (self.icon, self.name, self.version) = (icon, name, version)
+        (self.copyright, self.credit, self.whatsNew) = (copyright, credit, whatsNew)
     }
 
     package var body: some View {
         VStack(spacing: 0) {
-            icon.resizable().frame(width: 72, height: 72).foregroundStyle(Role.ink)
+            icon.resizable().frame(width: 72, height: 72)
             Text(name).type(.heading).foregroundStyle(Role.ink).padding(.top, Space.gap.rawValue)
             Text(version).font(.system(size: 11)).foregroundStyle(Role.muted).textSelection(.enabled).padding(.top, 3)
             if let whatsNew { Pill("What's New", action: whatsNew).padding(.top, Space.apart.rawValue) }
@@ -93,9 +89,7 @@ package struct AboutBox: View {
                     .padding(.top, Space.tight.rawValue)
             }
         }
-        .padding(.top, 34)
-        .padding(.bottom, 20)
-        .padding(.horizontal, 28)
+        .padding(EdgeInsets(top: 34, leading: 28, bottom: 20, trailing: 28))
         .frame(width: 320)
         .background(Role.ground)
     }
