@@ -15,7 +15,7 @@ private func reported(by record: String) throws -> String {
     return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
 }
 
-/// The record is a real run of three made-up steps, reported as Chete's tour reports an audit finding: one step with
+/// The record is a real run of three made-up steps, with its path and the Mac's identifiers made up, reported as Chete's tour reports an audit finding: one step with
 /// two findings, which XCTest counts as expected failures, one that passes, and one that fails.
 @Test func eachAuditFindingIsWrittenIntoTheSummary() throws {
     #expect(

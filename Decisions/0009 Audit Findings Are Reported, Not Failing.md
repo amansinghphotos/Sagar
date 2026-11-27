@@ -5,8 +5,7 @@ Decided by the owner on 27 November 2026.
 **Context.** Apple's accessibility audit failed Chete's tour whenever its find field held the keyboard,
 though the field looked right, and Apple says nothing about the finding (#98). Asked about it, he said:
 "I don't think you need to worry about the voiceover and accessibility stuff right now. We can add that
-in later [...] Right now, the app is only made for me, my girlfriend, and my family, and they don't have
-any special needs in that sense."
+in later."
 
 **Decision.** Every tour still runs the audit. Its findings are written into the run's summary, but they
 fail nothing, until he says to bring that back. Every other check in a tour still fails it.
