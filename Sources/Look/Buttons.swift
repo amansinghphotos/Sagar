@@ -26,15 +26,15 @@ package struct Pill: View {
                 .frame(height: Self.height)
                 .background {
                     if filled {
-                        Capsule().fill(tint).opacity(hovering ? 0.86 : 1)
+                        Capsule().fill(tint)
                     } else {
-                        if hovering { Capsule().fill(Role.hover) }
+                        Capsule().fill(hovering ? Role.hover : Role.ground)
                         Capsule().strokeBorder(Role.hairline, lineWidth: 1)
                     }
                 }
                 .contentShape(Capsule())
         }
-        .buttonStyle(Giving())
+        .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .animation(motion.quick, value: hovering)
     }
@@ -60,12 +60,15 @@ package struct Quick: View {
             Text(title)
                 .type(.detail)
                 .foregroundStyle(tint)
+                // Kept whole on one line, however narrow the row it sits in.
+                .lineLimit(1)
+                .fixedSize()
                 .padding(.horizontal, Space.near.rawValue)
                 .frame(height: Self.height)
                 .background(Capsule().fill(Role.wash))
                 .contentShape(Capsule())
         }
-        .buttonStyle(Giving())
+        .buttonStyle(.plain)
     }
 
     /// A little lower than a pill, so it sits quietly inside a row.
@@ -95,7 +98,7 @@ package struct Door: View {
         Button(action: act) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(on ? AnyShapeStyle(Role.ink) : AnyShapeStyle(greys.muted))
+                .foregroundStyle(ink)
                 .offset(x: nudge)
                 .frame(width: Self.side, height: Self.side)
                 .background {
@@ -106,13 +109,19 @@ package struct Door: View {
                         square.fill(greys.hover)
                     }
                 }
-                .contentShape(Rectangle())
+                .contentShape(RoundedRectangle(cornerRadius: Self.corner, style: .continuous))
         }
-        .buttonStyle(Giving())
+        .buttonStyle(.plain)
         .help(help)
         .onHover { hovering = $0 }
         .animation(motion.quick, value: hovering)
         .animation(motion.quick, value: on)
+    }
+
+    /// The symbol's colour: full ink while open, nearly so under the pointer, else the ground's own grey.
+    private var ink: AnyShapeStyle {
+        if on { return AnyShapeStyle(Role.ink) }
+        return hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.muted)
     }
 
     /// The square's side, and how round its corners are, in points.
@@ -138,12 +147,5 @@ package struct Give: ViewModifier {
     /// How large a thing is drawn: a little smaller while pressed, unless motion is reduced.
     static func scale(pressed: Bool, motion: Motion) -> CGFloat {
         pressed && !motion.reduced ? Motion.give : 1
-    }
-}
-
-/// A button drawn only as its label, which gives under a press.
-private struct Giving: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label.modifier(Give(pressed: configuration.isPressed))
     }
 }
