@@ -28,3 +28,12 @@ func theHandleAndArrowLookAsSearchsDo(dark: Bool) throws {
 @Test func theHandleHasSearchsMeasures() {
     #expect([Grip.width, Grip.rest, Grip.lit] == [4, 28, 40])
 }
+
+/// A scroll fades at its foot while more lies below, less as the end comes up, and not at all once it is in view:
+/// Search's `1 - min(1, max(0, over) / fade)`, over 24 points.
+@Test func aScrollFadesAsMoreLiesBeyond() {
+    #expect(FadingScroll<EmptyView>.strength(over: 0) == 1)
+    #expect(FadingScroll<EmptyView>.strength(over: 12) == 0.5)
+    #expect(FadingScroll<EmptyView>.strength(over: 48) == 0)
+    #expect(FadingScroll<EmptyView>.strength(over: -10) == 1)
+}

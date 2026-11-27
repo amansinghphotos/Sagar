@@ -2,8 +2,8 @@ import Look
 import SwiftUI
 
 /// The Controls page: every button, field, switch and choice, and what shows when there is nothing, trouble or
-/// work under way, sidebar rows, a drag handle and a folder's arrow, as
-/// Search has them.
+/// work under way, sidebar rows, a drag handle and a folder's arrow,
+/// as Search has them.
 struct Controls: View {
     @State private var search = ""
     @State private var typed = "notes"
