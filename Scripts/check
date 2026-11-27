@@ -688,7 +688,7 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
     # Xcode keeps a step's screen recording only if the step fails, unless the build's own run file says to keep it
     # always: the films are made from these (#227). Building first writes that file; the owner's project is unchanged.
     log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode build-for-testing \
-        CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) &&
+        SAGAR_NEW="A line the tour looks for." CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) &&
         run=$(ls .build/Xcode/Build/Products/"${app}Tour_${app}Tour_"*.xctestrun) &&
         plutil -replace TestConfigurations.0.TestTargets.0.SystemAttachmentLifetime -string keepAlways "$run" &&
         log=$(xcodebuild -xctestrun "$run" -destination platform=macOS -derivedDataPath .build/Xcode \
