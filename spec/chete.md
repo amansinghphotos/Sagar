@@ -18,6 +18,8 @@ this Mac unless you carry it.
    Passwords are kept too, even when the app they come from marks them private, so that you can paste
    one again later. What you copy on your own iPhone or another of your Macs, which macOS hands over
    by itself, is kept too, unless you turn that off.
+   *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. Until you choose
+   Allow there, macOS asks before each copy is kept.
 2. **It opens from any app,** with the same keyboard shortcut the Chete before it used, and from its item in
    the menu bar. It lives in the menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
@@ -29,8 +31,9 @@ this Mac unless you carry it.
 6. **Your history goes with you in one file.** Export saves everything in a plain file you choose,
    which opens on any Mac with no key or password, so keep it somewhere safe: it holds every clip,
    passwords included. Bring Back reads such a file on any Mac and replaces what is there.
-7. **The first open on a new Mac** says what Chete does in two lines, asks once to paste for you, offers
-   to bring back an exported file, and offers to open at login. It never asks for a Claude key.
+7. **The first open on a new Mac** says what Chete does in two lines, asks once to keep what you copy
+   and once to paste for you, offers to bring back an exported file, and offers to open at login. It
+   never asks for a Claude key.
    *Asks for:* Login Items, if you choose to open it at login.
 8. **It takes over the Chete before it.** On its first open on a Mac where the earlier Chete kept a
    history, it brings in every clip and both settings, how long to keep things and whether copies from
