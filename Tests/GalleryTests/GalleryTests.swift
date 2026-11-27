@@ -22,3 +22,11 @@ func theControlsPageMatchesItsPicture(dark: Bool) throws {
         of: Gallery(page: .controls, appearance: dark ? .dark : .light), width: size.width, height: size.height,
         named: "gallery-controls-\(dark ? "dark" : "light")", dark: dark)
 }
+
+@Test(arguments: [false, true])
+func theListsPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: Gallery(page: .lists, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        named: "gallery-lists-\(dark ? "dark" : "light")", dark: dark)
+}
