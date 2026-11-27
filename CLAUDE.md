@@ -90,8 +90,9 @@ Never, whatever the reason:
 
 - Commit anything personal: his data, a workplace detail, a key, an e-mail address, a path under his
   home folder. This repository is public.
-- Paste code from an older project or from someone else's. Read it for ideas and write fresh. The one
-  exception is Look's motion, taken from Search as `spec/look.md` says.
+- Paste code from an older project or from someone else's. Read it for ideas and write fresh. Until
+  Look's first set of parts is approved, decision 7 sets this aside for Look's motion alone, and lets
+  Look be built ahead of need.
 - Force push, reset hard, rewrite pushed history, or commit past the gate.
 - Stash, restore, clean or otherwise clear work you did not make in this session. Stop and say so.
 - Write a rule as prose. A rule is a check in `Scripts/check`, or it is not written.
@@ -102,7 +103,7 @@ Never, whatever the reason:
 ## How the Code Is Laid Out
 
 - `Apps/<App>/Main.swift` only starts the app's Kit. Everything else is in `Sources/<App>Kit/`.
-- Shared modules exist once an app needs them: Keep, Shell, Taps, Minds. Look is built whole, ahead of need.
+- Shared modules exist once an app needs them: Look, Keep, Shell, Taps, Minds.
 - `import AppKit` only in Shell, Taps and a Kit's `Mac/` folder. Network code only in Shell and Minds.
 - Screens name roles from Look, never a colour, a font or a size.
 - `package` is the widest access, but for the one scene a Kit hands to `Main.swift`, which is `public`.

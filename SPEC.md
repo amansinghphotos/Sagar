@@ -35,14 +35,14 @@ His pending approvals are the only list of things waiting on him.
    on anything that involves money, a key, a dependency or a permission. Everything else is decided
    and reported in a line. Agents merge ordinary work themselves once checks are green.
 3. What Apple provides is used as Apple intends. A dependency needs his yes and a decision record.
-4. Every line is written fresh, test first. Other code is read for ideas, and none is pasted, but for
-   Look's motion, taken from Search under its licence (decision 7).
-5. Shared code is written when the first app needs it, not ahead of need. Look is the exception: it is
-   built whole, so that every app starts from the same finished parts.
+4. Every line is written fresh, test first. Other code is read for ideas, and none is pasted.
+5. Shared code is written when the first app needs it, not ahead of need.
 6. Built to last. The method lives in plain Markdown, git, shell and GitHub's oldest features. The
    Claude layer is thin and only points at those files. Apps work offline unless their spec names what
    they need from the network.
 7. Checklists, as in aviation: every repeated procedure is a short list that is read every time.
+
+Until Look's first set of parts is approved, decision 7 sets principles 4 and 5 aside for Look alone.
 
 ## 3. The Repository
 
@@ -69,7 +69,7 @@ Decisions/             why things are the way they are
 Scripts/               check, build, release
 ```
 
-A module exists once an app needs it, but for Look (principle 5). AppKit is allowed only in Shell, Taps and a Kit's `Mac/` folder.
+A module exists once an app needs it. AppKit is allowed only in Shell, Taps and a Kit's `Mac/` folder.
 Network code is allowed only in Shell (updates) and Minds. Windows adapt by container width, and each
 screen is pictured narrow, default and wide.
 
@@ -174,8 +174,9 @@ usual calls and cannot see every way to fetch a file.
 
 ## 11. Written When the First App Needs It
 
-Keep. Shell's settings window, permissions, login item, menu bar, hot keys and Send Report. Taps and
-Minds. The three lines of notes shown once inside an app after it updates.
+Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
+window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds. The three lines of
+notes shown once inside an app after it updates.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
