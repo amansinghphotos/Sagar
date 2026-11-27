@@ -8,6 +8,7 @@ public struct CheteScene: Scene {
     /// The scene, ready for the app to open. Chete starts keeping what you copy as it opens.
     public init() {
         Self.startWatching()
+        NewBuildCard.showIfNew()
     }
 
     /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
@@ -19,7 +20,6 @@ public struct CheteScene: Scene {
             }
             .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
             .windowName("Your clips")
-            .showingWhatIsNew()
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }

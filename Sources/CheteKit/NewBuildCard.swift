@@ -13,10 +13,10 @@ struct NewBuildCard: View {
     }
 }
 
-extension View {
-    /// Shows what is new, once, the first time a new build's window opens.
-    func showingWhatIsNew() -> some View {
-        onAppear {
+extension NewBuildCard {
+    /// Shows what is new, once, as Chete opens on a new build, whichever of its windows opens with it.
+    static func showIfNew() {
+        Task {
             WhatIsNew.showIfNew { version, lines, close in
                 NewBuildCard(version: version, lines: lines.map { ($0.kind, $0.line) }, close: close)
             }

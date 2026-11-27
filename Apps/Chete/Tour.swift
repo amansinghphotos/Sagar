@@ -94,7 +94,7 @@ final class CheteTour: XCTestCase {
         app.terminate()
         app.launchArguments = []
         app.launch()
-        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
+        XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
         XCTAssertFalse(line.waitForExistence(timeout: 5), "What is new showed a second time.")
     }
 }
