@@ -30,10 +30,12 @@ He writes in plain words, in any chat, without naming a file or an issue. Find i
 - **A fault** ("X is broken"). If a build of that app is waiting on him, his words are his answer to
   it: `Scripts/release <App> <version> withdraw`, then the fault is the next slice. Otherwise find or
   open an issue in the app's milestone, quoting only what he said about the
-  app, and take it as the next slice.
+  app, and take it as the next slice. A fault in a shipped app that `NOW` does not name is mended
+  beside the app in work, as `SPEC.md` says under Mending a Shipped App: label the issue `fault`.
 - **A wish** ("I want X"). If a must-have in `spec/<app>.md` names that behaviour, open an issue for
   it, quoted the same way. If none does, it is a change to the spec: one pull request for him to approve, before any code.
 - **Another app than the one in `NOW`.** Tell him in a line what is in work, and ask which comes first.
+  A fault in a shipped app is no such question: tell him in a line that its mend has started.
 - **A question.** Answer it, and change nothing.
 - **His answer to a pull request** is its review on GitHub: an approval, or a request for changes in
   his words. The session start prints it. After a request for changes on a release:
@@ -83,7 +85,8 @@ Stop and ask the owner, as one pull request he can approve, before any of these:
 - A change to any path that `.github/CODEOWNERS` gives an owner: a spec, `NOW`, a picture, a release,
   a key, a dependency, a permission. GitHub will not merge it without him.
 - A new dependency, a new key or account, a new permission an app asks for.
-- Work on an app that `NOW` does not name, or on an app with a release waiting.
+- Work on an app that `NOW` does not name, but for mending a fault in one that has shipped, or on an
+  app with a release waiting.
 - Anything that would put a window, dialog, sound or prompt on his screen.
 
 Never, whatever the reason:
@@ -91,8 +94,7 @@ Never, whatever the reason:
 - Commit anything personal: his data, a workplace detail, a key, an e-mail address, a path under his
   home folder. This repository is public.
 - Paste code from an older project or from someone else's. Read it for ideas and write fresh. Until
-  Look's first set of parts is approved, decision 7 sets this aside for Look's motion alone, and lets
-  Look be built ahead of need.
+  Look's first set of parts is approved, decision 7 lets Look be built ahead of need.
 - Force push, reset hard, rewrite pushed history, or commit past the gate.
 - Stash, restore, clean or otherwise clear work you did not make in this session. Stop and say so.
 - Write a rule as prose. A rule is a check in `Scripts/check`, or it is not written.
