@@ -46,7 +46,7 @@ package struct SettingsScreen: View {
         VStack(alignment: .leading, spacing: Space.page.rawValue) {
             GroupBlock(title: "Your clips", icon: "list.clipboard") {
                 SettingRow(
-                    icon: "calendar", title: "Keep clips for", detail: "Older ones are deleted."
+                    icon: "calendar", title: "Keep clips for", detail: "Older clips are deleted."
                 ) {
                     Segmented(
                         options: [(.week, "A week"), (.month, "A month"), (.year, "A year"), (.forever, "Forever")],
@@ -68,13 +68,13 @@ package struct SettingsScreen: View {
             GroupBlock(title: "Back up", icon: "doc") {
                 SettingRow(
                     icon: "square.and.arrow.up", title: "Export your clips",
-                    detail: "Saves them all to a file, passwords too. Keep it somewhere safe."
+                    detail: "Saves every clip to one file, passwords too. Keep it somewhere safe."
                 ) {
                     Pill("Export…") { choices.attempt { exported = ExportedHistory(data: try choices.exported()) } }
                 }
                 SettingRow(
                     icon: "square.and.arrow.down", title: "Bring back clips",
-                    detail: "Swaps what’s here for the clips in a file you exported."
+                    detail: "Replaces your clips and settings with a file you exported."
                 ) { Pill("Bring Back…") { choosing = true } }
             }
             GroupBlock(title: "General", icon: "gearshape") {
@@ -110,7 +110,7 @@ package struct SettingsScreen: View {
             bringing = try? result.get()
         }
         .confirmationDialog(
-            "Replace your clips?",
+            "Replace your clips and settings?",
             isPresented: Binding {
                 bringing != nil
             } set: {
@@ -121,7 +121,7 @@ package struct SettingsScreen: View {
                 if let file = bringing { choices.attempt { try choices.bringBack(from: file) } }
             }
         } message: {
-            Text("The clips here will be swapped for the ones in this file. Export first if you want to keep them.")
+            Text("Your clips and settings here will be replaced. Export first to keep them.")
         }
     }
 }
