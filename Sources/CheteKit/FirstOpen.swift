@@ -109,7 +109,7 @@ package struct FirstOpenPages: View {
             default:
                 VStack(alignment: .leading, spacing: Space.wide.rawValue + Space.near.rawValue) {
                     WelcomeHeading(
-                        "Make it yours.", "Choose when Chete opens, and bring back a history from another Mac.")
+                        "Two more choices.", "Choose when Chete opens, and bring back a history from another Mac.")
                     card {
                         Look.Choice(
                             "Open at login", "Chete waits in the menu bar from the moment you log in.",
