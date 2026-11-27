@@ -51,7 +51,6 @@ private struct Toasting: ViewModifier {
                             .transition(.opacity)
                             .task(id: words) {
                                 try? await Task.sleep(for: .seconds(ToastQueue.stays))
-                                guard !Task.isCancelled else { return }
                                 queue.next()
                             }
                     }
@@ -90,8 +89,9 @@ package struct Banner: View {
     private let maybe: (String, () -> Void)?
     private let no: (String, () -> Void)
 
-    /// The height of the banner on one line, whose ends are then fully round.
+    /// The height of the banner on one line, and how round its corners are.
     private let line: CGFloat = 43
+    private let corner: CGFloat = 20
 
     package init(
         icon: String, question: String, yes: (String, () -> Void), maybe: (String, () -> Void)? = nil,
@@ -123,8 +123,8 @@ package struct Banner: View {
         }
         .padding(.leading, Space.page.rawValue)
         .padding(.trailing, Space.gap.rawValue)
-        .background(RoundedRectangle(cornerRadius: line / 2).fill(Role.ground))
-        .overlay(RoundedRectangle(cornerRadius: line / 2).strokeBorder(Role.hairline, lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: corner).fill(Role.ground))
+        .overlay(RoundedRectangle(cornerRadius: corner).strokeBorder(Role.hairline, lineWidth: 1))
         .elevation(.banner)
     }
 
@@ -162,12 +162,12 @@ private struct Answer: View {
             Text(words)
                 .type(.row)
                 .foregroundStyle(ink)
+                // Only the main answer stands in a capsule; the others are as tall as their words.
                 .padding(.horizontal, filled ? 11 : 0)
-                .frame(height: 25)
+                .frame(height: filled ? 25 : nil)
                 .background {
                     if filled { Capsule().fill(Role.ink) }
                 }
-                .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }
