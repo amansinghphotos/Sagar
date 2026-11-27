@@ -34,9 +34,13 @@ package enum WhatIsNew {
     ) {
         let info = Bundle.main.infoDictionary ?? [:]
         guard window == nil, let lines = due(info, .standard) else { return }
-        let panel = NSPanel(contentRect: .zero, styleMask: [.nonactivatingPanel], backing: .buffered, defer: true)
+        let panel = CardPanel(contentRect: .zero, styleMask: [.nonactivatingPanel], backing: .buffered, defer: true)
+        panel.closing = { [weak panel] in
+            panel?.close()
+            window = nil
+        }
         let version = info["CFBundleShortVersionString"] as? String ?? ""
-        let host = NSHostingView(rootView: card(version, lines) { [weak panel] in panel?.close() })
+        let host = NSHostingView(rootView: card(version, lines, panel.closing))
         panel.contentView = host
         panel.setContentSize(host.fittingSize)
         panel.backgroundColor = .clear
@@ -45,25 +49,18 @@ package enum WhatIsNew {
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false  // a panel hides while its app is not the active one, unless told not to
-        panel.becomesKeyOnlyIfNeeded = true
         panel.center()
         window = panel
-        NotificationCenter.default.addObserver(
-            Closer.shared, selector: #selector(Closer.closed), name: NSWindow.willCloseNotification, object: panel)
         panel.orderFrontRegardless()  // in front, though the app was opened behind: the keyboard stays where it was
     }
 
     /// The card's window, while it is up.
     private static var window: NSPanel?
 
-    /// Lets the card's window go once it closes.
-    private final class Closer: NSObject {
-        static let shared = Closer()
-        @objc func closed() {
-            MainActor.assumeIsolated {
-                NotificationCenter.default.removeObserver(self)
-                WhatIsNew.window = nil
-            }
-        }
+    /// A window with no frame of its own, which takes the keyboard once clicked, so that Escape closes it.
+    private final class CardPanel: NSPanel {
+        var closing: () -> Void = {}
+        override var canBecomeKey: Bool { true }  // a window with no title bar cannot, unless it says so
+        override func cancelOperation(_ sender: Any?) { closing() }
     }
 }

@@ -88,13 +88,14 @@ final class CheteTour: XCTestCase {
         app.launch()
         XCTAssert(line.waitForExistence(timeout: 10), "A new build did not show what is new.")
         try audit(app, "What is new")
-        app.buttons["Close"].firstMatch.click()
+        line.click()  // once clicked, the card takes the keyboard, and Escape closes it
+        app.typeKey(.escape, modifierFlags: [])
         XCTAssert(line.waitForNonExistence(timeout: 5), "The card for what is new did not close.")
         app.terminate()
         app.launchArguments = []
         app.launch()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
-        XCTAssertFalse(line.exists, "What is new showed a second time.")
+        XCTAssertFalse(line.waitForExistence(timeout: 5), "What is new showed a second time.")
     }
 }
 
