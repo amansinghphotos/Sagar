@@ -34,8 +34,8 @@ He writes in plain words, in any chat, without naming a file or an issue. Find i
   beside the app in work, as `SPEC.md` says under Mending a Shipped App: label the issue `fault`.
 - **A wish** ("I want X"). If a must-have in `spec/<app>.md` names that behaviour, open an issue for
   it, quoted the same way. If none does, it is a change to the spec: one pull request for him to approve, before any code.
-- **Another app than the one in `NOW`,** but for a fault. Tell him in a line what is in work, and ask
-  which comes first.
+- **Another app than the one in `NOW`.** Tell him in a line what is in work, and ask which comes first.
+  A fault in a shipped app is no such question: tell him in a line that its mend has started.
 - **A question.** Answer it, and change nothing.
 - **His answer to a pull request** is its review on GitHub: an approval, or a request for changes in
   his words. The session start prints it. After a request for changes on a release:
