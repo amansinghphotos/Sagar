@@ -2,6 +2,24 @@ import XCTest
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
+    /// Its settings keep what you choose: clips kept for a month instead of a year, still chosen the next
+    /// time Chete opens.
+    @MainActor
+    func testHowLongClipsAreKeptIsKept() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.typeKey(",", modifierFlags: .command)
+        let month = app.buttons["A month"]
+        XCTAssert(month.waitForExistence(timeout: 10), "Chete's settings did not open.")
+        month.click()
+        app.terminate()
+        app.launch()
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssert(app.buttons["A month"].waitForExistence(timeout: 10), "Chete's settings did not open again.")
+        XCTAssert(app.buttons["A month"].isSelected, "A month was not kept.")
+        app.buttons["A year"].click()
+    }
+
     /// It opens quickly, by Apple's own launch metric taken three times, of which the rules judge the fastest.
     /// Then it shows one window, which passes Apple's accessibility audit. Contrast is left out: see SPEC.md.
     @MainActor

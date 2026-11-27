@@ -1,6 +1,6 @@
 // Taken from Search at commit c92ea7c: Switch, Ticks and Segmented (Settings.swift). Copyright (c) 2026 Office
 // Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's
-// colours and motion are read from Look.
+// colours and motion are read from Look, and a sliding choice tells VoiceOver which option is chosen.
 import SwiftUI
 
 /// On or off, in ink rather than in blue.
@@ -88,6 +88,7 @@ package struct Segmented<Option: Hashable>: View {
                     .onTapGesture {
                         withAnimation(motion.settle) { selection = option }
                     }
+                    .accessibilityAddTraits(option == selection ? [.isButton, .isSelected] : .isButton)
             }
         }
         .padding(2)
