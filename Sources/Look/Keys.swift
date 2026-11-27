@@ -1,16 +1,9 @@
-// Taken from Search at commit c92ea7c: KeyCombo (Shortcuts.swift, its value and how a menu shows it), and FixedKey and
-// KeyBox (ShortcutsPage.swift). Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed where
-// this repository's rules require: Search's colours are read from Look; a key is heard through SwiftUI's key presses
-// while the box has focus, as Look may not use AppKit's events, so the box stops listening when focus leaves it; given
-// values replace Search's store of shortcuts, its browser's own refusals and its announcement, so `changed`, `refusal`
-// and `owner` are given, as is FixedKey's help line; and the access and isolation are the ones Swift 6 and this
-// repository ask for. Added: `listening`, to start a box waiting for a key, which the pictures need.
+// Keyboard shortcuts: a shortcut as a value and as a menu shows it, a box that records one, and a fixed key.
 import SwiftUI
 
-/// A key and the modifiers held with it.
+/// A keyboard shortcut: a key, by its name, and the modifiers held with it.
 nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
-    /// A lowercased character, or the name of a key that has none:
-    /// left, right, up, down, return, delete, space, f1…f12.
+    /// The key: a character in lower case, such as `t` or `]`, or a name, such as `left`, `return` or `f5`.
     package var key: String
     package var command = false
     package var shift = false
@@ -19,55 +12,70 @@ nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
 
     package init(_ key: String, command: Bool = true, shift: Bool = false, option: Bool = false, control: Bool = false)
     {
-        // ⌘+ is ⇧⌘= on some keyboards and a key of its own on others; both
-        // mean the same thing, so both are kept as "+" with nothing about ⇧.
-        let plus = key == "=" || key == "+"
-        self.key = plus ? "+" : key.lowercased()
-        self.shift = plus ? false : shift
+        self.key = key
         self.command = command
+        self.shift = shift
         self.option = option
         self.control = control
     }
 
-    /// The key SwiftUI heard, read as the key itself rather than what it typed, so ⇧⌘] is "]" with shift, not
-    /// "}"; the function keys by their names.
+    /// The shortcut a key press makes, or nil for a key that cannot be part of one.
     package init?(key equivalent: KeyEquivalent, modifiers: EventModifiers) {
-        let scalar = equivalent.character.unicodeScalars.first.map { Int($0.value) } ?? 0
-        let function = (0xF704...0xF70F).contains(scalar) ? "f\(scalar - 0xF704 + 1)" : nil
-        let key = KeyCombo.names[equivalent] ?? function ?? String(equivalent.character)
-        guard !key.isEmpty else { return nil }
+        let character = equivalent.character
+        let name: String
+        if let named = Self.names[equivalent] {
+            name = named
+        } else if let scalar = character.unicodeScalars.first, (0xF704...0xF71B).contains(scalar.value) {
+            name = "f\(scalar.value - 0xF704 + 1)"
+        } else if character.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) }) {
+            name = String(character).lowercased()
+        } else {
+            return nil
+        }
         self.init(
-            key, command: modifiers.contains(.command), shift: modifiers.contains(.shift),
+            name, command: modifiers.contains(.command), shift: modifiers.contains(.shift),
             option: modifiers.contains(.option), control: modifiers.contains(.control))
     }
 
+    /// Keys that are known by a name rather than by the character they type.
     private static let names: [KeyEquivalent: String] = [
-        .leftArrow: "left", .rightArrow: "right", .downArrow: "down", .upArrow: "up", .return: "return",
-        .delete: "delete", .deleteForward: "delete", .space: "space", .tab: "tab", .escape: "escape",
+        .upArrow: "up", .downArrow: "down", .leftArrow: "left", .rightArrow: "right", .return: "return", .tab: "tab",
+        .space: "space", .delete: "delete", .deleteForward: "forwarddelete", .escape: "escape", .home: "home",
+        .end: "end", .pageUp: "pageup", .pageDown: "pagedown", .clear: "clear",
     ]
 
+    /// How a menu shows each named key.
     private static let symbols: [String: String] = [
-        "left": "←", "right": "→", "up": "↑", "down": "↓", "return": "↩", "delete": "⌫", "space": "Space",
-        "tab": "⇥", "escape": "⎋",
+        "up": "↑", "down": "↓", "left": "←", "right": "→", "return": "↩", "tab": "⇥", "space": "Space",
+        "delete": "⌫", "forwarddelete": "⌦", "escape": "⎋", "home": "↖", "end": "↘", "pageup": "⇞",
+        "pagedown": "⇟", "clear": "⌧",
     ]
 
-    /// As a menu shows it: ⌃⌥⇧⌘ then the key.
+    /// The shortcut as a menu shows it: its modifiers in the Mac's order, then its key. Shift with = is shown as +,
+    /// as menus show Zoom In.
     package var display: String {
-        (control ? "⌃" : "") + (option ? "⌥" : "") + (shift ? "⇧" : "") + (command ? "⌘" : "")
-            + (KeyCombo.symbols[key] ?? key.uppercased())
+        let plus = shift && key == "="
+        var shown = ""
+        if control { shown += "⌃" }
+        if option { shown += "⌥" }
+        if shift && !plus { shown += "⇧" }
+        if command { shown += "⌘" }
+        if plus { return shown + "+" }
+        return shown + (Self.symbols[key] ?? key.uppercased())
     }
 
-    private var isFunctionKey: Bool { key.count > 1 && key.hasPrefix("f") && Int(key.dropFirst()) != nil }
-
-    /// A key alone, or with only ⇧, is typing — never a shortcut.
+    /// Whether the shortcut can be one: a key alone or with only Shift is typing, but for a function key.
     package var isUsable: Bool { command || option || control || isFunctionKey }
+
+    private var isFunctionKey: Bool {
+        key.count > 1 && key.first == "f" && key.dropFirst().allSatisfy(\.isNumber)
+    }
 }
 
-/// Keys that are listed but not moved here, drawn as a KeyBox at rest.
+/// A shortcut that cannot be changed, shown quietly in a box like the ones that can.
 package struct FixedKey: View {
-    let text: String
-    /// Where the key is set, said when the pointer rests on it.
-    var help = ""
+    private let text: String
+    private let help: String
 
     package init(_ text: String, help: String = "") {
         self.text = text
@@ -78,129 +86,68 @@ package struct FixedKey: View {
         Text(text)
             .font(.system(size: 12))
             .foregroundStyle(Role.muted)
-            .lineLimit(1)
             .padding(.horizontal, 10)
             .frame(minWidth: 64, minHeight: 24)
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Role.hairline, lineWidth: 1)
+                RoundedRectangle(cornerRadius: Radius.control.rawValue, style: .continuous).strokeBorder(Role.hairline)
             )
             .help(help)
     }
 }
 
-/// The key a command is on. Click it and press another: that key moves
-/// here, from whichever command had it. Esc stops without changing it,
-/// ⌫ takes it off. With `listening`, it starts out waiting for a key.
+/// A box that shows a shortcut and records a new one: click it, then press the keys. Delete clears it, Escape
+/// leaves it as it was. A shortcut changed from its default is shown in heavier type.
 package struct KeyBox: View {
-    @Binding var key: KeyCombo?
-    /// True when the key is not the one the command came with.
-    var changed = false
-    /// Why a key will not do, said for a moment while still listening; nil when it will.
-    var refusal: (KeyCombo) -> String? = { _ in nil }
-    /// The command that has a key already, if another does.
-    var owner: (KeyCombo) -> String? = { _ in nil }
-
-    @State private var listening = false
-    @State private var note: String?
-    @State private var hovering = false
-    /// A key another command has, pressed once: pressed again, it moves here.
-    @State private var taking: KeyCombo?
+    @Binding private var key: KeyCombo?
+    private let changed: Bool
+    @State private var listening: Bool
     @FocusState private var heard: Bool
 
-    package init(
-        key: Binding<KeyCombo?>, changed: Bool = false, refusal: @escaping (KeyCombo) -> String? = { _ in nil },
-        owner: @escaping (KeyCombo) -> String? = { _ in nil }, listening: Bool = false
-    ) {
-        _listening = State(initialValue: listening)
+    package init(key: Binding<KeyCombo?>, changed: Bool = false, listening: Bool = false) {
         _key = key
         self.changed = changed
-        self.refusal = refusal
-        self.owner = owner
+        _listening = State(initialValue: listening)
     }
 
     package var body: some View {
-        Button(action: listen) {
-            Text(label)
-                .font(.system(size: 12, weight: changed ? .semibold : .regular))
-                .foregroundStyle(listening || key != nil ? Role.ink : Role.muted)
-                .lineLimit(1)
-                .padding(.horizontal, 10)
-                .frame(minWidth: 64, minHeight: 24)
-                .background(
-                    listening ? Role.hover : (hovering ? Role.hover : Role.ground),
-                    in: RoundedRectangle(cornerRadius: 7, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(
-                            listening ? AnyShapeStyle(Role.ink.opacity(0.4)) : AnyShapeStyle(Role.hairline),
-                            lineWidth: 1)
-                )
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help("Click, then press the new shortcut")
-        .onHover { hovering = $0 }
-        .focusable(listening)
-        .focused($heard)
-        .onKeyPress(phases: .down) { press in
-            guard listening else { return .ignored }
-            take(KeyCombo(key: press.key, modifiers: press.modifiers))
-            return .handled
-        }
-        .onChange(of: heard) { _, now in if !now, listening { stop() } }
-        .onDisappear(perform: stop)
-    }
-
-    private var label: String {
-        if let taking, let other = owner(taking) {
-            return "Used by \(other) — press again"
-        }
-        if let note { return note }
-        if listening { return "Type a shortcut" }
-        return key?.display ?? "None"
-    }
-
-    private func listen() {
-        guard !listening else { return stop() }
-        listening = true
-        note = nil
-        taking = nil
-        heard = true
-    }
-
-    private func take(_ combo: KeyCombo?) {
-        guard let combo else { return }
-        let alone = !combo.command && !combo.option && !combo.control && !combo.shift
-        if combo.key == "escape", alone { return stop() }
-        if combo.key == "delete", alone {
-            key = nil
-            return stop()
-        }
-        guard combo.isUsable else { return say("Add ⌘, ⌥ or ⌃") }
-        if let reason = refusal(combo) { return say(reason) }
-        if owner(combo) != nil, taking != combo {
-            taking = combo
-            return
-        }
-        key = combo
-        stop()
-    }
-
-    /// Why that key won't do, for a moment, still listening.
-    private func say(_ text: String) {
-        note = text
-        Task {
-            try? await Task.sleep(for: .seconds(1.2))
-            if note == text { note = nil }
-        }
-    }
-
-    private func stop() {
-        listening = false
-        note = nil
-        taking = nil
-        heard = false
+        let shape = RoundedRectangle(cornerRadius: Radius.control.rawValue, style: .continuous)
+        Text(listening ? "Type a shortcut" : key?.display ?? "None")
+            .font(.system(size: 12, weight: changed ? .semibold : .regular))
+            .foregroundStyle(listening || key != nil ? Role.ink : Role.muted)
+            .padding(.horizontal, 10)
+            .frame(minWidth: 64, minHeight: 24)
+            .background(Role.hover.opacity(listening ? 1 : 0), in: shape)
+            .overlay(
+                shape.strokeBorder(listening ? AnyShapeStyle(Role.ink.opacity(0.4)) : AnyShapeStyle(Role.hairline))
+            )
+            .contentShape(shape)
+            .focusable()
+            .focused($heard)
+            .focusEffectDisabled()
+            .onTapGesture {
+                listening = true
+                heard = true
+            }
+            .onChange(of: heard) { if !heard { listening = false } }
+            .onKeyPress(phases: .down) { press in
+                guard listening else { return .ignored }
+                switch press.key {
+                case .escape:
+                    listening = false
+                case .delete, .deleteForward:
+                    key = nil
+                    listening = false
+                default:
+                    guard let combo = KeyCombo(key: press.key, modifiers: press.modifiers), combo.isUsable else {
+                        return .handled
+                    }
+                    key = combo
+                    listening = false
+                }
+                return .handled
+            }
+            .accessibilityElement()
+            .accessibilityLabel(listening ? "Type a shortcut" : "Shortcut, \(key?.display ?? "none")")
+            .accessibilityAddTraits(.isButton)
     }
 }
