@@ -112,11 +112,9 @@ first of them, and a release will not start while its own has a box unticked.
 - An update is always offered and never forced or silent: the app shows what is new and the person
   chooses to install it, to be reminded later, or to skip that version.
 - The first time an app's window opens on a new build, it shows Look's card for what is new, once,
-  with that release's three lines. On his Mac this is the try: it tells him the build is in place and
-  what to look for. For everyone else it follows the update. It is the same card for both, because
-  the build he tries is the file that ships. The build carries its own three lines. The app keeps,
-  on that Mac, the date stamp of the last build it showed, so a mended build under the same number
-  shows again. An app opened for the first time shows its welcome instead.
+  with that release's three lines. On his Mac it tells him a build to try is in place and what to
+  look for. For everyone else it follows the update. A mended build under the same number shows it
+  again. An app's very first open shows its welcome instead.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
   good code is released again, under the next number.
 - Before a release an agent confirms it opens the files the previous release wrote, and ticks that
