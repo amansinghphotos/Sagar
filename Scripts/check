@@ -3,6 +3,18 @@
 # The numbers come from CONSTRAINTS.md. GitHub also sets PR_NUMBER and PR_BRANCH.
 set -u
 cd "$(dirname "$0")/.." || exit 1
+if [ "${1:-}" = mending ]; then # Scripts/check mending <now> < state: the shipped app a branch mends beside the
+    # app in work (the platform spec, Mending a Shipped App), from its issue as gh issue view --json state,labels,milestone
+    # gives it and every release tag: {"issue": …, "tags": […]}. Only an open fault in the milestone of an app that has
+    # shipped, and is not the app in work, names one: a wish waits until NOW names the app again.
+    jq -r --arg now "${2:?Scripts/check mending <now> < state}" '
+        .tags as $tags | .issue // {} | select(.state == "OPEN" and any(.labels[]?; .name == "fault"))
+        | (.milestone.title // "" | capture("^(?<app>[A-Za-z]+) [0-9]+\\.[0-9]+$").app) as $app
+        | ($app | ascii_downcase) as $name
+        | select($name != ($now | ascii_downcase) and any($tags[]; startswith($name + "-")))
+        | $app'
+    exit
+fi
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
 case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | iphone | tool | plain | shown | title | launch | reviewed | ready) ;; *)
     echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
@@ -252,9 +264,18 @@ size() {
     [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
 }
 
+mended() { # the shipped app this branch mends beside the app in work, named by its issue, or nothing
+    local issue=${branch%%-*} state tags
+    [[ $issue =~ ^[0-9]+$ ]] || return 0
+    state=$(gh issue view "$issue" --json state,labels,milestone 2>/dev/null) || state=null
+    tags=$(git ls-remote --tags origin 2>/dev/null | sed -n 's|.*refs/tags/||p' | jq -R . | jq -s .)
+    jq -n --argjson issue "$state" --argjson tags "${tags:-[]}" '{issue: $issue, tags: $tags}' | Scripts/check mending "$now"
+}
+
 scope() {
     [ -n "$base" ] || return $nothing
-    local bad=0 file app
+    local bad=0 file app mends
+    mends=$(mended)
     while IFS= read -r file; do
         case $file in
             Apps/*/*) app=${file#Apps/} app=${app%%/*} ;;
@@ -264,7 +285,8 @@ scope() {
             docs/*/appcast.xml) app=${file#docs/} app=${app%%/*} ;;
             *) continue ;;
         esac
-        [ "$(lower "$app")" = "$(lower "$now")" ] || { echo "$file belongs to $app; NOW names $now."; bad=1; }
+        [ "$(lower "$app")" = "$(lower "$now")" ] || [ "$(lower "$app")" = "$(lower "$mends")" ] ||
+            { echo "$file belongs to $app; NOW names $now, and this branch's issue mends no fault in $app."; bad=1; }
     done < <(changed)
     return $bad
 }
