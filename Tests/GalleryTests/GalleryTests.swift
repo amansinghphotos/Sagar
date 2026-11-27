@@ -69,10 +69,12 @@ func theSplitFollowsTheWindow(size: WindowSize) throws {
     try expectPicture(of: split, width: size.width, height: size.height, named: "split-\(size.rawValue.lowercased())")
 }
 
+/// The page alone, without the Gallery's page choice above it, which macOS draws a little wider on GitHub's Mac
+/// when its last page is chosen.
 @Test(arguments: [false, true])
 func theKeyboardPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(page: .keyboard, appearance: dark ? .dark : .light), width: size.width, height: size.height,
-        named: "gallery-keyboard-\(dark ? "dark" : "light")", dark: dark)
+        of: KeyboardPage().background(Role.ground).environment(\.colorScheme, dark ? .dark : .light),
+        width: size.width, height: size.height, named: "gallery-keyboard-\(dark ? "dark" : "light")", dark: dark)
 }
