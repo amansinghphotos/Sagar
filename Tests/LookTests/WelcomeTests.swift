@@ -43,3 +43,32 @@ func theWelcomeLooksAsSearchsDoes(dark: Bool) throws {
     let ours = try picture(of: Showcase(), width: 640, height: 480, dark: dark)
     #expect(differingPixels(ours, search) <= tolerance)
 }
+
+// How the welcome moves. A still picture cannot show it, so each movement is recorded through time.
+
+/// Each movement, recorded every 120th of a second: it starts where it was, comes to rest within its time, and
+/// never swings further than a fifth past where it ends.
+@Test(arguments: [("arrival", 0.6), ("turn", 0.6), ("leaving", 0.2)])
+func eachMovementComesToRestInItsTime(name: String, seconds: Double) throws {
+    let moves = WelcomeMoves(motion: Motion(reduceMotion: false))
+    let animation = try #require(["arrival": moves.arrival, "turn": moves.turn, "leaving": moves.leaving][name] ?? nil)
+    let record = trace(animation, seconds: seconds)
+    #expect(try abs(#require(record.first)) <= 0.01)
+    #expect(try abs(#require(record.last) - 1) <= 0.02, "\(name) is not at rest after \(seconds) s")
+    #expect(record.allSatisfy { $0 <= 1.2 }, "\(name) swings too far")
+}
+
+/// Leaving is quicker than arriving, and the app's own touch on the first page comes a beat after its page.
+@Test func itLeavesQuickerThanItArrivesAndTheTouchComesABeatLater() {
+    let moves = WelcomeMoves(motion: Motion(reduceMotion: false))
+    #expect(moves.away > 0 && moves.away < 0.35)
+    #expect(moves.touchWaits > 0 && moves.touchWaits < moves.away + 0.1)
+}
+
+/// Under Reduce Motion, and under the app's own Reduce animations, nothing moves and nothing waits.
+@Test(arguments: [Motion(reduceMotion: true), Motion(reduceMotion: false, instant: true)])
+func underReduceMotionEachIsAtOnce(motion: Motion) {
+    let moves = WelcomeMoves(motion: motion)
+    #expect(moves.arrival == nil && moves.turn == nil && moves.leaving == nil)
+    #expect(moves.away == 0 && moves.touchWaits == 0)
+}
