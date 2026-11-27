@@ -314,7 +314,7 @@ scope() {
 
 lock() {
     [ -n "$base" ] || return $nothing
-    local feeds waiting other
+    local feeds waiting other state
     feeds=$(changed M | grep -E '^docs/.*/appcast\.xml$' || true)
     if [ -n "$feeds" ] && [[ $branch != release/* ]]; then
         echo "Only a release/<app>-<version> branch may change a feed: $feeds"
@@ -331,7 +331,8 @@ lock() {
         echo "Could not ask GitHub which releases are waiting: $waiting"
         return 1
     fi
-    waiting=$(branch_state "$waiting" | Scripts/check locked "$now")
+    state=$(branch_state "$waiting") && waiting=$(Scripts/check locked "$now" <<<"$state") ||
+        { echo "Could not tell which release locks this branch."; return 1; }
     [ -z "$waiting" ] || { echo "This branch's app is locked: $waiting is waiting on the owner."; return 1; }
 }
 
