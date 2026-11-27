@@ -1,7 +1,7 @@
 import Look
 import SwiftUI
 
-/// The Lists page: lines, quiet rows, marks, badges, key caps, setting rows, a stepper, a fading list, a banner
+/// The Lists page: lines, quiet rows, marks, badges, unread counts, key caps, setting rows, a stepper, a fading list, a banner
 /// and a toast, as Search has them, the toast in Search's capsule for a link's address.
 struct Lists: View {
     @State private var toast = {
@@ -25,6 +25,8 @@ struct Lists: View {
                 Mark(icon: nil, letter: "S")
                 Mark(icon: nil, letter: "N", size: 26)
                 Mark(icon: Image(systemName: "gearshape"), template: true, letter: "", size: 26)
+                Image(systemName: "tray").frame(width: 16, height: 16)
+                    .unreadBadge("12+", icon: 16, ring: .ground)
             }
             Key("⌘ K", "Find anything")
             GroupBlock(title: "General", icon: "gearshape") {
