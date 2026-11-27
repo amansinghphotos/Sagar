@@ -48,7 +48,9 @@ func aLongListFadesAsSearchsDoes(dark: Bool) throws {
     let search = try #require(approvedPicture(at: file))
     let fading = FadingScroll {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(1...12, id: \.self) { Text(verbatim: "Line \($0)").font(.system(size: 13)).frame(height: 24) }
+            ForEach(1...12, id: \.self) {
+                Text(verbatim: "Line \($0)").font(.system(size: 13)).frame(height: 24)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
