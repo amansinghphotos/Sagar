@@ -2,7 +2,7 @@ import Look
 import SwiftUI
 
 /// The Overlays page: captions, cards, panels, the card for what is new and the panel that stands over another
-/// app, as Search has them.
+/// app with its palette, as Search has them.
 struct Overlays: View {
     @State private var typed = ""
     @State private var plain = true
@@ -27,12 +27,13 @@ struct Overlays: View {
                 } foot: {
                     Pill("Clear", filled: true) {}
                 }
-                VStack(spacing: Space.near.rawValue) {
-                    LaunchField(text: $typed, prompt: "Paste anything", refusals: 0)
-                    LaunchList {
-                        Line("report.pdf", "2.4 MB") { Key("↩", "") }
-                    }
-                }
+                CommandPalette(
+                    text: $typed, prompt: "Paste anything",
+                    items: [
+                        PaletteItem(id: "1", key: "report.pdf", title: "2.4 MB", letter: "R"),
+                        PaletteItem(id: "2", key: "Paste as plain text", title: "", symbol: "command", keyLabel: "⇧↩"),
+                    ], take: { _ in }, dismiss: {}
+                )
                 .frame(width: 340)
             }
         }
