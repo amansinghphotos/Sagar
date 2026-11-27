@@ -333,7 +333,7 @@ build() {
     [ -d Sources ] || [ -d Tests ] || return $nothing
     ! words_only || return $nothing
     local app
-    compile swift build --build-tests || return 1
+    compile outside_git swift build --build-tests || return 1
     for app in Apps/*/; do
         [ -d "$app" ] || continue
         # GitHub's Mac builds every app. This Mac does only when the change touches what nothing else here compiles.
@@ -343,6 +343,10 @@ build() {
     done
 }
 
+outside_git() { # run a command without the settings a commit hook gives git, which name this repository and would
+    # send any git the command starts, a package fetch or a test's own small repository, here instead
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX "$@"
+}
 compile() { # run a build; any warning or error fails it, and only those lines are shown
     local log status problems
     log=$("$@" 2>&1)
@@ -355,7 +359,7 @@ compile() { # run a build; any warning or error fails it, and only those lines a
 tests() {
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
-    swift test --quiet 2>&1
+    outside_git swift test --quiet 2>&1
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
