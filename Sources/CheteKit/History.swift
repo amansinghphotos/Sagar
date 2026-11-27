@@ -18,9 +18,14 @@ nonisolated package struct History: Codable, Equatable, Sendable {
 
     /// Saves the history as a plain file, whole or not at all.
     package func export(to file: URL) throws {
+        try encoded().write(to: file, options: .atomic)
+    }
+
+    /// The history as the plain file holds it.
+    package func encoded() throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        try encoder.encode(self).write(to: file, options: .atomic)
+        return try encoder.encode(self)
     }
 
     /// Puts this history in Chete's folder in place of what is there, sealed by the key kept under a name.
