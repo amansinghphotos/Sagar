@@ -36,7 +36,9 @@ func eachPageLooksAsApproved(page: WelcomePage, dark: Bool) throws {
     try expectPicture(
         of: pages(
             at: .shortcut,
-            WelcomeGiven(held: KeyCombo("3", shift: true), warning: "macOS already uses these keys. Try others.")),
+            WelcomeGiven(
+                held: KeyCombo("3", shift: true),
+                warning: "macOS already uses \(KeyCombo("3", shift: true).inWords). Try others.")),
         width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-shortcut-warning")
 }
 
@@ -50,4 +52,10 @@ func eachCardLooksAsApproved(name: String, dark: Bool) throws {
 @Test func theWelcomeOpensOnItsGreetingAndEndsOnItsLastPage() {
     #expect(WelcomePage.allCases.first == .greeting)
     #expect(WelcomePage.allCases.last == .last)
+}
+
+@Test func aShortcutIsSaidInWordsAsAppleWritesOne() {
+    #expect(KeyCombo("c", shift: true).inWords == "Shift-Command-C")
+    #expect(KeyCombo("v", control: true).inWords == "Control-Command-V")
+    #expect(KeyCombo("space", command: false, option: true).inWords == "Option-Space")
 }

@@ -97,7 +97,8 @@ package struct WelcomePages: View {
             WelcomeHeading(
                 "Choose your shortcut.", "Pick one, or press the keys you'd like. They open Chete from any app.")
             VStack(spacing: Space.page.rawValue) {
-                Segmented(options: WelcomeGiven.suggestions.map { ($0, $0.display) }, selection: $given.shortcut)
+                Segmented(
+                    options: WelcomeGiven.suggestions.map { ($0, $0.inWords) }, selection: $given.shortcut, wide: true)
                 Keyboard(shortcut: given.shortcut, held: given.held, warning: given.warning)
             }
             .frame(maxWidth: .infinity)
@@ -149,6 +150,15 @@ package struct WelcomePages: View {
     }
 }
 
+extension KeyCombo {
+    /// The shortcut in words, as Apple writes one: Shift-Command-C.
+    var inWords: String {
+        let held = [(control, "Control"), (option, "Option"), (shift, "Shift"), (command, "Command")]
+        return (held.filter(\.0).map(\.1) + [key.count == 1 ? key.uppercased() : key.capitalized])
+            .joined(separator: "-")
+    }
+}
+
 /// Rows on a soft filled ground, as the welcome and its card both lay them.
 @MainActor private func rows(@ViewBuilder _ content: () -> some View) -> some View {
     VStack(alignment: .leading, spacing: Space.wide.rawValue, content: content)
@@ -159,11 +169,11 @@ package struct WelcomePages: View {
 
 /// The small card that stays in front of System Settings: where to go there, and what to look for.
 package struct WelcomeCard: View, Sendable {
-    package static let size = CGSize(width: 340, height: 166)
+    package static let size = CGSize(width: 340, height: 178)
     /// For keeping what is copied. macOS gives each app a menu there: Ask, Allow or Deny.
     package static let keeping = WelcomeCard(
         name: "keeping", place: "Paste from Other Apps", menu: "Allow",
-        how: "Set its menu to Allow. Chete only reads what you copy.")
+        how: "Choose Allow in its menu. Chete only reads what you copy.")
     /// For pasting. macOS gives each app a switch there. macOS 27 names the place Device Control and Data Access;
     /// earlier versions called it Accessibility.
     package static let pasting = WelcomeCard(
@@ -182,8 +192,8 @@ package struct WelcomeCard: View, Sendable {
         VStack(alignment: .leading, spacing: Space.apart.rawValue) {
             VStack(alignment: .leading, spacing: Space.hair.rawValue) {
                 Text("Find Chete, and allow it.").type(.heading).foregroundStyle(Role.ink)
-                Text("In Privacy & Security, under \(place).").type(.detail).foregroundStyle(Role.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text("In Privacy & Security, under:").type(.detail).foregroundStyle(Role.muted)
+                Text(place).type(.body).foregroundStyle(Role.ink)
             }
             rows {
                 // A picture of the row to look for. It is not the real one, so it takes no clicks.
