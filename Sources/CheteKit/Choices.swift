@@ -7,6 +7,8 @@ package final class Choices {
     private let folder: URL
     private let keyName: String
     private let now: () -> Date
+    /// Told each time clips are deleted or brought back, so the list can show what is kept now.
+    private let changed: () -> Void
 
     /// Kept the moment it changes. A shorter time to keep things deletes what is older at once.
     package var settings: Settings {
@@ -16,10 +18,13 @@ package final class Choices {
     package var failure: String?
 
     /// The choices kept in Chete's folder, whose clips are sealed by the key under a name.
-    package init(folder: URL, keyName: String, now: @escaping () -> Date = { .now }) {
+    package init(
+        folder: URL, keyName: String, now: @escaping () -> Date = { .now }, changed: @escaping () -> Void = {}
+    ) {
         self.folder = folder
         self.keyName = keyName
         self.now = now
+        self.changed = changed
         do {
             settings = try Settings.read(in: folder)
         } catch {
@@ -29,8 +34,8 @@ package final class Choices {
     }
 
     /// The choices in Chete's own folder on this Mac.
-    package static func onThisMac() -> Choices {
-        Choices(folder: .applicationSupportDirectory.appending(path: "Chete"), keyName: Clips.keyName)
+    package static func onThisMac(changed: @escaping () -> Void) -> Choices {
+        Choices(folder: .applicationSupportDirectory.appending(path: "Chete"), keyName: Clips.keyName, changed: changed)
     }
 
     /// Does something, and says so if it did not work.
@@ -46,6 +51,7 @@ package final class Choices {
     /// Deletes every clip. The settings stay.
     package func deleteAll() throws {
         try clips().deleteAll()
+        changed()
     }
 
     /// Every clip and setting as the plain file an export saves.
@@ -58,11 +64,13 @@ package final class Choices {
         let history = try History.bringBack(from: file)
         try history.replace(in: folder, keyName: keyName)
         settings = history.settings
+        changed()
     }
 
     private func keep() throws {
         try settings.write(in: folder)
         try clips().trim(settings.keeping, now: now())
+        changed()
     }
 
     private func clips() throws -> Clips {
