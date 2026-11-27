@@ -40,17 +40,24 @@ private struct Toasting: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .bottomLeading) {
-                if let words = queue.current {
-                    Toast(words: words)
-                        .padding(Space.gap.rawValue)
-                        .transition(.opacity)
-                        .task(id: words) {
-                            try? await Task.sleep(for: .seconds(ToastQueue.stays))
-                            guard !Task.isCancelled else { return }
-                            queue.next()
-                        }
+            .overlay {
+                GeometryReader { space in
+                    if let words = queue.current {
+                        // A long line is cut in its middle, so it never covers more than part of the view.
+                        Toast(words: words)
+                            .frame(maxWidth: min(space.size.width * 0.6, 640), alignment: .leading)
+                            .padding(Space.gap.rawValue)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                            .transition(.opacity)
+                            .task(id: words) {
+                                try? await Task.sleep(for: .seconds(ToastQueue.stays))
+                                guard !Task.isCancelled else { return }
+                                queue.next()
+                            }
+                    }
                 }
+                // Clicks pass through a toast to what lies under it.
+                .allowsHitTesting(false)
             }
             .animation(motion.timed(.easeOut(duration: 0.12)), value: queue.current == nil)
     }
@@ -64,6 +71,8 @@ private struct Toast: View {
         Text(words)
             .type(.row)
             .foregroundStyle(Role.ink)
+            .lineLimit(1)
+            .truncationMode(.middle)
             .padding(.horizontal, 11)
             .frame(height: 26)
             .background(Capsule().fill(Role.ground))
@@ -72,16 +81,20 @@ private struct Toast: View {
     }
 }
 
-/// A question over the page: an icon and its words, then a main answer, another, and one to say no.
+/// A question over the page: an icon and its words, then a main answer, perhaps another, and one to say no.
+/// Where it is too narrow for one line, its answers go under its words, and then under each other.
 package struct Banner: View {
     private let icon: String
     private let question: String
     private let yes: (String, () -> Void)
-    private let maybe: (String, () -> Void)
+    private let maybe: (String, () -> Void)?
     private let no: (String, () -> Void)
 
+    /// The height of the banner on one line, whose ends are then fully round.
+    private let line: CGFloat = 43
+
     package init(
-        icon: String, question: String, yes: (String, () -> Void), maybe: (String, () -> Void),
+        icon: String, question: String, yes: (String, () -> Void), maybe: (String, () -> Void)? = nil,
         no: (String, () -> Void)
     ) {
         self.icon = icon
@@ -92,6 +105,30 @@ package struct Banner: View {
     }
 
     package var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.apart.rawValue) {
+                words
+                answers
+            }
+            .frame(height: line)
+            .fixedSize()
+            VStack(alignment: .leading, spacing: Space.apart.rawValue) {
+                words
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.apart.rawValue) { answers }.fixedSize()
+                    VStack(alignment: .leading, spacing: Space.gap.rawValue) { answers }
+                }
+            }
+            .padding(.vertical, (line - 25) / 2)
+        }
+        .padding(.leading, Space.page.rawValue)
+        .padding(.trailing, Space.gap.rawValue)
+        .background(RoundedRectangle(cornerRadius: line / 2).fill(Role.ground))
+        .overlay(RoundedRectangle(cornerRadius: line / 2).strokeBorder(Role.hairline, lineWidth: 1))
+        .elevation(.banner)
+    }
+
+    private var words: some View {
         HStack(spacing: Space.apart.rawValue) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .medium))
@@ -99,16 +136,17 @@ package struct Banner: View {
             Text(question)
                 .font(.system(size: 12.5))
                 .foregroundStyle(Role.ink)
-            Answer(words: yes.0, ink: .ground, filled: true, act: yes.1)
-            Answer(words: maybe.0, ink: .ink, act: maybe.1)
-            Answer(words: no.0, ink: .muted, act: no.1)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.leading, Space.page.rawValue)
-        .padding(.trailing, Space.gap.rawValue)
-        .frame(height: 43)
-        .background(Capsule().fill(Role.ground))
-        .overlay(Capsule().strokeBorder(Role.hairline, lineWidth: 1))
-        .elevation(.banner)
+    }
+
+    @ViewBuilder
+    private var answers: some View {
+        Answer(words: yes.0, ink: .ground, filled: true, act: yes.1)
+        if let maybe {
+            Answer(words: maybe.0, ink: .ink, act: maybe.1)
+        }
+        Answer(words: no.0, ink: .muted, act: no.1)
     }
 }
 
