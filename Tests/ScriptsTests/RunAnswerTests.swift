@@ -25,8 +25,8 @@ func githubsAnswerAboutARunIsReadAsItSays(record: String, reading expected: Stri
     #expect(try reading(record, ended: 0) == expected)
 }
 
-/// Recorded the same day, when the agents' hourly allowance ran out: gh ended with 1 and this error. The ready step
-/// once read it as a failed check, though the check was still running and passed.
+/// Recorded the same day, when the agents' hourly allowance ran out, with its names and numbers made up: gh ended
+/// with 1 and this error. The ready step once read it as a failed check, though the check was still running and passed.
 @Test func githubNotAnsweringIsNeitherAFailureNorAPass() throws {
     #expect(try reading("Out of Allowance.txt", ended: 1) == "unanswered\n")
 }
