@@ -1,28 +1,50 @@
 // Taken from Search, Sources/Search/Design.swift at commit c92ea7c (github.com/driceroland/Search).
 // Copyright (c) 2026 Office Commun. Used under the MIT licence, whose notice is in ACKNOWLEDGEMENTS.md.
 // Changed only where this repository's rules require: Reduce Motion is read from SwiftUI rather than AppKit,
-// so the motion is a value a screen reads from its environment; Search's own settings (Reduce animations,
-// the lighter motion when power is short, sliding the column) and its test switches are not carried over,
-// and sliding the column is a value given here instead of read from Search's settings.
+// so the motion is a value a screen reads from its environment; the lighter motion when power is short and
+// the test switches are not carried over; and Reduce animations and sliding the column are values given
+// here instead of read from Search's settings.
 import SwiftUI
 
 // One set of springs for the whole app, so every panel, tab and page moves
 // like a single piece of software rather than a pile of views.
-// When macOS Reduce Motion is on in System Settings, transitions become
-// immediate so the interface does not jump or slide.
+// When macOS Reduce Motion is on in System Settings, or Reduce animations in
+// the app's own, transitions become immediate so the interface does not jump
+// or slide.
 nonisolated package struct Motion: Equatable, Sendable {
-    /// Whether interface transitions should be immediate, following the
-    /// Mac's own accessibility setting.
-    package var reduced: Bool
+    /// The Mac's own Reduce Motion.
+    package var reduceMotion: Bool
+
+    /// Reduce animations, for the app alone: every transition is immediate,
+    /// as under Reduce Motion, and so are the fades Reduce Motion keeps.
+    package var instant = false
 
     /// Slide the column in and out: the column comes out on an ease-out and
     /// goes back on an ease-in, as Arc's does, rather than on the short
     /// springs below.
     package var slides = false
 
-    package init(reduced: Bool, slides: Bool = false) {
-        self.reduced = reduced
+    package init(reduceMotion: Bool, slides: Bool = false, instant: Bool = false) {
+        self.reduceMotion = reduceMotion
         self.slides = slides
+        self.instant = instant
+    }
+
+    /// Whether interface transitions should be immediate, following the
+    /// Mac's own accessibility setting or the app's Reduce animations.
+    package var reduced: Bool {
+        instant || reduceMotion
+    }
+
+    /// `seconds`, or none with Reduce animations on: for the fades that run
+    /// on a length of their own rather than on the animations below.
+    package func seconds(_ seconds: TimeInterval) -> TimeInterval {
+        instant ? 0 : seconds
+    }
+
+    /// `animation`, or none with Reduce animations on, the same way.
+    package func timed(_ animation: Animation) -> Animation? {
+        instant ? nil : animation
     }
 
     package var glide: Animation? {
@@ -80,9 +102,10 @@ nonisolated package struct Motion: Equatable, Sendable {
     /// Slide the column in and out with the Mac's Reduce Motion on: the
     /// column fades in place where it would slide, as Apple's own sidebars
     /// do under Reduce Motion, rather than doing nothing at all, which read
-    /// as a switch that does nothing.
+    /// as a switch that does nothing. The app's own Reduce animations still
+    /// means at once (see `instant`).
     package var fadesColumn: Bool {
-        slide(out: true) != nil && reduced
+        !instant && slide(out: true) != nil && reduceMotion
     }
 
     /// That fade's length.
@@ -91,5 +114,5 @@ nonisolated package struct Motion: Equatable, Sendable {
 
 extension EnvironmentValues {
     /// The motion for where a screen sits: Search's, at once under the Mac's Reduce Motion.
-    package var motion: Motion { Motion(reduced: accessibilityReduceMotion) }
+    package var motion: Motion { Motion(reduceMotion: accessibilityReduceMotion) }
 }
