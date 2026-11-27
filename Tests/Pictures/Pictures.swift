@@ -129,6 +129,13 @@ private func bytes(of image: CGImage) -> [UInt8] {
     return data
 }
 
+/// The red, green and blue of one point of a picture, each 0 to 255. A point is two pixels across.
+package func colour(at x: Int, _ y: Int, in image: CGImage) -> [Int] {
+    let all = bytes(of: image)
+    let pixel = ((y * 2) * image.width + x * 2) * 4
+    return (0..<3).map { Int(all[pixel + $0]) }
+}
+
 /// The picture kept in a file, if there is one.
 package func approvedPicture(at file: URL) -> CGImage? {
     CGImageSourceCreateWithURL(file as CFURL, nil).flatMap { CGImageSourceCreateImageAtIndex($0, 0, nil) }

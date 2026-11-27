@@ -23,7 +23,8 @@ let package = Package(
         .testTarget(name: "ShellTests", dependencies: ["Shell"], swiftSettings: strict),
         .target(name: "CheteKit", dependencies: ["Shell"], swiftSettings: strict),
         .target(name: "Look", swiftSettings: strict),
-        .testTarget(name: "LookTests", dependencies: ["Look"], swiftSettings: strict),
+        .testTarget(
+            name: "LookTests", dependencies: ["Look", "Pictures"], exclude: ["Fixtures"], swiftSettings: strict),
         // The test window where each part of the look is checked against Search. Never shipped.
         .executableTarget(name: "Gallery", dependencies: ["Look"], swiftSettings: strict),
         .testTarget(
