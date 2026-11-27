@@ -12,7 +12,7 @@ public struct CheteScene: Scene {
 
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
-        SwiftUI.Settings { CheteSettings() }.restorationBehavior(.disabled)
+        SwiftUI.Settings { CheteSettings(changed: Self.reread) }.restorationBehavior(.disabled)
         Window("Chete", id: "chete") {
             ClipList(clips: Self.shelf.clips) { clip, plainText in
                 _ = Pasting.paste(clip, plainText: plainText, mayPaste: false)
@@ -27,6 +27,8 @@ public struct CheteScene: Scene {
 
     /// The clips the window shows. Picking one copies it, until pasting for you comes with the panel.
     private static let shelf = Shelf()
+    /// Where what you copy is kept, once it is open.
+    private static var copies: Copies?
     /// Watches what you copy for as long as Chete is open.
     private static var watcher: Watcher?
     private static var started = false
@@ -39,12 +41,27 @@ public struct CheteScene: Scene {
             do {
                 let copies = try await Task.detached { try Copies.onThisMac() }.value
                 shelf.clips = try await copies.all()
+                Self.copies = copies
                 watcher = Watcher(copies: copies)
                 watcher?.kept = { shelf.add($0) }
                 watcher?.start()
                 copies.trimDaily { shelf.remove($0) }
             } catch {
                 Logger(subsystem: "com.amansingh.chete", category: "Copies").error("Chete keeps no copies: \(error)")
+            }
+        }
+    }
+}
+
+extension CheteScene {
+    /// Shows what is kept now, after Settings deleted or brought back clips.
+    fileprivate static func reread() {
+        Task {
+            guard let copies else { return }
+            do {
+                shelf.clips = try await copies.reread()
+            } catch {
+                Logger(subsystem: "com.amansingh.chete", category: "Copies").error("Chete could not reread: \(error)")
             }
         }
     }
