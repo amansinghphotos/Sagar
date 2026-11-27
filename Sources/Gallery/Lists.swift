@@ -1,8 +1,8 @@
 import Look
 import SwiftUI
 
-/// The Lists page: lines, quiet rows, marks, badges, key caps, setting rows, a stepper, a banner and a toast, as
-/// Search has them, the toast in Search's capsule for a link's address.
+/// The Lists page: lines, quiet rows, marks, badges, key caps, setting rows, a stepper, a fading list, a banner
+/// and a toast, as Search has them, the toast in Search's capsule for a link's address.
 struct Lists: View {
     @State private var toast = {
         var queue = ToastQueue()
@@ -40,6 +40,16 @@ struct Lists: View {
         }
         .padding(Space.page.rawValue)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .overlay(alignment: .topTrailing) {
+            FadingScroll {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(1...12, id: \.self) { Text(verbatim: "Line \($0)").frame(height: 24) }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(width: 220, height: 160)
+            .padding(Space.page.rawValue)
+        }
         .overlay(alignment: .bottomTrailing) {
             Banner(
                 icon: "bell", question: "Chete wants to paste for you", yes: ("Allow once", {}),

@@ -2,7 +2,8 @@ import Look
 import SwiftUI
 
 /// The Controls page: every button, field, switch and choice, and what shows when there is nothing, trouble or
-/// work under way, and sidebar rows, as Search has them.
+/// work under way, sidebar rows, a drag handle and a folder's arrow,
+/// as Search has them.
 struct Controls: View {
     @State private var search = ""
     @State private var typed = "notes"
@@ -54,6 +55,13 @@ struct Controls: View {
                     SideItem(title: "Recipes", letter: "R", close: {})
                 }
                 .frame(width: 240)
+                HStack(spacing: Space.page.rawValue) {
+                    EdgeGrip(lit: false, resting: true)
+                    EdgeGrip(lit: true)
+                    DisclosureArrow(open: false)
+                    DisclosureArrow(open: true)
+                }
+                .padding(Space.page.rawValue)
             }
             .frame(width: 380)
         }
