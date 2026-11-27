@@ -30,8 +30,7 @@ struct WelcomeOnThisMac: View {
     /// The card in front of System Settings while a permission is being turned on.
     @State private var card: SettingsCard?
 
-    private static let folder = Copies.folderOnThisMac
-    private var folder: URL { Self.folder }
+    private let folder = Copies.folderOnThisMac
 
     var body: some View {
         WelcomePages(startPage: Self.opensAt, given: $given, act: acts(), finish: finish)
