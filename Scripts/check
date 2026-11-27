@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | request | size | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [request | size | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | request | size | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | request | size | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -22,6 +22,15 @@ if [ "${1:-}" = tool ]; then # Scripts/check tool <command>…: runs a command a
     shift
     [ $# -gt 0 ] || { echo "Usage: Scripts/check tool <command>…"; exit 2; }
     exec "$@"
+fi
+
+if [ "${1:-}" = folder ]; then # Scripts/check folder: the commit gate's first rule. Each chat works in its own copy;
+    # the shared folder, where every chat opens, stays on clean main, and only a release commits there.
+    [ "$(git rev-parse --path-format=absolute --git-dir)" = "$(git rev-parse --path-format=absolute --git-common-dir)" ] ||
+        exit 0
+    case $(git branch --show-current) in release/*) exit 0 ;; esac
+    echo "This is the shared folder, where every chat opens. Commit from your own copy: EnterWorktree, or git worktree add."
+    exit 1
 fi
 
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
