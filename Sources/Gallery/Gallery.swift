@@ -15,6 +15,7 @@ struct GalleryApp: App {
 enum Page: String, CaseIterable, Identifiable {
     case tokens = "Tokens"
     case controls = "Controls"
+    case choices = "Choices"
     case lists = "Lists"
     case overlays = "Overlays"
     case states = "States"
@@ -47,9 +48,10 @@ struct Gallery: View {
                 switch page {
                 case .tokens: Tokens()
                 case .controls: Controls()
+                case .choices: Choices()
                 case .lists: Lists()
                 case .overlays: Overlays()
-                default: ContentUnavailableView(page.rawValue, systemImage: "square.dashed")
+                case .states: States()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
