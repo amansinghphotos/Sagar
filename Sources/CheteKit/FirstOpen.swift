@@ -116,8 +116,8 @@ package struct FirstOpenPages: View {
                         Rule(inset: 0)
                         HStack(spacing: Space.apart.rawValue) {
                             VStack(alignment: .leading, spacing: Space.hair.rawValue) {
-                                Text("Bring back your history").type(.body).foregroundStyle(Role.ink)
-                                Text(broughtBack ?? "Pick a file you exported. It replaces what’s here.")
+                                Text("Bring back clips").type(.body).foregroundStyle(Role.ink)
+                                Text(broughtBack ?? "Replaces your clips and settings with a file you exported.")
                                     .type(.detail).foregroundStyle(Role.muted)
                             }
                             Spacer()
