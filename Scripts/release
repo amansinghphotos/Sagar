@@ -184,7 +184,7 @@ run=$(gh run list --workflow check --branch main --event push --limit 1 --json d
 [ -n "$run" ] && gh run watch "$run" --exit-status >/dev/null 2>&1 ||
     stop "GitHub's Mac has not passed main as it stands: see gh run list --workflow check --branch main."
 
-Scripts/build "$app" "$version"
+NOTES="$notes" Scripts/build "$app" "$version"
 image=$out/$app-$version.dmg
 ditto -c -k --keepParent "$out/$app.app" "$out/$app.zip"
 notarise "$out/$app.zip" "$out/$app.app"
