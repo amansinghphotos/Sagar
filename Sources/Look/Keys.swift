@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A keyboard shortcut: a key, by its name, and the modifiers held with it.
 nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
-    /// The key: a character in lower case, such as `t` or `]`, or a name, such as `left`, `return` or `f5`.
+    /// The key: a character in lower case, such as `t` or `]`, or a name, such as `left`, `return` or `f5` (F1 to F12).
     package var key: String
     package var command = false
     package var shift = false
@@ -29,7 +29,7 @@ nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
         let name: String
         if let named = Self.names[equivalent] {
             name = named
-        } else if let scalar = character.unicodeScalars.first, (0xF704...0xF71B).contains(scalar.value) {
+        } else if let scalar = character.unicodeScalars.first, (0xF704...0xF70F).contains(scalar.value) {
             name = "f\(scalar.value - 0xF704 + 1)"
         } else {
             name = String(character)
@@ -43,15 +43,13 @@ nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
     /// Keys that are known by a name rather than by the character they type.
     private static let names: [KeyEquivalent: String] = [
         .upArrow: "up", .downArrow: "down", .leftArrow: "left", .rightArrow: "right", .return: "return", .tab: "tab",
-        .space: "space", .delete: "delete", .deleteForward: "delete", .escape: "escape", .home: "home",
-        .end: "end", .pageUp: "pageup", .pageDown: "pagedown", .clear: "clear",
+        .space: "space", .delete: "delete", .deleteForward: "delete", .escape: "escape",
     ]
 
     /// How a menu shows each named key.
     private static let symbols: [String: String] = [
         "up": "↑", "down": "↓", "left": "←", "right": "→", "return": "↩", "tab": "⇥", "space": "Space",
-        "delete": "⌫", "escape": "⎋", "home": "↖", "end": "↘", "pageup": "⇞",
-        "pagedown": "⇟", "clear": "⌧",
+        "delete": "⌫", "escape": "⎋",
     ]
 
     /// The shortcut as a menu shows it: its modifiers in the Mac's order, then its key.
@@ -68,7 +66,7 @@ nonisolated package struct KeyCombo: Codable, Hashable, Sendable {
     package var isUsable: Bool { command || option || control || isFunctionKey }
 
     private var isFunctionKey: Bool {
-        key.count > 1 && key.first == "f" && key.dropFirst().allSatisfy(\.isNumber)
+        key.count > 1 && key.first == "f" && Int(key.dropFirst()) != nil
     }
 }
 
@@ -78,21 +76,27 @@ package struct FixedKey: View {
     private let help: String
 
     package init(_ text: String, help: String = "") {
-        self.text = text
-        self.help = help
+        (self.text, self.help) = (text, help)
     }
 
     package var body: some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(Role.muted)
-            .lineLimit(1)
+        Text(text).foregroundStyle(Role.muted)
+            .asKeyBox(weight: .regular)
+            .overlay { keyBoxShape.strokeBorder(Role.hairline) }
+            .help(help)
+    }
+}
+
+/// The rounded shape of a shortcut box.
+private let keyBoxShape = RoundedRectangle(cornerRadius: Radius.control.rawValue, style: .continuous)
+
+extension Text {
+    /// Sets words as a shortcut box shows them: on one line, with room at the sides, and at least as large as a
+    /// short shortcut needs.
+    fileprivate func asKeyBox(weight: Font.Weight) -> some View {
+        font(.system(size: 12, weight: weight)).lineLimit(1)
             .padding(.horizontal, 10)
             .frame(minWidth: 64, minHeight: 24)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.control.rawValue, style: .continuous).strokeBorder(Role.hairline)
-            )
-            .help(help)
     }
 }
 
@@ -116,11 +120,8 @@ package struct KeyBox: View {
         key: Binding<KeyCombo?>, changed: Bool = false, refusal: @escaping (KeyCombo) -> String? = { _ in nil },
         owner: @escaping (KeyCombo) -> String? = { _ in nil }, listening: Bool = false
     ) {
-        _key = key
-        self.changed = changed
-        self.refusal = refusal
-        self.owner = owner
-        _listening = State(initialValue: listening)
+        (_key, _listening) = (key, State(initialValue: listening))
+        (self.changed, self.refusal, self.owner) = (changed, refusal, owner)
     }
 
     private var words: String {
@@ -130,32 +131,33 @@ package struct KeyBox: View {
     }
 
     package var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.control.rawValue, style: .continuous)
-        Button(action: listenOrStop) {
-            Text(words)
-                .font(.system(size: 12, weight: changed ? .semibold : .regular))
-                .foregroundStyle(listening || key != nil ? Role.ink : Role.muted)
-                .lineLimit(1)
-                .padding(.horizontal, 10)
-                .frame(minWidth: 64, minHeight: 24)
-                .background(listening || hovering ? Role.hover : Role.ground, in: shape)
-                .overlay(
-                    shape.strokeBorder(listening ? AnyShapeStyle(Role.ink.opacity(0.4)) : AnyShapeStyle(Role.hairline))
-                )
-                .contentShape(shape)
-        }
-        .buttonStyle(.plain)
-        .help("Click, then press the new shortcut")
-        .onHover { hovering = $0 }
-        .focusable(listening)
-        .focused($heard)
-        .onKeyPress(phases: .down) { press in
-            guard listening else { return .ignored }
-            hear(KeyCombo(key: press.key, modifiers: press.modifiers))
-            return .handled
-        }
-        .onChange(of: heard) { if !heard, listening { stop() } }
-        .onDisappear(perform: stop)
+        Button(action: listenOrStop) { face }
+            .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+            .help("Click, then press the new shortcut")
+            .focusable(listening)
+            .focused($heard)
+            .onKeyPress(phases: .down, action: press)
+            .onChange(of: heard) { _, isHeard in if !isHeard, listening { stop() } }
+            .onDisappear(perform: stop)
+    }
+
+    /// The words on a lit ground while listening or under the pointer, in a darker edge while listening. A click
+    /// lands anywhere in its bounds.
+    private var face: some View {
+        let edge = listening ? AnyShapeStyle(Role.ink.opacity(0.4)) : AnyShapeStyle(Role.hairline)
+        return Text(words).foregroundStyle(listening || key != nil ? Role.ink : Role.muted)
+            .asKeyBox(weight: changed ? .semibold : .regular)
+            .background(listening || hovering ? Role.hover : Role.ground, in: keyBoxShape)
+            .overlay { keyBoxShape.strokeBorder(edge) }
+            .contentShape(Rectangle())
+    }
+
+    /// A key pressed while the box has focus: heard while listening, and otherwise passed on.
+    private func press(_ press: KeyPress) -> KeyPress.Result {
+        guard listening else { return .ignored }
+        hear(KeyCombo(key: press.key, modifiers: press.modifiers))
+        return .handled
     }
 
     private func listenOrStop() {
