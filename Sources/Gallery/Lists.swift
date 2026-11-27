@@ -21,7 +21,7 @@ struct Lists: View {
                 Mark(icon: Image(systemName: "gearshape"), template: true, letter: "", size: 26)
             }
             Key("⌘ K", "Find anything")
-            GroupBlock(title: "Privacy", icon: "hand.raised") {
+            GroupBlock(title: "General", icon: "gearshape") {
                 SettingRow(icon: "bell", title: "Notifications", detail: "Let sites ask to send them.") {
                     Switch(on: $notify)
                 }
