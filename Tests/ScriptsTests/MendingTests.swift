@@ -5,7 +5,7 @@ import Testing
 /// it, the release tags, and the open branches. Returns its answer.
 private func ask(
     _ question: String, _ issue: String, tags: [String] = ["bolo-1.0"], waiting: [String] = [],
-    branch: String = "7-a-slice"
+    branch: String = "7-a-slice", faults: [String] = []
 ) throws -> String {
     let here = URL(filePath: #filePath).deletingLastPathComponent()
     let process = Process()
@@ -17,7 +17,10 @@ private func ask(
     process.standardOutput = answer
     try process.run()
     let list = { (names: [String]) in names.map { "\"\($0)\"" }.joined(separator: ",") }
-    let state = #"{"issue":\#(issue),"tags":[\#(list(tags))],"waiting":[\#(list(waiting))],"branch":"\#(branch)"}"#
+    let state = #"""
+        {"issue":\#(issue),"tags":[\#(list(tags))],"waiting":[\#(list(waiting))],"branch":"\#(branch)",
+        "faults":[\#(faults.joined(separator: ","))]}
+        """#
     input.fileHandleForWriting.write(Data(state.utf8))
     try input.fileHandleForWriting.close()
     process.waitUntilExit()
@@ -27,6 +30,11 @@ private func ask(
 /// The shipped app that the issue's branch may mend beside the app in work, or nothing.
 private func mends(_ issue: String, tags: [String] = ["bolo-1.0"]) throws -> String {
     try ask("mending", issue, tags: tags)
+}
+
+/// The apps GitHub's Mac tours: the app in work, then each shipped app with an open fault.
+private func touring(_ faults: [String], tags: [String] = ["bolo-1.0"]) throws -> String {
+    try ask("touring", "null", tags: tags, faults: faults)
 }
 
 /// The waiting release that locks the branch, or nothing.
@@ -74,4 +82,17 @@ func anythingElseNamesNoApp(issue: String) throws {
 
 @Test func aReleaseIsNotLockedByItself() throws {
     #expect(try locked("null", waiting: ["release/chete-1.0"], branch: "release/chete-1.0") == "")
+}
+
+@Test func theAppInWorkIsToured() throws {
+    #expect(try touring([]) == "Chete\n")
+}
+
+@Test func aShippedAppWithAnOpenFaultIsTouredOnce() throws {
+    #expect(try touring([record(), record()]) == "Chete\nBolo\n")
+}
+
+@Test func noOtherAppIsToured() throws {
+    #expect(try touring([record(label: "enhancement"), record(milestone: "Chete 1.1")]) == "Chete\n")
+    #expect(try touring([record()], tags: ["chete-1.0"]) == "Chete\n")
 }

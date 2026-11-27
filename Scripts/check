@@ -3,18 +3,22 @@
 # The numbers come from CONSTRAINTS.md. GitHub also sets PR_NUMBER and PR_BRANCH.
 set -u
 cd "$(dirname "$0")/.." || exit 1
-case ${1:-} in mending | locked) # questions about a branch, asked with <now> and its state on standard input:
+case ${1:-} in mending | locked | touring) # questions about a branch, asked with <now> and its state on standard input:
     # {"issue": its issue, as gh issue view --json state,labels,milestone gives it, "tags": [every release tag],
-    #  "waiting": [every open branch], "branch": its own name}. The platform spec, Mending a Shipped App.
+    #  "waiting": [every open branch], "branch": its own name, "faults": [every open fault issue]}. The platform
+    # spec, Mending a Shipped App.
     # mending: the shipped app the branch mends beside the app in work, or nothing. Only an open fault in the
     #   milestone of an app that has shipped, and is not the app in work, names one: a wish waits for NOW.
     # locked: the waiting release that locks the branch: its own app's, the mended app or the app in work.
+    # touring: the apps GitHub's Mac tours: the app in work, then each shipped app with an open fault.
     mends='.tags as $tags | .issue // {} | select(.state == "OPEN" and any(.labels[]?; .name == "fault"))
         | (.milestone.title // "" | capture("^(?<app>[A-Za-z]+) [0-9]+\\.[0-9]+$").app) as $app
         | ($app | ascii_downcase) as $name
         | select($name != ($now | ascii_downcase) and any($tags[]; startswith($name + "-")))
         | $app'
-    [ "$1" = mending ] || mends='. as $state | ([('"$mends"')][0] // $now | ascii_downcase) as $app
+    [ "$1" != touring ] || mends='[$now] + ([.tags as $tags | .faults[]? | {issue: ., tags: $tags} | '"$mends"'] | unique)
+        | .[]'
+    [ "$1" != locked ] || mends='. as $state | ([('"$mends"')][0] // $now | ascii_downcase) as $app
         | $state.waiting[]? | select(. != $state.branch and (ascii_downcase | startswith("release/" + $app + "-")))'
     jq -r --arg now "${2:?Scripts/check $1 <now> < state}" "$mends"
     exit ;;
@@ -323,10 +327,11 @@ size() {
     [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
 }
 
+release_tags() { git ls-remote --tags origin 2>/dev/null | sed -n 's|.*refs/tags/||p' | jq -R . | jq -s .; }
 branch_state() { # branch_state [open branches]: what the questions about this branch read, from its issue
     local issue=${branch%%-*} state=null tags
     [[ ! $issue =~ ^[0-9]+$ ]] || state=$(gh issue view "$issue" --json state,labels,milestone 2>/dev/null) || state=null
-    tags=$(git ls-remote --tags origin 2>/dev/null | sed -n 's|.*refs/tags/||p' | jq -R . | jq -s .)
+    tags=$(release_tags)
     jq -n --argjson issue "$state" --argjson tags "${tags:-[]}" --arg branch "$branch" --arg waiting "${1:-}" \
         '{issue: $issue, tags: $tags, branch: $branch, waiting: ($waiting | split("\n") | map(select(. != "")))}'
 }
@@ -365,7 +370,7 @@ lock() {
         return 1
     fi
     changed | grep -qE '^(Apps|Sources|Tests)/' || return 0
-    if ! waiting=$(gh pr list --state open --json headRefName --jq '.[].headRefName' 2>&1); then
+    if ! waiting=$(gh pr list --state open --limit 1000 --json headRefName --jq '.[].headRefName' 2>&1); then
         [ -n "${CI:-}" ] || return $nothing
         echo "Could not ask GitHub which releases are waiting: $waiting"
         return 1
@@ -550,35 +555,50 @@ tests() {
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
-    [ -n "${CI:-}" ] && [ -f "Apps/$now/Tour.swift" ] || return $nothing
+    [ -n "${CI:-}" ] || return $nothing
     ! words_only || return $nothing
-    local log launch before after
-    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${now}Tour" -derivedDataPath .build/Xcode \
-        -resultBundlePath .build/Tour.xcresult test \
+    local faults tags apps app toured=no
+    faults=$(gh issue list --state open --label fault --limit 100 --json state,labels,milestone) &&
+        tags=$(release_tags) &&
+        apps=$(jq -n --argjson faults "$faults" --argjson tags "$tags" '{faults: $faults, tags: $tags}' |
+            Scripts/check touring "$now") || { echo "Could not tell which apps to tour."; return 1; }
+    mkdir -p .build/Tours
+    for app in $apps; do # the app in work, then each shipped app whose fault is being mended
+        [ -f "Apps/$app/Tour.swift" ] || continue
+        tour_of "$app" || return 1
+        toured=yes
+    done
+    [ $toured = yes ] || return $nothing
+}
+
+tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are within the numbers
+    local app=$1 log launch before after result=.build/Tours/$1.xcresult
+    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode \
+        -resultBundlePath "$result" test \
         CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) || {
-        xcrun xcresulttool get test-results summary --path .build/Tour.xcresult |
+        xcrun xcresulttool get test-results summary --path "$result" |
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
         return 1
     }
 
     # Launch, by Apple's own launch metric, which the tour must take.
-    launch=$(xcrun xcresulttool get test-results metrics --path .build/Tour.xcresult |
+    launch=$(xcrun xcresulttool get test-results metrics --path "$result" |
         fastest_launch "$(number 'Launch to first frame')") ||
-        { echo "The tour's fastest launch was $launch s."; return 1; }
-    echo "note: fastest of its launches $launch s"
+        { echo "$app's tour: its fastest launch was $launch s."; return 1; }
+    echo "note: $app, fastest of its launches $launch s"
 
     # At rest: opened hidden, left alone, and measured from outside.
     used() {
-        ps -xo cputime=,comm= | awk -v app="/$now.app/Contents/MacOS/$now" \
+        ps -xo cputime=,comm= | awk -v app="/$app.app/Contents/MacOS/$app" \
             'index($0, app) { split($1, part, ":"); print part[1] * 60 + part[2] }'
     }
-    open -g -j ".build/Xcode/Build/Products/Release/$now.app" && sleep 5
+    open -g -j ".build/Xcode/Build/Products/Release/$app.app" && sleep 5
     before=$(used) && sleep 10 && after=$(used)
-    pkill -f "/$now.app/Contents/MacOS/$now"
-    [ -n "$before" ] && [ -n "$after" ] || { echo "$now did not stay open."; return 1; }
-    awk -v before="$before" -v after="$after" -v most="$(number 'Processor time while')" 'BEGIN {
+    pkill -f "/$app.app/Contents/MacOS/$app"
+    [ -n "$before" ] && [ -n "$after" ] || { echo "$app did not stay open."; return 1; }
+    awk -v app="$app" -v before="$before" -v after="$after" -v most="$(number 'Processor time while')" 'BEGIN {
         percent = (after - before) * 10
-        printf "note: hidden for 10 s it used %.1f%% of a processor\n", percent
+        printf "note: " app ", hidden for 10 s it used %.1f%% of a processor\n", percent
         exit !(percent <= most)
     }'
 }
