@@ -24,7 +24,7 @@ let package = Package(
         .target(name: "CheteKit", dependencies: ["Shell"], swiftSettings: strict),
         .target(name: "Look", swiftSettings: strict),
         .testTarget(name: "LookTests", dependencies: ["Look"], swiftSettings: strict),
-        // Every part of the look on its own pages, where the agents test it against Search. Never shipped.
+        // The test window where each part of the look is checked against Search. Never shipped.
         .executableTarget(name: "Gallery", dependencies: ["Look"], swiftSettings: strict),
         .testTarget(
             name: "GalleryTests", dependencies: ["Gallery", "Look", "Pictures"], exclude: ["Pictures"],

@@ -1,8 +1,8 @@
 import Look
 import SwiftUI
 
-/// The Gallery: every part of the look in every state, on its own pages, where the agents test it against
-/// Search. It is never shipped.
+/// The Gallery: the test window where each part of the look, in every state, is checked against Search.
+/// It is never shipped.
 @main
 struct GalleryApp: App {
     var body: some Scene {
