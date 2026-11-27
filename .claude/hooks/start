@@ -75,6 +75,18 @@ leftovers() { # leftovers < merged heads: chats' copies whose work has merged, w
         done | tr '\n' ' '
 }
 
+keep_caches() { # each cache becomes a link into the drive's Caches, taking along what it holds; nothing is deleted
+    local cache usual
+    for cache in $moved; do
+        usual=$HOME/Library/Caches/$cache
+        mkdir -p "$caches" ~/Library/Caches || return 1
+        if [ -d "$usual" ] && [ ! -L "$usual" ] && [ ! -e "$caches/$cache" ]; then mv "$usual" "$caches/"; fi
+        mkdir -p "$caches/$cache"
+        # A link to an old drive is replaced; a real folder the drive already has a copy of is left, and ready says so.
+        if [ -L "$usual" ] || [ ! -e "$usual" ]; then ln -sfn "$caches/$cache" "$usual"; fi
+    done
+}
+
 ready() { # Checklists/Build Mac.md, as what can be seen without asking the keychain or the network.
     local wanted have='' plugin
     on_drive || echo "The project on its own drive, off the disk that holds the home folder"
@@ -84,7 +96,8 @@ ready() { # Checklists/Build Mac.md, as what can be seen without asking the keyc
     [ -z "$wanted" ] || [ "$have" = "$wanted" ] || echo "Xcode $wanted, opened once (this Mac has ${have:-none})"
     command -v gh >/dev/null || echo "GitHub's gh, in the Tools folder beside the project"
     for cache in $moved; do
-        ! on_drive || [ -L "$HOME/Library/Caches/$cache" ] || echo "The $cache cache, linked into the Caches folder beside the project"
+        ! on_drive || [ "$(readlink "$HOME/Library/Caches/$cache")" = "$caches/$cache" ] ||
+            echo "The $cache cache, kept in the Caches folder beside the project"
     done
     [ -d "$private/.git" ] || echo "The private notes, cloned beside the repository as '$(basename "$private")'"
     for plugin in $plugins; do
@@ -105,6 +118,7 @@ case ${1:-} in
     "") ;;
     token) token; exit ;;
     ready) ready; exit ;;
+    caches) on_drive && keep_caches; exit ;;
     leftovers) leftovers "$(cat)"; exit ;;
     answers) answers "${2:?}"; exit ;;
     setup)
@@ -139,12 +153,7 @@ case ${1:-} in
         for file in CLAUDE.md settings.json; do [ -e ~/.claude/$file ] || cp "$private/Claude/$file" ~/.claude/; done
         # Xcode's own builds go beside the project's, on the drive, not into the home folder.
         defaults write com.apple.dt.Xcode IDECustomDerivedDataLocation "$shared/.build/Xcode"
-        for cache in $moved; do # what a cache already holds moves with it, unless the drive has its own
-            usual=$HOME/Library/Caches/$cache
-            mkdir -p "$caches" ~/Library/Caches && [ ! -L "$usual" ] || continue
-            if [ -e "$usual" ] && [ ! -e "$caches/$cache" ]; then mv "$usual" "$caches/"; fi
-            mkdir -p "$caches/$cache" && { [ -e "$usual" ] || ln -s "$caches/$cache" "$usual"; }
-        done
+        keep_caches
         [ -d ~/.claude/skills/cook ] || git clone -q https://github.com/Leonxlnx/cook ~/.claude/skills/cook
         for plugin in $plugins; do
             claude plugin marketplace add "${plugin#*=}" >/dev/null && claude plugin install "${plugin%%=*}" >/dev/null

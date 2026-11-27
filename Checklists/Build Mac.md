@@ -3,9 +3,9 @@
 The owner types no command. He does three things, then an agent does the rest. It asks him only for
 what is his: a sign-in, a standard permission, a key pasted from Passwords.
 
-Everything that grows lives on an external drive, in one folder: the project, the private notes beside it,
-`Tools` (what setup downloads), `Caches` (Swift's packages and its tests' cache), each chat's copy and every
-build. The Mac itself keeps only the apps, Xcode, Claude and their own settings.
+Everything that grows lives on an external drive, in one `Developer` folder: the project, the private notes
+beside it, `Tools` (what setup downloads), `Caches` (what Swift and its tests keep for next time), each chat's
+copy and every build. The Mac itself keeps only the apps, Xcode, Claude and their own settings.
 The drive: a solid-state drive with 100 GB free, formatted APFS (Encrypted); case-sensitive works too. It is
 plugged in whenever a chat works.
 
@@ -18,11 +18,11 @@ plugged in whenever a chat works.
 
 **The agent, in that chat:**
 
-- [ ] `git clone https://github.com/amansinghphotos/Sagar` onto the drive, as `Sagar` at its top. No drive, no clone: ask him to plug it in.
+- [ ] `git clone https://github.com/amansinghphotos/Sagar` into `Developer` on the drive. No drive, no clone: ask him to plug it in. If it is already there, pull it and the notes.
 - [ ] **Owner.** Agents' GitHub key: paste the note of Sagar · Agents' GitHub Key into the file the agent names.
 - [ ] `.claude/hooks/start setup <that file>`, then delete the file. It keeps the key, gives git the agents'
       identity, installs `gh` into `Tools`, clones the private notes beside, sends Xcode's builds to the drive,
-      links Swift's two caches into `Caches`, and
+      keeps Swift's two caches in `Caches`, and
       brings back his Claude instructions, plugins and skill. It stops if the project is not on its own drive,
       and marks the Mac: from then on, a chat or a commit in a copy off the drive stops.
 - [ ] **Owner.** macOS asks once whether Claude may use the drive: Allow.
@@ -40,7 +40,7 @@ plugged in whenever a chat works.
 installs for the whole Mac; Claude's app and its own folder; `~/.claude`, with his instructions, plugins and
 each chat's history, which Claude prunes after a month, and which Claude needs even with the drive away;
 Xcode's and Claude's small settings, logs and caches; the keys in the keychain; temporary files, which
-macOS clears. With the drive away, the two links lead nowhere: a write there fails, and nothing lands on the Mac.
+macOS clears. With the drive away, Swift builds without its cache, and nothing lands on the Mac.
 
 **If the drive is lost:** a new drive, then the same sentence. The code and the private notes are on GitHub.
 
