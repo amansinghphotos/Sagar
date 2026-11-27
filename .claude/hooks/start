@@ -68,7 +68,9 @@ case ${1:-} in
 esac
 
 # With no agents' token, gh must fail, never fall back to a person's own sign-in.
-git config core.hooksPath .githooks # the commit gate, Scripts/check, is git's own hook
+# The commit gate, Scripts/check, is git's own hook. Every chat shares one settings file, so it is written only when it differs.
+[ "$(git config core.hooksPath)" = .githooks ] || git config core.hooksPath .githooks
+git worktree prune # copies whose folders are gone, such as one kept in a temporary folder before a restart
 git fetch -q --prune origin 2>/dev/null # then drop local branches whose pull request has merged
 for gone in $(git branch --format='%(refname:short) %(upstream:track)' | awk '$2 == "[gone]" { print $1 }'); do
     # Only if GitHub merged exactly the commit this branch ends on: nothing unpushed can be lost.
@@ -83,6 +85,8 @@ export GH_TOKEN
 
 echo "Sagar. The app in work: $(cat NOW)"
 echo "Checkout: $(git status -sb | head -1)$(git status --porcelain | sed -n '1s/.*/, with uncommitted changes/p')"
+[ "$(git rev-parse --path-format=absolute --git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ] ||
+    echo "This is the shared folder, where every chat opens. Change nothing here: move into your own copy first (EnterWorktree), from origin/main. It stays on clean main, for Scripts/release alone."
 echo "Branches besides main: $(git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' ')"
 repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)
 owner=${repository%/*}
