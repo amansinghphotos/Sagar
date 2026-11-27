@@ -23,6 +23,7 @@ package struct Hunt: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Role.ink)
                 .focused(focus)
+                .line(16)
                 .overlay(alignment: .leading) {
                     if text.isEmpty {
                         Text(prompt)
@@ -97,6 +98,7 @@ private struct Tile<Box: View>: View {
             .textFieldStyle(.plain)
             .font(.system(size: 12.5, design: design))
             .foregroundStyle(Role.ink)
+            .line(15)
             .overlay(alignment: .leading) {
                 if empty {
                     Text(name)
@@ -109,5 +111,14 @@ private struct Tile<Box: View>: View {
             .padding(.horizontal, Space.gap.rawValue)
             .frame(height: 29)
             .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.row.rawValue, style: .continuous))
+    }
+}
+
+extension View {
+    /// Holds a text box to `height`, the height of one line of its words, with the box at its top. SwiftUI now
+    /// and then sizes a text box at another box's height; the box draws its words from its top, so they stay
+    /// where they belong whatever height it was given.
+    func line(_ height: CGFloat) -> some View {
+        frame(height: height, alignment: .top)
     }
 }

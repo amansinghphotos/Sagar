@@ -5,22 +5,30 @@ import Testing
 
 @testable import Gallery
 
-@Test func theEmptyGalleryMatchesItsApprovedPictureInTheLightLook() throws {
-    let size = WindowSize.standard
-    try expectPicture(of: Gallery(), width: size.width, height: size.height, named: "gallery-light")
+/// Each page alone, without the Gallery's bar above it: the bar holds macOS's own page choice, which draws a
+/// little wider on GitHub's Mac and moves with every page added.
+private func alone(_ page: some View, dark: Bool) -> some View {
+    page
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .foregroundStyle(Role.ink)
+        .background(Role.ground)
+        .environment(\.theme, .modern)
+        .environment(\.colorScheme, dark ? .dark : .light)
 }
 
-@Test func theEmptyGalleryMatchesItsApprovedPictureInTheDarkLook() throws {
+@Test(arguments: [false, true])
+func theTokensPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(appearance: .dark), width: size.width, height: size.height, named: "gallery-dark", dark: true)
+        of: alone(Tokens(), dark: dark), width: size.width, height: size.height,
+        named: dark ? "gallery-dark" : "gallery-light", dark: dark)
 }
 
 @Test(arguments: [false, true])
 func theControlsPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(page: .controls, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        of: alone(Controls(), dark: dark), width: size.width, height: size.height,
         named: "gallery-controls-\(dark ? "dark" : "light")", dark: dark)
 }
 
@@ -28,7 +36,7 @@ func theControlsPageMatchesItsPicture(dark: Bool) throws {
 func theChoicesPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(page: .choices, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        of: alone(Choices(), dark: dark), width: size.width, height: size.height,
         named: "gallery-choices-\(dark ? "dark" : "light")", dark: dark)
 }
 
@@ -36,7 +44,7 @@ func theChoicesPageMatchesItsPicture(dark: Bool) throws {
 func theListsPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(page: .lists, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        of: alone(Lists(), dark: dark), width: size.width, height: size.height,
         named: "gallery-lists-\(dark ? "dark" : "light")", dark: dark)
 }
 
@@ -44,7 +52,7 @@ func theListsPageMatchesItsPicture(dark: Bool) throws {
 func theOverlaysPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(page: .overlays, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        of: alone(Overlays(), dark: dark), width: size.width, height: size.height,
         named: "gallery-overlays-\(dark ? "dark" : "light")", dark: dark)
 }
 
@@ -52,8 +60,16 @@ func theOverlaysPageMatchesItsPicture(dark: Bool) throws {
 func theStatesPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
-        of: Gallery(page: .states, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        of: alone(States(), dark: dark), width: size.width, height: size.height,
         named: "gallery-states-\(dark ? "dark" : "light")", dark: dark)
+}
+
+@Test(arguments: [false, true])
+func theKeyboardPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: alone(KeyboardPage(), dark: dark), width: size.width, height: size.height,
+        named: "gallery-keyboard-\(dark ? "dark" : "light")", dark: dark)
 }
 
 /// Search's column keeps its width beside its page as a card, and the page takes the rest of a narrow, a default
@@ -67,14 +83,4 @@ func theSplitFollowsTheWindow(size: WindowSize) throws {
         Text(verbatim: "The page")
     }
     try expectPicture(of: split, width: size.width, height: size.height, named: "split-\(size.rawValue.lowercased())")
-}
-
-/// The page alone, without the Gallery's page choice above it, which macOS draws a little wider on GitHub's Mac
-/// when its last page is chosen.
-@Test(arguments: [false, true])
-func theKeyboardPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: KeyboardPage().background(Role.ground).environment(\.colorScheme, dark ? .dark : .light),
-        width: size.width, height: size.height, named: "gallery-keyboard-\(dark ? "dark" : "light")", dark: dark)
 }
