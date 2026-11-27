@@ -116,8 +116,9 @@ plain_words() { # reads a pull request's description: true if it opens with the 
         printf '%s\n' "$part" | awk -v label="**$label**" 'at = index($0, label) {
             if (substr($0, at + length(label)) ~ /[^[:space:]]/) answered = 1 } END { exit !answered }' || return 1
     done
+    # Whatever he answers is in front of him: no link sends him to another page, and no file name to the files.
     ! printf '%s\n' "$part" |
-        grep -qE '`|(Sources|Scripts|Tests|Apps|docs|Config|spec|Checklists|Decisions|\.github|\.claude)/|\.(swift|md|yml|xml|json|xcconfig|plist)\b'
+        grep -qiE '`|\]\(|https?://|www\.|<a |(Sources|Scripts|Tests|Apps|docs|Config|spec|Checklists|Decisions|\.github|\.claude)/|\.(swift|md|yml|xml|json|xcconfig|plist)\b'
 }
 [ "${1:-}" != plain ] || { plain_words && echo yes || echo no; exit; }
 shows_all() { # shows_all <file>…: true if the owner's part of the description on standard input shows him, in
