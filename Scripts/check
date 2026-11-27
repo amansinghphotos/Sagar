@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | tests | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | tests | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -631,11 +631,45 @@ tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those th
     local reach=all
     [ -n "${CI:-}" ] || reach=$(reached)
     case $reach in
-        all) swift test --quiet 2>&1 ;;
         "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
-        *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test"
-            swift test --quiet --filter "^($reach)\." 2>&1 ;;
+        all) reach=$(swift package --scratch-path .build/reached dump-package |
+            jq -er '[.targets[] | select(.type == "test") | .name] | select(length > 0) | join("|")') ||
+            { echo "The package's test targets could not be read."; return 1; } ;;
+        *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test" ;;
     esac
+    side_by_side "$reach"
+}
+
+side_by_side() { # side_by_side <target>|…: each test target in its own process, as many at once as this Mac has
+    # cores. Each has its own copy of the build, as SwiftPM lets one process use a build folder at a time; on this
+    # disk a copy is instant. Each target must pass and say how many tests it ran.
+    local side=.build/side target status count bad=0
+    compile swift build --build-tests || return 1
+    rm -rf "$side" && mkdir -p "$side" || return 1
+    printf '%s\n' ${1//|/ } | xargs -P "$(sysctl -n hw.ncpu)" -I {} /bin/bash -c '
+        mkdir -p "$1/$2" || exit
+        for entry in .build/*; do
+            case ${entry#.build/} in side | reached | Xcode | Pictures | Tours) ;; *) cp -cR "$entry" "$1/$2/" || exit ;; esac
+        done
+        swift test --skip-build --quiet --scratch-path "$1/$2" --filter "^($2)\." >"$1/$2.log" 2>&1
+        echo $? >"$1/$2.status"
+        rm -rf "$1/$2"' side "$side" {}
+    for target in ${1//|/ }; do
+        status=$(cat "$side/$target.status" 2>/dev/null) || status=none
+        count=$(grep -oE '(Test run with|Executed) [0-9]+ tests?' "$side/$target.log" 2>/dev/null | grep -oE '[0-9]+' |
+            awk '{ sum += $1 } END { print sum + 0 }')
+        if [ "$status" != 0 ]; then
+            echo "$target failed:"
+            tail -n 30 "$side/$target.log" 2>/dev/null
+            bad=1
+        elif [ "$count" -eq 0 ]; then
+            echo "$target ran no test."
+            bad=1
+        else
+            echo "note: $target, $count test$([ "$count" -eq 1 ] || echo s)"
+        fi
+    done
+    return $bad
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
@@ -729,6 +763,7 @@ if [ "${1:-}" = owed ]; then # Scripts/check owed [<file>…]: that rule alone, 
     rules="owed"
     named=("${@:2}")
 fi
+[ "${1:-}" != tests ] || rules="tests" # Scripts/check tests: that rule alone
 if [ "${1:-}" = iphone ]; then # Scripts/check iphone [<module>…]: that rule alone, of the modules named or its own
     rules="iphone"
     [ $# -lt 2 ] || phone="${*:2}"
