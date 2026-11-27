@@ -634,6 +634,9 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
         fastest_launch "$(number 'Launch to first frame')") ||
         { echo "$app's tour: its fastest launch was $launch s."; return 1; }
     echo "note: $app, fastest of its launches $launch s"
+    # A film of each step, from Xcode's recording of it, for the owner to judge motion: kept apart, and small (#227).
+    Scripts/film "$result" ".build/Films/$app" >/dev/null 2>&1 &&
+        echo "note: $app, a film of each step in the run's films" || echo "note: $app, no film could be made"
 
     # At rest: opened hidden, left alone, and measured from outside.
     used() {
