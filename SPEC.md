@@ -186,8 +186,8 @@ that does not talk to Claude never asks. This is built with the first app that n
 1. Logic: Swift Testing, written first, on real code with temporary folders.
 2. Screens: pictures taken from a real window that is never put on screen, compared with approved
    pictures.
-3. The real app: one XCUITest tour per app on the hosted runner, with an accessibility audit, where
-   the app needs no permission.
+3. The real app: one XCUITest tour per app on the hosted runner, where the app needs no permission. It
+   runs Apple's accessibility audit, whose findings are reported but fail nothing, for now (decision 9).
 4. What needs a permission or his hardware he tries at step 7.
 
 ## 8. The Look and the Words
