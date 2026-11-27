@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | merging | run | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -50,6 +50,28 @@ if [ "${1:-}" = folder ]; then # Scripts/check folder: the commit gate's first r
         exit 0
     case $(git branch --show-current) in release/*) exit 0 ;; esac
     echo "This is the shared folder, where every chat opens. Commit from your own copy: EnterWorktree, or git worktree add."
+    exit 1
+fi
+
+if [ "${1:-}" = leaving ]; then # Scripts/check leaving: before a Mac is given up, nothing of the work lives only on it.
+    # Prints each thing that does, in the repository and in the private notes beside it, and fails if there is one.
+    shared=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+    # A branch that ends where a merged pull request ended is on GitHub, though GitHub has deleted the branch.
+    merged=$(gh pr list --state merged --limit 1000 --json headRefOid --jq '.[].headRefOid' 2>/dev/null)
+    found=$(for repository in "$shared" "$shared Private"; do
+        [ -d "$repository/.git" ] || { echo "No $(basename "$repository") beside the repository: clone it, or say it is not needed"; continue; }
+        git -C "$repository" fetch -q --prune origin 2>/dev/null || echo "$(basename "$repository"): GitHub could not be asked"
+        git -C "$repository" for-each-ref refs/heads --format='%(refname:short)' | while read -r branch; do
+            ahead=$(git -C "$repository" rev-list --count "$branch" --not --remotes)
+            [ "$ahead" = 0 ] || grep -qx "$(git -C "$repository" rev-parse "$branch")" <<<"$merged" || echo "$(basename "$repository"), $branch: work GitHub does not have"
+        done
+        git -C "$repository" worktree list --porcelain | sed -n 's/^worktree //p' | while read -r copy; do
+            [ -z "$(git -C "$copy" status --porcelain 2>/dev/null)" ] || echo "$copy: changes not yet committed"
+        done
+        ! git -C "$repository" rev-parse -q --verify refs/stash >/dev/null || echo "$(basename "$repository"): work set aside with git stash"
+    done)
+    [ -n "$found" ] || { echo "Nothing lives only on this Mac."; exit 0; }
+    printf '%s\n' "$found"
     exit 1
 fi
 

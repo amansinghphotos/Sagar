@@ -1,8 +1,9 @@
 #!/bin/bash
 # Runs when a session starts: prints where things stand and the Start checklist, and gives the session
-# the agents' GitHub identity. Two more uses, both plain shell that any tool can call:
+# the agents' GitHub identity. More uses, all plain shell that any tool can call:
 #   .claude/hooks/start token               prints a fresh GitHub token for the agents' app
-#   .claude/hooks/start setup [key file]    a new Mac: stores the app's key, points git at it
+#   .claude/hooks/start setup [key file]    a new Mac: stores the app's key, then sets up all ready checks
+#   .claude/hooks/start ready               prints what this Mac still needs before it can build, or nothing
 set -u
 here=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$here" || exit 0
@@ -50,9 +51,37 @@ answers() { # answers <owner>: reads GitHub's reply about the open pull requests
       (.reviews[], .comments[] | his | select(.body != "") | "      \(.author.login) wrote: \(.body)")'
 }
 
+# Where the owner's private notes are kept: beside the shared folder, under its name and " Private".
+shared=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo "$here/.git")")
+private="$shared Private"
+helper="!f() { test \"\$1\" = get && printf 'username=x-access-token\npassword=%s\n' \"\$('$here/.claude/hooks/start' token)\"; }; f"
+plugins='agent-skills@addy-agent-skills=addyosmani/agent-skills taste-skill@taste-skill=Leonxlnx/taste-skill'
+
+ready() { # Checklists/Build Mac.md, as what can be seen without asking the keychain or the network.
+    local wanted have plugin
+    wanted=$(sed -n 's|.*Xcode_\([0-9.]*\)\.app.*|\1|p' .github/workflows/check.yml 2>/dev/null | head -1)
+    have=$(xcodebuild -version 2>/dev/null | awk 'NR == 1 { print $2 }')
+    [ -z "$wanted" ] || [ "$have" = "$wanted" ] || echo "Xcode $wanted, opened once (this Mac has ${have:-none})"
+    command -v gh >/dev/null || echo "GitHub's gh, in ~/.local/bin"
+    [ -d "$private/.git" ] || echo "The private notes, cloned beside the repository as '$(basename "$private")'"
+    for plugin in $plugins; do
+        jq -e --arg p "${plugin%%=*}" '.plugins[$p]' "$HOME/.claude/plugins/installed_plugins.json" >/dev/null 2>&1 ||
+            echo "The ${plugin%%@*} plugin"
+    done
+    [ -f "$HOME/.claude/skills/cook/SKILL.md" ] || echo "The cook skill"
+    # The owner's Claude instructions and settings live only in his home folder: a copy waits in the private notes.
+    for file in CLAUDE.md settings.json; do
+        if [ ! -f "$HOME/.claude/$file" ]; then echo "The owner's ~/.claude/$file"
+        elif [ -d "$private/.git" ] && ! cmp -s "$HOME/.claude/$file" "$private/Claude/$file"; then
+            echo "A fresh copy of ~/.claude/$file in the private notes' Claude folder, committed and pushed"
+        fi
+    done
+}
+
 case ${1:-} in
     "") ;;
     token) token; exit ;;
+    ready) ready; exit ;;
     answers) answers "${2:?}"; exit ;;
     setup)
         [ -z "${2:-}" ] || security add-generic-password -U -s Sagar.Agent -a key -w "$(base64 -i "$2")"
@@ -60,11 +89,32 @@ case ${1:-} in
         git config user.name 'sagar-agent[bot]'
         git config user.email "$author@users.noreply.github.com"
         git config --replace-all credential.https://github.com.helper ''
-        git config --add credential.https://github.com.helper \
-            "!f() { test \"\$1\" = get && printf 'username=x-access-token\npassword=%s\n' \"\$('$here/.claude/hooks/start' token)\"; }; f"
-        token >/dev/null && echo "The agents' identity works." || echo "No token: is the key in the keychain?"
+        git config --add credential.https://github.com.helper "$helper"
+        token >/dev/null && echo "The agents' identity works." || { echo "No token: is the key in the keychain?"; exit 1; }
+        if ! command -v gh >/dev/null; then # GitHub's own build, checked against the sums GitHub publishes beside it
+            mkdir -p ~/.local/bin && cd "$(mktemp -d)" &&
+                release=$(curl -fsS https://api.github.com/repos/cli/cli/releases/latest) &&
+                zip=$(jq -er --arg chip "_macOS_$(uname -m | sed s/x86_64/amd64/).zip" \
+                    '.assets[].name | select(endswith($chip))' <<<"$release") &&
+                curl -fsSLO "https://github.com/cli/cli/releases/download/$(jq -r .tag_name <<<"$release")/$zip" &&
+                curl -fsSL "https://github.com/cli/cli/releases/download/$(jq -r .tag_name <<<"$release")/$(jq -r \
+                    '.assets[].name | select(endswith("_checksums.txt"))' <<<"$release")" | grep " $zip\$" | shasum -a 256 -c &&
+                unzip -q "$zip" && mv "${zip%.zip}/bin/gh" ~/.local/bin/ && cd "$here" || exit 1
+        fi
+        if [ ! -d "$private/.git" ]; then
+            git -c credential.helper= -c credential.helper="$helper" clone -q \
+                "$(git remote get-url origin | sed 's|\.git$||')-Private" "$private" || exit 1
+            git -C "$private" config credential.https://github.com.helper "$helper"
+        fi
+        mkdir -p ~/.claude/skills
+        for file in CLAUDE.md settings.json; do [ -e ~/.claude/$file ] || cp "$private/Claude/$file" ~/.claude/; done
+        [ -d ~/.claude/skills/cook ] || git clone -q https://github.com/Leonxlnx/cook ~/.claude/skills/cook
+        for plugin in $plugins; do
+            claude plugin marketplace add "${plugin#*=}" >/dev/null && claude plugin install "${plugin%%=*}" >/dev/null
+        done
+        ready
         exit ;;
-    *) echo "Usage: .claude/hooks/start [token | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
+    *) echo "Usage: .claude/hooks/start [token | ready | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
 esac
 
 # With no agents' token, gh must fail, never fall back to a person's own sign-in.
@@ -83,6 +133,8 @@ GH_TOKEN=$(token || echo no-agent-token)
 export GH_TOKEN
 
 echo "Sagar. The app in work: $(cat NOW)"
+missing=$(ready; [ "$GH_TOKEN" != no-agent-token ] || echo "The agents' GitHub key")
+[ -z "$missing" ] || printf 'This Mac cannot yet build the apps. Follow Checklists/Build Mac.md for:\n%s\n' "$(sed 's/^/  /' <<<"$missing")"
 echo "Checkout: $(git status -sb | head -1)$(git status --porcelain | sed -n '1s/.*/, with uncommitted changes/p')"
 [ "$(git rev-parse --path-format=absolute --git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ] ||
     echo "This is the shared folder, where every chat opens. Change nothing here: move into your own copy first (EnterWorktree), from origin/main. It stays on clean main, for Scripts/release alone."
