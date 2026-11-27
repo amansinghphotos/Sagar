@@ -18,15 +18,16 @@ follows() { # follows <last> <next>: yes if <next> is the next second number, or
 [ "${1:-}" != follows ] || { follows "${2:-}" "${3:-}"; exit; }
 
 why() { # why < notes: the owner's reason for a release, if its notes are allowed. The notes are New, Better and Fixed
-    # lines in that order, each with something to say, one at least, and no issue number or code. The reason is
-    # the first line that is there: what is new, else what is better, else what is mended.
+    # lines in that order, each with something to say, one at least, and no issue number, code or dollar sign, which
+    # the build would fill in. The reason is the first line that is there: what is new, else what is better, else what
+    # is mended.
     local notes first
     notes=$(cat)
     awk 'BEGIN { rank["New"] = 1; rank["Better"] = 2; rank["Fixed"] = 3 }
         $0 !~ /^(New|Better|Fixed): +[^[:space:]]/ { bad = 1; next }
         { label = $0; sub(/: .*/, "", label); if (rank[label] <= last) bad = 1; last = rank[label] }
         END { exit bad }' <<<"$notes" || return 1
-    ! grep -q '[#`]' <<<"$notes" || return 1
+    ! grep -q '[#`$]' <<<"$notes" || return 1
     first=$(head -n 1 <<<"$notes" | sed 's/^[A-Za-z]*: *//')
     printf '%s%s\n' "$(tr '[:lower:]' '[:upper:]' <<<"${first:0:1}")" "${first:1}"
 }
@@ -145,7 +146,7 @@ profile=${NOTARY_PROFILE:-Sagar}
 tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
 notes=$(cat)
 reason=$(why <<<"$notes") ||
-    stop "The notes are plain lines on standard input: New: …, Better: …, Fixed: …, in that order. Leave out a line with nothing to say, but keep one. No issue numbers or code."
+    stop "The notes are plain lines on standard input: New: …, Better: …, Fixed: …, in that order. Leave out a line with nothing to say, but keep one. No issue numbers, code or dollar signs."
 [ -x "$tools/generate_appcast" ] || stop "Sparkle's tools are missing: run swift build first."
 [ "$(git branch --show-current)" = main ] && [ -z "$(git status --porcelain)" ] || stop "Start from a clean main."
 git fetch -q origin main
