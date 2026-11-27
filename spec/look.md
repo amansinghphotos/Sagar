@@ -18,7 +18,7 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 1. **Two themes, each light and dark.** Modern is Search's look exactly, from Search at commit
    `c92ea7c`: its typeface, colours, sizes, spacing, corners, shadows and parts, with nothing changed.
    A part Search does not have is drawn the way Search draws its nearest one. Lexicon
-   is paper and ink, set in Iowan Old Style, the Mac's own book face, sharing Modern's parts and spacing.
+   is paper and ink, set in New York, Apple's own serif, sharing Modern's parts and spacing.
    Its paper and ink are those of Lexicon's sketch, light and dark, and every word reads at 4.5 to 1 or
    more. Modern comes first, and Lexicon follows once Modern's pictures are approved. An app chooses its
    theme once. No seasons, no variants.
