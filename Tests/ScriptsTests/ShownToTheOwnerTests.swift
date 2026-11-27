@@ -119,6 +119,20 @@ func aSpecWhoseMustHavesTheOwnerCannotSeeFails(description: String) throws {
     #expect(try !isPlain(description(owner: "![Sources/AKit/Window.swift](https://example.com/a.png)")))
 }
 
+/// Whatever he answers is in front of him: his part never sends him to another page.
+@Test(arguments: [
+    "Read [the spec](https://github.com/someone/Sagar/pull/1/files) first.",
+    "It is all at https://example.com/plan, if you want more.",
+    "See <a href=\"https://example.com\">the plan</a>.",
+])
+func aLinkAwayFromTheOwnersPartFails(link: String) throws {
+    #expect(try !isPlain(description(owner: link)))
+}
+
+@Test func aLinkInTheAgentsPartIsTheirs() throws {
+    #expect(try isPlain(description(owner: "", agents: "Read on https://example.com/notes.")))
+}
+
 private func isPlain(_ description: String) throws -> Bool {
     let process = Process()
     let question = Pipe()

@@ -11,7 +11,7 @@
 <!-- Answer each in one or two short sentences he could read aloud, in
 everyday words. Say what he will notice, never how it works. No file names, no code.
 The title, above, says what he gets: a few everyday words, in Title Case.
-Below the four answers, show here whatever he must judge, so he never goes looking:
+Below the four answers, show here whatever he must read, decide or see, with no link away:
 a changed spec's must-haves as a numbered list, each changed picture as an image. -->
 
 <details><summary>Checklist for the Agents</summary>

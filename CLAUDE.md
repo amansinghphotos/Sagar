@@ -57,8 +57,8 @@ pictures. The download page is built with `design-taste-frontend`.
 3. **Build.** One slice per session, on a branch named `<issue number>-<words>` and pushed at once,
    which claims the issue. Write the failing test, see it fail, write the code, see it pass.
 4. **Pull request.** Open it as a draft, `gh pr create --draft`, which asks nobody. Fill in the template
-   honestly. 400 changed lines at most, naming one issue. Whatever he must judge is shown inside the
-   owner's part, so that he never goes looking: a changed spec's must-haves, each changed picture.
+   honestly. 400 changed lines at most, naming one issue. Whatever he must read, decide or see is
+   inside the owner's part, with no link away: a changed spec's must-haves, each changed picture.
 5. **Review,** once, when the change is finished. Give the `reviewer` agent the diff, the commit
    messages, the issue and the description. Post its reply on the pull request as a comment that
    names the commit it read, folded inside `<details>`. Mend what it says must be mended, in one
