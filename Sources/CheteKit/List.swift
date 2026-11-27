@@ -28,10 +28,10 @@ package struct ClipList: View {
             Hunt(text: $typed, prompt: "Find a clip", focus: $finding)
                 .padding(Space.page.rawValue)
             if clips.isEmpty {
-                Key("⌘ C", "Copy anything, in any app, and it appears here.")
+                Key("⌘ C", "Copy something, and it shows up here.")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if found.isEmpty {
-                Text("Nothing you copied holds “\(typed)”.")
+                Text("No clips match “\(typed)”.")
                     .type(.body)
                     .foregroundStyle(Role.muted)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
