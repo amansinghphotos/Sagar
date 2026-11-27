@@ -1,15 +1,11 @@
-// Taken from Search at commit c92ea7c: Hunt (Plate.swift), and the Passwords panel's field and password
-// field (Passwords.swift), lifted out of that panel as Field and Secret. Copyright (c) 2026 Office Commun,
-// MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's colours are
-// read from Look, the panel's focus and Return, which belong to the panel, are left to whoever uses them, and each
-// field is named for VoiceOver, as Apple's accessibility audit requires.
+// Boxes to type into: the search box with its glass and its clear button, a plain named field and a password.
 import SwiftUI
 
-/// The field for narrowing a list. The wash, the glass, the caret.
+/// A search box: a magnifying glass, the words, and a button that clears them once there are any.
 package struct Hunt: View {
-    @Binding var text: String
-    var prompt = "Search"
-    var focus: FocusState<Bool>.Binding
+    @Binding private var text: String
+    private let prompt: String
+    private let focus: FocusState<Bool>.Binding
 
     package init(text: Binding<String>, prompt: String = "Search", focus: FocusState<Bool>.Binding) {
         _text = text
@@ -18,21 +14,24 @@ package struct Hunt: View {
     }
 
     package var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.near.rawValue) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Role.muted)
-            ZStack(alignment: .leading) {
-                if text.isEmpty {
-                    Text(prompt).foregroundStyle(Role.muted.opacity(0.7))
+            TextField(text: $text, prompt: Text(verbatim: "")) { Text(prompt) }
+                .textFieldStyle(.plain)
+                .font(.system(size: 13))
+                .foregroundStyle(Role.ink)
+                .focused(focus)
+                .overlay(alignment: .leading) {
+                    if text.isEmpty {
+                        Text(prompt)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Role.muted.opacity(0.7))
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
                 }
-                TextField("", text: $text)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(Role.ink)
-                    .focused(focus)
-                    .accessibilityLabel(prompt)
-            }
-            .font(.system(size: 13))
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -42,19 +41,19 @@ package struct Hunt: View {
                         .foregroundStyle(Role.faint)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Clear")
+                .accessibilityLabel(Text(verbatim: "Clear"))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, Space.apart.rawValue)
+        .frame(height: 32)
+        .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
     }
 }
 
-/// A field for words, its name shown in it while it is empty: Search's Passwords panel's.
+/// A field for a name, a site or the like, its name standing in it until something is typed.
 package struct Field: View {
-    let name: String
-    @Binding var text: String
+    private let name: String
+    @Binding private var text: String
 
     package init(_ name: String, text: Binding<String>) {
         self.name = name
@@ -62,26 +61,16 @@ package struct Field: View {
     }
 
     package var body: some View {
-        ZStack(alignment: .leading) {
-            if text.isEmpty {
-                Text(name).foregroundStyle(Role.ink.opacity(0.3)).padding(.leading, 10)
-            }
-            TextField("", text: $text)
-                .textFieldStyle(.plain)
-                .foregroundStyle(Role.ink)
-                .accessibilityLabel(name)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
+        Tile(name: name, empty: text.isEmpty) {
+            TextField(text: $text, prompt: Text(verbatim: "")) { Text(name) }
         }
-        .font(.system(size: 12.5))
-        .background(Role.wash, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
 
-/// A field for a password, shown as dots: Search's Passwords panel's.
+/// A field for a password, which shows a dot for each letter.
 package struct Secret: View {
-    let name: String
-    @Binding var text: String
+    private let name: String
+    @Binding private var text: String
 
     package init(_ name: String, text: Binding<String>) {
         self.name = name
@@ -89,19 +78,36 @@ package struct Secret: View {
     }
 
     package var body: some View {
-        ZStack(alignment: .leading) {
-            if text.isEmpty {
-                Text(name).foregroundStyle(Role.ink.opacity(0.3))
-                    .padding(.leading, 10)
-            }
-            SecureField("", text: $text)
-                .textFieldStyle(.plain)
-                .accessibilityLabel(name)
-                .font(.system(size: 12.5, design: .monospaced))
-                .foregroundStyle(Role.ink)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
+        Tile(name: name, empty: text.isEmpty, design: .monospaced) {
+            SecureField(text: $text, prompt: Text(verbatim: "")) { Text(name) }
         }
-        .background(Role.wash, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+}
+
+/// A field on its pale tile, with its name in faint ink while it is empty. A password's dots are set in the
+/// monospaced face, so that each stands as far from the next.
+private struct Tile<Box: View>: View {
+    let name: String
+    let empty: Bool
+    var design: Font.Design = .default
+    @ViewBuilder let box: Box
+
+    var body: some View {
+        box
+            .textFieldStyle(.plain)
+            .font(.system(size: 12.5, design: design))
+            .foregroundStyle(Role.ink)
+            .overlay(alignment: .leading) {
+                if empty {
+                    Text(name)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Role.ink.opacity(0.3))
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .padding(.horizontal, Space.gap.rawValue)
+            .frame(height: 29)
+            .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.row.rawValue, style: .continuous))
     }
 }
