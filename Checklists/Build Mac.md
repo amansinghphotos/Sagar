@@ -5,7 +5,7 @@ The owner installs Xcode and the Claude app, and signs in to iCloud and Claude. 
 - [ ] Xcode is the version `.github/workflows/check.yml` names. GitHub's `gh` is in `~/.local/bin`, signed in to nothing.
 - [ ] The Claude app has the owner's `~/.claude/CLAUDE.md` and the agent-skills, taste-skill and cook plugins.
 - [ ] `git clone https://github.com/amansinghphotos/Sagar ~/Developer/Sagar`, then `swift build` in it.
-- [ ] Notary profile: it comes by iCloud Keychain. `xcrun notarytool history --keychain-profile Theatre` answers.
+- [ ] Notary profile: it comes by iCloud Keychain. `xcrun notarytool history --keychain-profile Sagar` answers.
 - [ ] **Owner.** Developer ID: paste the note of Sagar · Developer ID into the file an agent names. The agent
       decodes it with `base64 -d` into a `.p12`; open that, give it the password from the same entry. Delete both files.
 - [ ] **Owner.** Agents' GitHub key: paste the note of Sagar · Agents' GitHub Key into the file an agent names.
