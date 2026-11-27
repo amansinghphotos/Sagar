@@ -9,6 +9,8 @@ package struct MenuCardActs {
     /// Nil when there is nothing to check for updates with, as in a build from Xcode: the button is then dimmed.
     let checkForUpdates: (() -> Void)?
     let quit: () -> Void
+    /// Opens the welcome at the step that allows keeping what is copied.
+    var allowKeeping: () -> Void = {}
 
     package init(
         copy: @escaping (Clip) -> Void, open: @escaping () -> Void, settings: @escaping () -> Void,
@@ -36,11 +38,14 @@ package struct MenuCard: View {
     let act: MenuCardActs
     /// The clip under the pointer as the card opens: none, but for a picture of one lit.
     let lit: Clip.ID?
+    /// Whether macOS lets Chete keep what is copied. Until it does, Chete keeps nothing, and the card says so.
+    let keeping: Bool
 
-    package init(clips: [Clip], now: Date, lit: Clip.ID? = nil, act: MenuCardActs) {
+    package init(clips: [Clip], now: Date, lit: Clip.ID? = nil, keeping: Bool = true, act: MenuCardActs) {
         self.clips = clips
         self.now = now
         self.lit = lit
+        self.keeping = keeping
         self.act = act
     }
 
@@ -50,7 +55,22 @@ package struct MenuCard: View {
                 .padding(.horizontal, Space.page.rawValue)
                 .padding(.top, Space.page.rawValue)
                 .padding(.bottom, Space.apart.rawValue)
-            if clips.isEmpty {
+            if !keeping {
+                HStack(spacing: Space.apart.rawValue) {
+                    VStack(alignment: .leading, spacing: Space.hair.rawValue) {
+                        Text("Chete keeps nothing yet.").type(.body).foregroundStyle(Role.ink)
+                        Text("Allow it once to start.").type(.detail).foregroundStyle(Role.muted)
+                    }
+                    Spacer(minLength: 0)
+                    Pill("Allow…", filled: true, action: act.allowKeeping)
+                }
+                .padding(.horizontal, Space.page.rawValue)
+                .padding(.vertical, Space.apart.rawValue)
+                .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
+                .padding(.horizontal, Space.snug.rawValue)
+                .padding(.bottom, Space.near.rawValue)
+            }
+            if clips.isEmpty, keeping {
                 Key("⌘ C", "Copy something. It shows up here.")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, Space.page.rawValue * 2)
