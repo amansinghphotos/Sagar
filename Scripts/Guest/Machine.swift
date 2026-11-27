@@ -116,8 +116,11 @@ func install(_ folder: URL) async throws {
     // The first start makes the guest's one user, who logs in by itself: macOS reads these only now.
     let password = String(
         (0..<24).map { _ in "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789".randomElement()! })
-    try password.write(to: machine.file("Password"), atomically: true, encoding: .utf8)
-    try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: machine.file("Password").path)
+    guard
+        FileManager.default.createFile(
+            atPath: machine.file("Password").path, contents: Data(password.utf8), attributes: [.posixPermissions: 0o600]
+        )
+    else { fail("Cannot write the guest's password.") }
     let provisioning = VZMacGuestProvisioningOptions()
     provisioning.fullName = "Tour"
     provisioning.username = "tour"
@@ -147,7 +150,10 @@ final class Host: NSObject, VZVirtualMachineDelegate {
         vm.delegate = self
     }
 
-    nonisolated func guestDidStop(_ virtualMachine: VZVirtualMachine) { exit(0) }
+    nonisolated func guestDidStop(_ virtualMachine: VZVirtualMachine) {
+        MainActor.assumeIsolated { if machine.frozen { machine.discard() } }
+        exit(0)
+    }
     nonisolated func virtualMachine(_ virtualMachine: VZVirtualMachine, didStopWithError error: any Error) {
         fail("The hidden Mac stopped: \(error.localizedDescription)")
     }
@@ -220,9 +226,14 @@ final class Host: NSObject, VZVirtualMachineDelegate {
         Task {
             do {
                 try await vm.pause()
-                try await vm.saveMachineStateTo(url: machine.file("Clean.vzvmsave"))
+                // The saved memory takes its name last, so a guest half kept is never taken for a clean one.
+                let saved = machine.file("Clean.vzvmsave.new")
+                defer { try? FileManager.default.removeItem(at: saved) }
+                try await vm.saveMachineStateTo(url: saved)
                 try await vm.stop()
                 try machine.keepAsClean()
+                try? FileManager.default.removeItem(at: machine.file("Clean.vzvmsave"))
+                try FileManager.default.moveItem(at: saved, to: machine.file("Clean.vzvmsave"))
                 print("kept as the clean guest")
                 exit(0)
             } catch { fail("Could not keep the guest: \(error)") }
