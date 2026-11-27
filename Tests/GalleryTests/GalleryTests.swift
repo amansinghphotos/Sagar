@@ -25,6 +25,14 @@ func theControlsPageMatchesItsPicture(dark: Bool) throws {
 }
 
 @Test(arguments: [false, true])
+func theChoicesPageMatchesItsPicture(dark: Bool) throws {
+    let size = WindowSize.standard
+    try expectPicture(
+        of: Gallery(page: .choices, appearance: dark ? .dark : .light), width: size.width, height: size.height,
+        named: "gallery-choices-\(dark ? "dark" : "light")", dark: dark)
+}
+
+@Test(arguments: [false, true])
 func theListsPageMatchesItsPicture(dark: Bool) throws {
     let size = WindowSize.standard
     try expectPicture(
