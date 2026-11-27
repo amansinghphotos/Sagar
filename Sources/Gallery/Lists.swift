@@ -1,8 +1,14 @@
 import Look
 import SwiftUI
 
-/// The Lists page: lines, quiet rows, marks, badges, key caps, setting rows and a stepper, as Search has them.
+/// The Lists page: lines, quiet rows, marks, badges, key caps, setting rows, a stepper, a banner and a toast, as
+/// Search has them, the toast in Search's capsule for a link's address.
 struct Lists: View {
+    @State private var toast = {
+        var queue = ToastQueue()
+        queue.show("Copied. Press ⌘V to paste.")
+        return queue
+    }()
     @State private var notify = true
     @State private var size = 1.0
 
@@ -34,5 +40,13 @@ struct Lists: View {
         }
         .padding(Space.page.rawValue)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .overlay(alignment: .bottomTrailing) {
+            Banner(
+                icon: "bell", question: "Chete wants to paste for you", yes: ("Allow once", {}),
+                maybe: ("Always allow", {}), no: ("Don't allow", {})
+            )
+            .padding(Space.page.rawValue)
+        }
+        .toasts($toast)
     }
 }
