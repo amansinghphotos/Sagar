@@ -11,7 +11,7 @@ public struct CheteScene: Scene {
 
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
-        SwiftUI.Settings { CheteSettings() }
+        SwiftUI.Settings { CheteSettings() }.restorationBehavior(.disabled)
         Window("Chete", id: "chete") {
             Text("What You Copy Appears Here")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

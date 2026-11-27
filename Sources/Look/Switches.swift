@@ -91,6 +91,7 @@ package struct Segmented<Option: Hashable>: View {
                         withAnimation(motion.settle) { selection = option }
                     }
                     .accessibilityAddTraits(option == selection ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { withAnimation(motion.settle) { selection = option } }
             }
         }
         .padding(2)
