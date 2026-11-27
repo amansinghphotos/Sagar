@@ -1,7 +1,8 @@
 // Taken from Search at commit c92ea7c: Hunt (Plate.swift), and the Passwords panel's field and password
 // field (Passwords.swift), lifted out of that panel as Field and Secret. Copyright (c) 2026 Office Commun,
 // MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's colours are
-// read from Look, and the panel's focus and Return, which belong to the panel, are left to whoever uses them.
+// read from Look, the panel's focus and Return, which belong to the panel, are left to whoever uses them, and each
+// field is named for VoiceOver, as Apple's accessibility audit requires.
 import SwiftUI
 
 /// The field for narrowing a list. The wash, the glass, the caret.
@@ -29,6 +30,7 @@ package struct Hunt: View {
                     .textFieldStyle(.plain)
                     .foregroundStyle(Role.ink)
                     .focused(focus)
+                    .accessibilityLabel(prompt)
             }
             .font(.system(size: 13))
             if !text.isEmpty {
@@ -40,6 +42,7 @@ package struct Hunt: View {
                         .foregroundStyle(Role.faint)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Clear")
             }
         }
         .padding(.horizontal, 12)
@@ -66,6 +69,7 @@ package struct Field: View {
             TextField("", text: $text)
                 .textFieldStyle(.plain)
                 .foregroundStyle(Role.ink)
+                .accessibilityLabel(name)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
         }
@@ -92,6 +96,7 @@ package struct Secret: View {
             }
             SecureField("", text: $text)
                 .textFieldStyle(.plain)
+                .accessibilityLabel(name)
                 .font(.system(size: 12.5, design: .monospaced))
                 .foregroundStyle(Role.ink)
                 .padding(.horizontal, 10)
