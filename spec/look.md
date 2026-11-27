@@ -58,8 +58,8 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 ## What Proves It
 
 A Modern part is done when its picture matches the same part pictured from Search's own code at
-`c92ea7c`, in light and dark, kept beside it as the reference. A part Search does not have, and Lexicon, the owner first sees in an app's
-screen, whose pictures he approves. Motion is done when the reviewer, reading it beside
+`c92ea7c`, in light and dark, kept beside it as the reference. A part Search does not have, and all of Lexicon, has no Search picture
+to match: the owner first sees it in an app's screen, and approves that screen's pictures. Motion is done when the reviewer, reading it beside
 Search's source, finds nothing changed beyond what must-have 4 allows, and a test shows each movement
 is instant under Reduce Motion, but for that one fade. Keyboard reach and labels are proven by the Gallery's tour and its audit.
 

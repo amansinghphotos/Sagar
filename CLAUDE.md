@@ -110,7 +110,7 @@ Never, whatever the reason:
   Swift 6 mode everywhere.
 - Tests use real code and temporary folders. No mocks. Fixtures are made up, or are records of real runs with nothing personal in them.
 - A screen's pictures live in `Tests/<Module>Tests/Pictures/`. A new or changed picture needs his
-  approval.
+  approval, but for the Gallery's, which are checked against Search's own (`spec/look.md`).
 
 ## Speaking to the Owner
 
