@@ -1,3 +1,4 @@
 #!/bin/bash
 # Git runs this before every commit, whoever or whatever makes it: no commit unless every rule holds.
-exec "$(git rev-parse --show-toplevel)/Scripts/check"
+top=$(git rev-parse --show-toplevel)
+"$top/Scripts/check" folder && exec "$top/Scripts/check"
