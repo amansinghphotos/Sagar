@@ -157,3 +157,70 @@ private struct Mac {
     #expect(!gate.passes)
     #expect(gate.words.hasPrefix("This copy is not on the drive the project lives on"))
 }
+
+/// Runs a tool with the given home folder, and returns what it printed.
+private func printed(_ tool: String, _ arguments: [String], in place: URL, home: URL) throws -> String {
+    let process = Process()
+    let answer = Pipe()
+    process.executableURL = URL(filePath: tool)
+    process.arguments = arguments
+    process.currentDirectoryURL = place
+    var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
+    environment["HOME"] = home.path
+    process.environment = environment
+    process.standardOutput = answer
+    try process.run()
+    process.waitUntilExit()
+    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+}
+
+/// On a drive of its own, a real disk image here, the caches move beside the project, with what they hold, and a
+/// link left from an old drive is pointed at the new one.
+@Test func theCachesLiveOnTheDriveAndFollowANewOne() throws {
+    let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
+    let drive = top.appending(path: "Drive")
+    let home = top.appending(path: "Home")
+    let image = top.appending(path: "Drive.sparseimage").path
+    try FileManager.default.createDirectory(at: drive, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: top) }
+    _ = try printed(
+        "/usr/bin/hdiutil",
+        [
+            "create", "-quiet", "-size", "200m", "-type", "SPARSE", "-fs", "APFS", "-volname", "Drive",
+            image,
+        ], in: top, home: home)
+    _ = try printed(
+        "/usr/bin/hdiutil", ["attach", "-quiet", "-nobrowse", "-mountpoint", drive.path, image], in: top, home: home)
+    defer { _ = try? printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home) }
+
+    let work = drive.appending(path: "Developer/Work")
+    let hook = work.appending(path: ".claude/hooks/start")
+    try FileManager.default.createDirectory(at: hook.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try FileManager.default.copyItem(
+        at: URL(filePath: #filePath).appending(path: "../../../.claude/hooks/start").standardizedFileURL, to: hook)
+    _ = try printed("/usr/bin/env", ["git", "init", "-q"], in: work, home: home)
+    let usual = home.appending(path: "Library/Caches/org.swift.swiftpm")
+    try FileManager.default.createDirectory(at: usual, withIntermediateDirectories: true)
+    try "kept\n".write(to: usual.appending(path: "Kept"), atomically: true, encoding: .utf8)
+    let caches = drive.appending(path: "Developer/Caches").resolvingSymlinksInPath().path
+    #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
+
+    _ = try printed(hook.path, ["caches"], in: work, home: home)
+    let link = { (name: String) in
+        URL(
+            filePath: try FileManager.default.destinationOfSymbolicLink(
+                atPath: home.appending(path: "Library/Caches/\(name)").path)
+        ).resolvingSymlinksInPath().path
+    }
+    #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
+    #expect(try link("com.apple.dt.xctest.tool") == caches + "/com.apple.dt.xctest.tool")
+    #expect(FileManager.default.fileExists(atPath: caches + "/org.swift.swiftpm/Kept"))
+    #expect(!(try printed(hook.path, ["ready"], in: work, home: home).contains("cache")))
+
+    try FileManager.default.removeItem(at: usual)
+    try FileManager.default.createSymbolicLink(
+        atPath: usual.path, withDestinationPath: "/nowhere/Caches/org.swift.swiftpm")
+    #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
+    _ = try printed(hook.path, ["caches"], in: work, home: home)
+    #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
+}
