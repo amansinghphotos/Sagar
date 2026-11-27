@@ -46,39 +46,39 @@ package struct SettingsScreen: View {
         VStack(alignment: .leading, spacing: Space.page.rawValue) {
             GroupBlock(title: "Your clips", icon: "list.clipboard") {
                 SettingRow(
-                    icon: "calendar", title: "Keep clips for", detail: "Older clips are deleted as they pass it."
+                    icon: "calendar", title: "Keep clips for", detail: "Older ones are deleted."
                 ) {
                     Segmented(
                         options: [(.week, "A week"), (.month, "A month"), (.year, "A year"), (.forever, "Forever")],
                         selection: $choices.settings.keeping)
                 }
                 SettingRow(
-                    icon: "iphone", title: "Copies from your other devices",
-                    detail: "What you copy on your iPhone or another Mac."
+                    icon: "iphone", title: "Keep copies from other devices",
+                    detail: "Like your iPhone, iPad or another Mac."
                 ) {
                     Switch(on: $choices.settings.keepsCopiesFromOtherDevices).accessibilityLabel(
-                        "Copies from your other devices")
+                        "Keep copies from other devices")
                 }
                 SettingRow(
-                    icon: "trash", title: "Delete everything", detail: "Every clip, at once. This cannot be undone."
+                    icon: "trash", title: "Delete all clips", detail: "You can’t undo this."
                 ) {
                     Pill("Delete All…", tint: .unsafe) { deleting = true }
                 }
             }
-            GroupBlock(title: "Your history in one file", icon: "doc") {
+            GroupBlock(title: "Back up", icon: "doc") {
                 SettingRow(
-                    icon: "square.and.arrow.up", title: "Save your history to a file",
-                    detail: "Every clip, passwords too, in a plain file any Mac opens. Keep it somewhere safe."
+                    icon: "square.and.arrow.up", title: "Export your clips",
+                    detail: "Saves them all to a file, passwords too. Keep it somewhere safe."
                 ) {
                     Pill("Export…") { choices.attempt { exported = ExportedHistory(data: try choices.exported()) } }
                 }
                 SettingRow(
-                    icon: "square.and.arrow.down", title: "Bring back a saved history",
-                    detail: "Puts a saved file's clips and settings in place of what is here."
+                    icon: "square.and.arrow.down", title: "Bring back clips",
+                    detail: "Swaps what’s here for the clips in a file you exported."
                 ) { Pill("Bring Back…") { choosing = true } }
             }
-            GroupBlock(title: "Chete", icon: "gearshape") {
-                SettingRow(icon: "power", title: "Open at login", detail: "Ready from the moment you log in.") {
+            GroupBlock(title: "General", icon: "gearshape") {
+                SettingRow(icon: "power", title: "Open at login", detail: "Chete’s ready as soon as you log in.") {
                     Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
                 }
             }
@@ -89,10 +89,10 @@ package struct SettingsScreen: View {
         .padding(Space.page.rawValue)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(Role.ground)
-        .confirmationDialog("Delete every clip?", isPresented: $deleting) {
-            Button("Delete Everything", role: .destructive) { choices.attempt { try choices.deleteAll() } }
+        .confirmationDialog("Delete all clips?", isPresented: $deleting) {
+            Button("Delete All", role: .destructive) { choices.attempt { try choices.deleteAll() } }
         } message: {
-            Text("This cannot be undone. A file you exported is not touched.")
+            Text("You can’t undo this. Files you’ve exported are kept.")
         }
         .fileExporter(
             isPresented: Binding {
@@ -100,17 +100,17 @@ package struct SettingsScreen: View {
             } set: {
                 if !$0 { exported = nil }
             }, document: exported,
-            contentType: .json, defaultFilename: "Chete History"
+            contentType: .json, defaultFilename: "Chete Clips"
         ) { result in
             if case .failure(let error) = result {
-                choices.failure = "That did not work: \(error.localizedDescription)"
+                choices.failure = "That didn’t work. \(error.localizedDescription)"
             }
         }
         .fileImporter(isPresented: $choosing, allowedContentTypes: [.json]) { result in
             bringing = try? result.get()
         }
         .confirmationDialog(
-            "Replace your history with this file?",
+            "Replace your clips?",
             isPresented: Binding {
                 bringing != nil
             } set: {
@@ -121,7 +121,7 @@ package struct SettingsScreen: View {
                 if let file = bringing { choices.attempt { try choices.bringBack(from: file) } }
             }
         } message: {
-            Text("Every clip here is put in place of the file's. Export first to keep them.")
+            Text("The clips here will be swapped for the ones in this file. Export first if you want to keep them.")
         }
     }
 }

@@ -24,7 +24,7 @@ package final class Choices {
             settings = try Settings.read(in: folder)
         } catch {
             settings = Settings()
-            failure = "Your settings could not be read, so Chete uses its first ones."
+            failure = "Couldn’t read your settings, so Chete went back to the usual ones."
         }
     }
 
@@ -39,7 +39,7 @@ package final class Choices {
             try work()
             failure = nil
         } catch {
-            failure = "That did not work: \(error.localizedDescription)"
+            failure = "That didn’t work. \(error.localizedDescription)"
         }
     }
 
