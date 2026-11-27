@@ -7,6 +7,7 @@
 #   Scripts/release <App> <version> publish     run by GitHub when his approval merges the pull request
 #   Scripts/release follows <last> <next>       says whether one version may follow another
 #   Scripts/release may <App> <now> < state     why a release of <App> may not start yet, or nothing
+#   Scripts/release opens <app path>            item or menu: where the update tour asks that app for updates
 #   Scripts/release notice <App> <version> <passed|failed> <owner> <why> < comments    the note that tells him, if any
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -30,16 +31,23 @@ may() { # may <App> <now> < {"open": [every open branch], "milestone": [its open
 }
 [ "${1:-}" != may ] || { may "${2:-}" "${3:-}"; exit; }
 
+opens() { # opens <app path>: how a person asks the app for updates. An app kept out of the Dock has no menu of
+    # its own, so from its item in the menu bar; any other from its menu. Read from the app, never from its name.
+    [ "$(plutil -extract LSUIElement raw -o - "$1/Contents/Info.plist" 2>/dev/null)" = true ] && echo item || echo menu
+}
+[ "${1:-}" != opens ] || { opens "${2:-}"; exit; }
+
 why() { # why < notes: the owner's reason for a release, if its notes are allowed. The notes are New, Better and Fixed
-    # lines in that order, each with something to say, one at least, and no issue number or code. The reason is
-    # the first line that is there: what is new, else what is better, else what is mended.
+    # lines in that order, each with something to say, one at least, and no issue number, code or dollar sign, which
+    # the build would fill in. The reason is the first line that is there: what is new, else what is better, else what
+    # is mended.
     local notes first
     notes=$(cat)
     awk 'BEGIN { rank["New"] = 1; rank["Better"] = 2; rank["Fixed"] = 3 }
         $0 !~ /^(New|Better|Fixed): +[^[:space:]]/ { bad = 1; next }
         { label = $0; sub(/: .*/, "", label); if (rank[label] <= last) bad = 1; last = rank[label] }
         END { exit bad }' <<<"$notes" || return 1
-    ! grep -q '[#`]' <<<"$notes" || return 1
+    ! grep -q '[#`$]' <<<"$notes" || return 1
     first=$(head -n 1 <<<"$notes" | sed 's/^[A-Za-z]*: *//')
     printf '%s%s\n' "$(tr '[:lower:]' '[:upper:]' <<<"${first:0:1}")" "${first:1}"
 }
@@ -140,7 +148,7 @@ publish) # On GitHub's clean Mac: make the tried file public, then be the person
     else # an update: the previous download, asked for updates, takes this one
         curl -fsSL "$files/$name-$previous/$app-$previous.dmg" -o "$out/previous.dmg"
         install "$out/previous.dmg"
-        TEST_RUNNER_APP=$app TEST_RUNNER_IDENTIFIER=$(defaults read "/Applications/$app.app/Contents/Info" CFBundleIdentifier) \
+        TEST_RUNNER_APP=$app TEST_RUNNER_OPENS=$(opens "/Applications/$app.app") TEST_RUNNER_IDENTIFIER=$(defaults read "/Applications/$app.app/Contents/Info" CFBundleIdentifier) \
             xcodebuild -project Sagar.xcodeproj -scheme UpdateTour -derivedDataPath .build/Xcode \
             -resultBundlePath .build/Update.xcresult -quiet test \
             CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= >/dev/null 2>&1 ||
@@ -158,7 +166,7 @@ profile=${NOTARY_PROFILE:-Sagar}
 tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
 notes=$(cat)
 reason=$(why <<<"$notes") ||
-    stop "The notes are plain lines on standard input: New: …, Better: …, Fixed: …, in that order. Leave out a line with nothing to say, but keep one. No issue numbers or code."
+    stop "The notes are plain lines on standard input: New: …, Better: …, Fixed: …, in that order. Leave out a line with nothing to say, but keep one. No issue numbers, code or dollar signs."
 [ -x "$tools/generate_appcast" ] || stop "Sparkle's tools are missing: run swift build first."
 [ "$(git branch --show-current)" = main ] && [ -z "$(git status --porcelain)" ] || stop "Start from a clean main."
 git fetch -q origin main
@@ -202,7 +210,7 @@ run=$(gh run list --workflow check --branch main --event push --limit 1 --json d
 [ -n "$run" ] && gh run watch "$run" --exit-status >/dev/null 2>&1 ||
     stop "GitHub's Mac has not passed main as it stands: see gh run list --workflow check --branch main."
 
-Scripts/build "$app" "$version"
+NOTES="$notes" Scripts/build "$app" "$version"
 image=$out/$app-$version.dmg
 ditto -c -k --keepParent "$out/$app.app" "$out/$app.zip"
 notarise "$out/$app.zip" "$out/$app.app"

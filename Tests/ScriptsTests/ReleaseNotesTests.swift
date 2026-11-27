@@ -40,6 +40,8 @@ func aLineWithNothingToSayCanBeLeftOut(notes: String, why: String) throws {
     "New:   \n", "Fixed: it works.\nBetter: \t\n", "New: one.\nNew: two.\n", "Fixed: it works.\nBetter: and faster.\n",
     "Added: a thing.\n", "New: fixes #12.\n",
     "New: the `list` is faster.\n", "New: one.\n\nFixed: two.\n",
+    // The build would fill $(…) in from its own settings, which name this Mac's user and folders.
+    "New: made by $(USER).\n", "Fixed: costs $5 less.\n",
 ])
 func notesOutOfOrderEmptyOrWithCodeAreRefused(notes: String) throws {
     #expect(try reason(for: notes) == nil)

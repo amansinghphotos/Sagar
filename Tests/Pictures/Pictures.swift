@@ -6,6 +6,10 @@ import Testing
 /// differently from one Mac to the next; one changed word is far more than this.
 package let tolerance = 40
 
+/// A far smaller step than the default, for a part that must match Search's picture shade for shade: a shadow a
+/// little too dark or a corner a point too round stays within the default.
+package let fine = 2
+
 /// What comparing a screen with its approved picture found.
 package enum Verdict: Equatable {
     case same
@@ -104,14 +108,15 @@ private func onItsWindow(_ drawn: CGImage, _ window: NSWindow) throws -> CGImage
     return image
 }
 
-/// How many pixels differ in colour by more than a small step. Pictures of different sizes differ everywhere.
-package func differingPixels(_ first: CGImage, _ second: CGImage) -> Int {
+/// How many pixels differ in colour by more than `levels`, of 255: by default a small step that edges smoothed
+/// differently from one Mac to the next stay within. Pictures of different sizes differ everywhere.
+package func differingPixels(_ first: CGImage, _ second: CGImage, levels: Int = 24) -> Int {
     guard first.width == second.width, first.height == second.height else { return .max }
     let one = bytes(of: first)
     let two = bytes(of: second)
     var differing = 0
     for pixel in stride(from: 0, to: one.count, by: 4)
-    where (0..<4).contains(where: { abs(Int(one[pixel + $0]) - Int(two[pixel + $0])) > 24 }) {
+    where (0..<4).contains(where: { abs(Int(one[pixel + $0]) - Int(two[pixel + $0])) > levels }) {
         differing += 1
     }
     return differing

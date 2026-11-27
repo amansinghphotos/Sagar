@@ -46,7 +46,7 @@ package struct Hunt: View {
         }
         .padding(.horizontal, Space.apart.rawValue)
         .frame(height: 32)
-        .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
+        .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

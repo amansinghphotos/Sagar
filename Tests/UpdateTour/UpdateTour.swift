@@ -1,15 +1,26 @@
 import XCTest
 
-/// On a clean Mac with the previous release installed: ask for updates as a person would, and take
-/// what is offered. `Scripts/release` runs this on GitHub's runner after every release but an app's first.
+/// On a clean Mac with the previous release installed: ask for updates as a person would, from the app's
+/// menu or, for an app kept out of the Dock, from its item in the menu bar, and take what is offered.
+/// `Scripts/release` runs this on GitHub's runner after every release but an app's first.
 final class UpdateTour: XCTestCase {
     @MainActor
     func testThePreviousVersionTakesTheUpdate() throws {
         let environment = ProcessInfo.processInfo.environment
         let app = XCUIApplication(bundleIdentifier: try XCTUnwrap(environment["IDENTIFIER"]))
+        let name = try XCTUnwrap(environment["APP"])
         app.launch()
-        app.menuBars.menuBarItems[try XCTUnwrap(environment["APP"])].click()
-        app.menuBars.menuItems["Check for Updates…"].click()
+        if environment["OPENS"] == "item" {  // an app kept out of the Dock has no menu: its item drops a card
+            let item = app.statusItems[name]
+            if !item.waitForExistence(timeout: 10) { add(XCTAttachment(string: app.debugDescription)) }
+            item.click()
+            let check = app.buttons["Check for Updates"]
+            if !check.waitForExistence(timeout: 5) { add(XCTAttachment(string: app.debugDescription)) }
+            check.click()
+        } else {
+            app.menuBars.menuBarItems[name].click()
+            app.menuBars.menuItems["Check for Updates…"].click()
+        }
 
         let install = app.buttons["Install Update"]
         if !install.waitForExistence(timeout: 60) { add(XCTAttachment(string: app.debugDescription)) }

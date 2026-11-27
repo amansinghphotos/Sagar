@@ -125,6 +125,23 @@ first of them, and a release will not start while its own has a box unticked.
   in the Release issue. After his approval GitHub's Mac installs the previous release and watches it
   take the update.
 
+### When an App Stops Unexpectedly
+
+macOS records why on that Mac, and tells no one else. Send Report, in Shell, lets the person pass it on.
+
+- The next time the app opens, a card says it stopped, and offers a short report. Not Now
+  closes it, and that stop's report is never offered again.
+- The report is plain text, shown in full on the card before it goes. It holds only the app, its
+  version and build date, the Mac's model, the macOS version, and where in the app's own code it
+  stopped, as Apple's MetricKit hands it over.
+- It never holds a clip, a password, a name, an address, a file path or any words from the app. A
+  test builds a report from a recorded real stop and fails on anything outside that list.
+- Send hands the text to the Mac's own Share menu, where the person chooses Messages or Mail and
+  whom to send it to. The app itself sends nothing, so it needs no account, key or network. With no
+  network, Messages or Mail sends it later.
+- Each release's symbol file turns a report's numbers into the line that stopped. It holds paths
+  from the Mac that built it, so it stays out of the repository and is never published.
+
 ### Mending a Shipped App
 
 A fault in a shipped app is mended beside the app in work, and `NOW` stays as it is. (`Scripts/check`
@@ -207,6 +224,10 @@ request that changes a check runs its own new version, and is read by the review
 
 Launch is judged by the fastest of three launches on GitHub's Mac. That shows what the code costs,
 not how an app feels on its very first open after an install, which he judges when he tries a build.
+
+Everything in the repository can be read by anyone. That keeps GitHub's Mac and its rules free.
+Before a spec needs something in the code that cannot be public, privacy is decided again
+(decision 3).
 
 The guards catch honest mistakes, not deliberate ones. The agents' app may push workflow files, so a
 branch could carry a workflow that reports a pass it did not earn. The network rule reads for the
