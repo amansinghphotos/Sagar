@@ -158,8 +158,9 @@ private struct Mac {
     #expect(gate.words.hasPrefix("This copy is not on the drive the project lives on"))
 }
 
-/// Runs a tool with the given home folder, and returns what it printed.
-private func printed(_ tool: String, _ arguments: [String], in place: URL, home: URL) throws -> String {
+/// Runs a tool with the given home folder, and returns what it printed. It waits without holding one of the few
+/// threads every test shares, so a test that waits on its own timer is never starved while a disk image is made.
+private func printed(_ tool: String, _ arguments: [String], in place: URL, home: URL) async throws -> String {
     let process = Process()
     let answer = Pipe()
     process.executableURL = URL(filePath: tool)
@@ -169,120 +170,111 @@ private func printed(_ tool: String, _ arguments: [String], in place: URL, home:
     environment["HOME"] = home.path
     process.environment = environment
     process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
+    try await withCheckedThrowingContinuation { (ended: CheckedContinuation<Void, any Error>) in
+        process.terminationHandler = { _ in ended.resume() }
+        do { try process.run() } catch { ended.resume(throwing: error) }
+    }
     return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
 }
 
 /// A drive made of a real disk image, with a small repository on it holding the real start hook and numbers, and a
 /// home folder on the Mac's own disk. The image is detached and removed after `body`.
-private func withADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throws {
+private func withADrive(_ body: (_ work: URL, _ home: URL) async throws -> Void) async throws {
     let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
     let drive = top.appending(path: "Drive")
     let home = top.appending(path: "Home")
     let image = top.appending(path: "Drive.sparseimage").path
     try FileManager.default.createDirectory(at: drive, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: top) }
-    _ = try printed(
+    _ = try await printed(
         "/usr/bin/hdiutil",
         ["create", "-quiet", "-size", "200m", "-type", "SPARSE", "-fs", "APFS", "-volname", "Drive", image],
         in: top, home: home)
-    _ = try printed(
+    _ = try await printed(
         "/usr/bin/hdiutil", ["attach", "-quiet", "-nobrowse", "-mountpoint", drive.path, image], in: top, home: home)
-    defer { _ = try? printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home) }
-    let work = drive.appending(path: "Developer/Work")
-    let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
-    for file in [".claude/hooks/start", "CONSTRAINTS.md", ".gitignore"] {
-        try FileManager.default.createDirectory(
-            at: work.appending(path: file).deletingLastPathComponent(), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: project.appending(path: file), to: work.appending(path: file))
+    do {
+        let work = drive.appending(path: "Developer/Work")
+        let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
+        for file in [".claude/hooks/start", "CONSTRAINTS.md", ".gitignore"] {
+            try FileManager.default.createDirectory(
+                at: work.appending(path: file).deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: project.appending(path: file), to: work.appending(path: file))
+        }
+        for arguments in [
+            ["init", "-q", "-b", "main"], ["add", "-A"],
+            ["-c", "user.name=Test", "-c", "user.email=test@users.noreply.github.com", "commit", "-q", "-m", "A"],
+        ] {
+            _ = try await printed("/usr/bin/env", ["git"] + arguments, in: work, home: home)
+        }
+        try await body(work, home)
+    } catch {
+        _ = try? await printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home)
+        throw error
     }
-    let git = { (arguments: [String]) in _ = try printed("/usr/bin/env", ["git"] + arguments, in: work, home: home) }
-    try git(["init", "-q", "-b", "main"])
-    try git(["add", "-A"])
-    try git(["-c", "user.name=Test", "-c", "user.email=test@users.noreply.github.com", "commit", "-q", "-m", "A"])
-    try body(work, home)
+    _ = try await printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home)
 }
 
 /// The tests that make a disk image run one at a time: images made at once can clash.
 @Suite(.serialized) struct OnADrive {
-    /// On a drive of its own, a real disk image here, the caches move beside the project, with what they hold, and a
-    /// link left from an old drive is pointed at the new one.
-    @Test func theCachesLiveOnTheDriveAndFollowANewOne() throws {
-        let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
-        let drive = top.appending(path: "Drive")
-        let home = top.appending(path: "Home")
-        let image = top.appending(path: "Drive.sparseimage").path
-        try FileManager.default.createDirectory(at: drive, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: top) }
-        _ = try printed(
-            "/usr/bin/hdiutil",
-            [
-                "create", "-quiet", "-size", "200m", "-type", "SPARSE", "-fs", "APFS", "-volname", "Drive",
-                image,
-            ], in: top, home: home)
-        _ = try printed(
-            "/usr/bin/hdiutil", ["attach", "-quiet", "-nobrowse", "-mountpoint", drive.path, image], in: top, home: home
-        )
-        defer { _ = try? printed("/usr/bin/hdiutil", ["detach", "-quiet", "-force", drive.path], in: top, home: home) }
+    /// On a drive of its own, the caches move beside the project, with what they hold, and a link left from an old
+    /// drive is pointed at the new one.
+    @Test func theCachesLiveOnTheDriveAndFollowANewOne() async throws {
+        try await withADrive { work, home in
+            let hook = work.appending(path: ".claude/hooks/start").path
+            let usual = home.appending(path: "Library/Caches/org.swift.swiftpm")
+            try FileManager.default.createDirectory(at: usual, withIntermediateDirectories: true)
+            try "kept\n".write(to: usual.appending(path: "Kept"), atomically: true, encoding: .utf8)
+            let caches = work.deletingLastPathComponent().appending(path: "Caches").resolvingSymlinksInPath().path
+            #expect(try await printed(hook, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
 
-        let work = drive.appending(path: "Developer/Work")
-        let hook = work.appending(path: ".claude/hooks/start")
-        try FileManager.default.createDirectory(at: hook.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(
-            at: URL(filePath: #filePath).appending(path: "../../../.claude/hooks/start").standardizedFileURL, to: hook)
-        _ = try printed("/usr/bin/env", ["git", "init", "-q"], in: work, home: home)
-        let usual = home.appending(path: "Library/Caches/org.swift.swiftpm")
-        try FileManager.default.createDirectory(at: usual, withIntermediateDirectories: true)
-        try "kept\n".write(to: usual.appending(path: "Kept"), atomically: true, encoding: .utf8)
-        let caches = drive.appending(path: "Developer/Caches").resolvingSymlinksInPath().path
-        #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
+            _ = try await printed(hook, ["caches"], in: work, home: home)
+            let link = { (name: String) in
+                URL(
+                    filePath: try FileManager.default.destinationOfSymbolicLink(
+                        atPath: home.appending(path: "Library/Caches/\(name)").path)
+                ).resolvingSymlinksInPath().path
+            }
+            #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
+            #expect(try link("com.apple.dt.xctest.tool") == caches + "/com.apple.dt.xctest.tool")
+            #expect(FileManager.default.fileExists(atPath: caches + "/org.swift.swiftpm/Kept"))
+            #expect(!(try await printed(hook, ["ready"], in: work, home: home).contains("cache")))
 
-        _ = try printed(hook.path, ["caches"], in: work, home: home)
-        let link = { (name: String) in
-            URL(
-                filePath: try FileManager.default.destinationOfSymbolicLink(
-                    atPath: home.appending(path: "Library/Caches/\(name)").path)
-            ).resolvingSymlinksInPath().path
+            try FileManager.default.removeItem(at: usual)
+            try FileManager.default.createSymbolicLink(
+                atPath: usual.path, withDestinationPath: "/nowhere/Caches/org.swift.swiftpm")
+            #expect(try await printed(hook, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
+            _ = try await printed(hook, ["caches"], in: work, home: home)
+            #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
         }
-        #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
-        #expect(try link("com.apple.dt.xctest.tool") == caches + "/com.apple.dt.xctest.tool")
-        #expect(FileManager.default.fileExists(atPath: caches + "/org.swift.swiftpm/Kept"))
-        #expect(!(try printed(hook.path, ["ready"], in: work, home: home).contains("cache")))
-
-        try FileManager.default.removeItem(at: usual)
-        try FileManager.default.createSymbolicLink(
-            atPath: usual.path, withDestinationPath: "/nowhere/Caches/org.swift.swiftpm")
-        #expect(try printed(hook.path, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
-        _ = try printed(hook.path, ["caches"], in: work, home: home)
-        #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
     }
 
     /// With the project on its drive, a build or a project left on the Mac's own disk is named at each chat's start; a
     /// home folder with neither is told nothing.
-    @Test func aStrayBuildOrProjectOnTheMacsOwnDiskIsNamed() throws {
-        try withADrive { work, home in
+    @Test func aStrayBuildOrProjectOnTheMacsOwnDiskIsNamed() async throws {
+        try await withADrive { work, home in
             let hook = work.appending(path: ".claude/hooks/start").path
-            #expect(try printed(hook, ["lean"], in: work, home: home) == "")
+            #expect(try await printed(hook, ["lean"], in: work, home: home) == "")
             let stray = home.appending(path: "Library/Developer/Xcode/DerivedData/Stray")
             try FileManager.default.createDirectory(at: stray, withIntermediateDirectories: true)
             try FileManager.default.createDirectory(
                 at: home.appending(path: "Code/Old/.git"), withIntermediateDirectories: true)
-            let told = try printed(hook, ["lean"], in: work, home: home)
+            let told = try await printed(hook, ["lean"], in: work, home: home)
             #expect(told.contains("Builds on the Mac's own disk: ~/Library/Developer/Xcode/DerivedData\n"))
             #expect(told.contains("A project or its build on the Mac's own disk: ~/Code/Old/.git\n"))
         }
     }
 
     /// On the drive, a finished chat's copy untouched for a day is removed. These stay: one touched today, one holding
-    /// changes, one with a recent file deep inside, one holding ignored files that are not builds, and one whose work has not merged.
-    @Test func aFinishedCopyUntouchedForADayIsRemoved() throws {
-        try withADrive { work, home in
+    /// changes, one with a recent file deep inside, one holding ignored files that are not builds, and one whose work
+    /// has not merged.
+    @Test func aFinishedCopyUntouchedForADayIsRemoved() async throws {
+        try await withADrive { work, home in
             let copies = work.deletingLastPathComponent().appending(path: "Copies")
-            let run = { (tool: String, arguments: [String]) in try printed(tool, arguments, in: work, home: home) }
-            let merged = try run("/usr/bin/env", ["git", "rev-parse", "HEAD"])
+            let run = { (tool: String, arguments: [String]) in try await printed(tool, arguments, in: work, home: home)
+            }
+            let merged = try await run("/usr/bin/env", ["git", "rev-parse", "HEAD"])
             for name in ["old", "fresh", "busy", "deep", "local", "unmerged"] {
-                _ = try run(
+                _ = try await run(
                     "/usr/bin/env", ["git", "worktree", "add", "-q", "-b", name, copies.appending(path: name).path])
             }
             let place = { (copy: String, file: String) in copies.appending(path: "\(copy)/\(file)") }
@@ -291,7 +283,7 @@ private func withADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throw
             try "{}\n".write(to: place("local", ".claude/settings.local.json"), atomically: true, encoding: .utf8)
             try FileManager.default.createDirectory(at: place("old", ".build"), withIntermediateDirectories: true)
             try "built\n".write(to: place("old", ".build/Old.o"), atomically: true, encoding: .utf8)
-            _ = try run(
+            _ = try await run(
                 "/bin/bash",
                 [
                     "-c",
@@ -301,14 +293,14 @@ private func withADrive(_ body: (_ work: URL, _ home: URL) throws -> Void) throw
             try FileManager.default.createDirectory(at: place("deep", ".build/Deep"), withIntermediateDirectories: true)
             try "building\n".write(to: place("deep", ".build/Deep/Now.o"), atomically: true, encoding: .utf8)
             for name in ["old", "busy", "deep", "local", "unmerged"] {
-                _ = try run(
+                _ = try await run(
                     "/bin/bash",
                     ["-c", "find \"$0\" -exec touch -h -t 202601010000 {} +", copies.appending(path: name).path])
             }
             // Only a file deep inside is recent: its folders, and everything at the top, stay old.
             try "building again\n".write(to: place("deep", ".build/Deep/Now.o"), atomically: false, encoding: .utf8)
             let hook = work.appending(path: ".claude/hooks/start").path
-            let removed = try run("/bin/bash", ["-c", "printf '%s' \"$1\" | \"$0\" tidy", hook, merged])
+            let removed = try await run("/bin/bash", ["-c", "printf '%s' \"$1\" | \"$0\" tidy", hook, merged])
             #expect(removed == "old ")
             #expect(!FileManager.default.fileExists(atPath: copies.appending(path: "old").path))
             for name in ["fresh", "busy", "deep", "local", "unmerged"] {
