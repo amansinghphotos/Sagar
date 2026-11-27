@@ -4,6 +4,7 @@
 #   Scripts/release <App> <version> withdraw    he reported a fault: mend it, then offer the same number again
 #   Scripts/release <App> <version> publish     run by GitHub when his approval merges the pull request
 #   Scripts/release follows <last> <next>       says whether one version may follow another
+#   Scripts/release notice <App> <version> <passed|failed> <owner> <why> < comments    the note that tells him, if any
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,6 +14,24 @@ follows() { # follows <last> <next>: yes if <next> is the next second number, or
         print (want == was[1] "." was[2] + 1 || want == was[1] + 1 ".0") ? "yes" : "no" }'
 }
 [ "${1:-}" != follows ] || { follows "${2:-}" "${3:-}"; exit; }
+
+notice() { # notice <App> <version> <passed|failed> <owner> <why> < the release pull request's comments, as GitHub lists
+    # them. Prints the note to post there for the owner, or nothing: a failed proof is said once, and so is a later pass.
+    local said
+    said=$(jq -r '[.[].body | capture("<!-- proof (?<ended>passed|failed) -->").ended] | last // "passed"')
+    [ "$3" != "$said" ] || return 0
+    if [ "$3" = failed ]; then
+        printf '@%s **%s %s failed its last check, after you approved it.**\n' "$4" "$1" "$2"
+        printf "GitHub's Mac tried getting it the way people will. It didn't work.\n"
+        printf 'Say "the %s check failed" in any chat, and we'\''ll mend it.\n\n' "$1"
+        printf '<details><summary>For the Agents</summary>\n\n%s\n\n</details>\n' "$5"
+    else
+        printf '@%s **%s %s has now passed its last check.**\n' "$4" "$1" "$2"
+        printf "A second try worked. There's nothing for you to do.\n"
+    fi
+    printf '<!-- proof %s -->\n' "$3"
+}
+[ "${1:-}" != notice ] || { shift; notice "$@"; exit; }
 
 app=${1:?Usage: Scripts/release <App> <version> [withdraw|publish]}
 version=${2:?Usage: Scripts/release <App> <version> [withdraw|publish]}
@@ -61,6 +80,17 @@ withdraw)
     exit 0
     ;;
 publish) # On GitHub's clean Mac: make the tried file public, then be the person who has the previous version.
+    why="It stopped without saying why."
+    stop() { why=$1; echo "$1"; exit 1; }
+    told() { # told <passed|failed>: however this ends, the pull request he approved gets the note it calls for, if any
+        local request words
+        request=$(gh pr list --state merged --head "$branch" --json number --jq '.[0].number // empty')
+        [ -n "$request" ] || return 0
+        words=$(gh api "repos/$repository/issues/$request/comments?per_page=100" | notice "$app" "$version" "$1" \
+            "${repository%/*}" "$why ${GITHUB_SERVER_URL:-}/$repository/actions/runs/${GITHUB_RUN_ID:-}")
+        [ -z "$words" ] || gh api "repos/$repository/issues/$request/comments" -f body="$words" >/dev/null
+    }
+    trap 'ended=$?; told "$([ "$ended" -eq 0 ] && echo passed || echo failed)" || true; exit "$ended"' EXIT
     [ "$(versions | head -1)" = "$version" ] || stop "$feed does not lead with $version."
     gh release edit "$tag" --draft=false >/dev/null
     mkdir -p "$out"
