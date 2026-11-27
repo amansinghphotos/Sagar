@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -120,14 +120,25 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     clashing=$(Scripts/check clashes "$head") ||
         { [ -n "$clashing" ] && echo "#$request clashes with main in $(paste -sd ' ' - <<<"$clashing"). Bring it up to date with main first." ||
             echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
-    # Two checks count. The code's ran on the newest commit. The words' ran after the description last changed.
-    edited=$(gh api graphql -F owner="${repository%/*}" -F name="${repository#*/}" -F number="$request" -f query='
-        query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
-            pullRequest(number: $number) { createdAt lastEditedAt } } }' \
-        --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt] | map(select(. != null)) | max')
+    # The words are judged here first, by the very rules GitHub runs, so a fault is told now in its own lines. GitHub
+    # judges a request's words only once it is shown to someone: a draft is still being written.
+    owner=${repository%/*}
+    judged=$(PR_NUMBER=$request PR_BRANCH=$branch PR_HEAD=$head Scripts/check request) ||
+        { printf '%s\n' "$judged" | grep -vE '^(ok|--) |^[0-9]+ rules? failed\.$'; echo "Nobody was asked."; exit 1; }
+    # Given back after his review, it first tells him what changed since.
+    [ "$(gh pr view "$request" --json body,latestReviews | Scripts/check since "$owner")" = yes ] ||
+        { echo "He reviewed #$request: his part must answer **What Changed Since Your Review:** first. Nobody was asked."; exit 1; }
     unasked=0
     said=$(mktemp) # what gh says on the side, kept apart so that a warning is never read as GitHub's answer
-    trap 'rm -f "$said"' EXIT
+    unjudged="" # set while the request is shown and GitHub has not yet passed its words
+    take_back() { # any end before GitHub passed the words makes the request a draft again, out of his list
+        if gh pr ready "$request" --undo >/dev/null 2>&1; then
+            echo "#$request had been shown, and is a draft again."
+        else
+            echo "#$request is still shown, unjudged: make it a draft again with gh pr ready $request --undo."
+        fi
+    }
+    trap 'status=$?; rm -f "$said"; [ "$status" -eq 0 ] || [ -z "$unjudged" ] || take_back' EXIT
     unanswered() { # GitHub gave no answer, as when the agents' hourly allowance runs out. It is asked again a minute
         # later; after a quarter of an hour of no answers in a row, this says so, and when GitHub can next be asked.
         unasked=$((unasked + 1))
@@ -165,13 +176,19 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             esac
         done
     }
+    # Two checks count. The code's ran on the newest commit. The words' ran on GitHub once the request was shown, and
+    # after its description last changed.
     passed check ""
-    passed words "$edited"
-    # Given back after his review, it first tells him what changed since.
-    owner=${repository%/*}
-    [ "$(gh pr view "$request" --json body,latestReviews | Scripts/check since "$owner")" = yes ] ||
-        { echo "He reviewed #$request: his part must answer **What Changed Since Your Review:** first. Nobody was asked."; exit 1; }
+    unjudged=yes
     gh pr ready "$request" >/dev/null 2>&1
+    shown=$(gh api graphql -F owner="$owner" -F name="${repository#*/}" -F number="$request" -f query='
+        query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
+            pullRequest(number: $number) { createdAt lastEditedAt
+                timelineItems(itemTypes: [READY_FOR_REVIEW_EVENT], last: 1) { nodes { ... on ReadyForReviewEvent { createdAt } } } } } }' \
+        --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt, .timelineItems.nodes[0].createdAt] |
+            map(select(. != null)) | max')
+    passed words "$shown"
+    unjudged=""
     # If the owner answered before, he is asked again: GitHub does not do that by itself.
     if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
         gh pr edit "$request" --add-reviewer "$owner" >/dev/null
@@ -191,17 +208,17 @@ fi
 
 failed=0
 nothing=77 # what a rule returns when it had nothing to judge, so that silence is never read as a pass
-rule() { # rule <name>: run the function of that name, print one line, show its words if it fails
+rule() { # rule <name>: run the function of that name, print one line with its seconds, show its words if it fails
     local out
-    local status=0
+    local status=0 started=$SECONDS
     out=$("$1" 2>&1) || status=$?
     if [ "$status" -eq 0 ]; then
-        printf 'ok    %s\n' "$1"
+        printf 'ok    %-9s %4d s\n' "$1" "$((SECONDS - started))"
         printf '%s\n' "$out" | sed -n 's/^note: /        /p'
     elif [ "$status" -eq "$nothing" ]; then
         printf -- '--    %s (nothing to judge here)\n' "$1"
     else
-        printf 'FAIL  %s\n' "$1"
+        printf 'FAIL  %-9s %4d s\n' "$1" "$((SECONDS - started))"
         printf '%s\n' "$out" | tail -n 40 | sed 's/^/        /'
         failed=$((failed + 1))
     fi
@@ -209,11 +226,15 @@ rule() { # rule <name>: run the function of that name, print one line, show its 
 
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 now=$(tr -d '[:space:]' <NOW)
-base=$(git merge-base origin/main HEAD 2>/dev/null || true)
-[ -n "$base" ] || [ -z "${CI:-}" ] || { echo "origin/main is missing, so the pull request cannot be judged."; exit 1; }
+# The request's newest commit, when named, is judged instead of the folder: the ready step judges a request here as
+# GitHub will, from whatever copy it is run in.
+newest=${PR_HEAD:-HEAD}
+base=$(git merge-base origin/main "$newest" 2>/dev/null || true)
+[ -n "$base" ] || [ -z "${CI:-}${PR_HEAD:-}" ] ||
+    { echo "origin/main or the request's newest commit is missing, so the pull request cannot be judged."; exit 1; }
 branch=${PR_BRANCH:-$(git branch --show-current)}
 changed() { # changed [filter]: files this branch adds, changes or removes; a moved file counts on both sides
-    [ -z "$base" ] || git -c core.quotePath=false diff --no-renames --name-only ${1:+--diff-filter=$1} "$base"
+    [ -z "$base" ] || git -c core.quotePath=false diff --no-renames --name-only ${1:+--diff-filter=$1} "$base" ${PR_HEAD:+"$PR_HEAD"}
 }
 words_only() { # true when the branch changes only words: documents, specs, feeds, GitHub's templates.
     # CONSTRAINTS.md is not words: the tour reads its numbers. Nor is a file inside Apps, Sources or Tests.
@@ -379,7 +400,7 @@ size() {
     if git rev-parse -q --verify MERGE_HEAD >/dev/null && git merge-base --is-ancestor MERGE_HEAD origin/main; then
         from=MERGE_HEAD
     fi
-    total=$(git diff --numstat "$from" | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
+    total=$(git diff --numstat "$from" ${PR_HEAD:+"$PR_HEAD"} | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
     [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
 }
 
@@ -488,7 +509,7 @@ template() {
     head=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
     gh api "repos/{owner}/{repo}/issues/$PR_NUMBER/comments?per_page=100" | reviewed "$head" || {
         echo "The reviewer has not read this change as it now stands. Post its reply as a comment, folded in"
-        echo "<details>, that names ${head:0:7}, then edit the description, which runs the words check again."
+        echo "<details>, that names ${head:0:7}, then run Scripts/check ready $PR_NUMBER again."
         bad=1
     }
     return $bad
@@ -551,7 +572,7 @@ secrets() {
         grep -vE "$allowed" || true)
     [ -z "$found" ] || { echo "A key, an e-mail address or a home folder path:"; echo "$found"; bad=1; }
     if [ -n "$base" ]; then
-        found=$(git log --no-merges --format='%ae%n%ce' "$base"..HEAD | sort -u |
+        found=$(git log --no-merges --format='%ae%n%ce' "$base..$newest" | sort -u |
             grep -vE '@users\.noreply\.github\.com$|^noreply@github\.com$' || true)
         [ -z "$found" ] || { echo "A commit without GitHub's no-reply address: $found"; bad=1; }
     fi
@@ -684,11 +705,30 @@ order() { # The two lists every new part adds to are alphabetical, so two pieces
     [ "$list" = "$(sort <<<"$list")" ] || { echo "CONSTRAINTS.md: the line budget is not in alphabetical order."; return 1; }
 }
 
+# Nothing of Search's is pasted, so nothing is owed to it, and its notice stays gone (decision 8). Judges the files
+# named after `owed`, or every file the repository keeps but the decisions, which record the history, and this
+# script, which holds the words it looks for. A named file that cannot be read fails.
+owed() {
+    local found status pasted='Office Commun|Taken from Search'
+    if [ ${#named[@]} -gt 0 ]; then
+        found=$(grep -nIE "$pasted" "${named[@]}") && status=0 || status=$?
+    else
+        found=$(git grep -nIE "$pasted" -- . ':!Decisions/' ':!Scripts/check') && status=0 || status=$?
+    fi
+    [ "$status" -le 1 ] || { echo "Could not read what was named."; return 1; }
+    [ -z "$found" ] || { echo "Search's notice or a line taken from Search, though nothing of it is pasted (decision 8):"; echo "$found"; return 1; }
+}
+
 # A request's words and label are judged by themselves, in seconds, whenever they change. Everything
 # else is judged once for each change to the code.
-[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look network secrets format build iphone tests tour"
+[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look owed network secrets format build iphone tests tour"
 [ "${1:-}" != size ] || rules="size"
 [ "${1:-}" != order ] || rules="order"
+named=()
+if [ "${1:-}" = owed ]; then # Scripts/check owed [<file>…]: that rule alone, of the files named or the whole repository
+    rules="owed"
+    named=("${@:2}")
+fi
 if [ "${1:-}" = iphone ]; then # Scripts/check iphone [<module>…]: that rule alone, of the modules named or its own
     rules="iphone"
     [ $# -lt 2 ] || phone="${*:2}"

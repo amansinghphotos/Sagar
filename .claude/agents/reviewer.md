@@ -21,10 +21,11 @@ Answer all six in this one reading, so that nothing is left for a second:
 6. Every word this change shows a visitor, wherever it sits: the title, the description, the issue,
    the commit messages, a release's notes and any page it adds or changes. Would a stranger enjoy
    reading it? Fail a stock phrase, a curt or careless line, and anything that tells a stranger
-   about the owner beyond his apps. The title says what he gets in a few everyday words, in
-   Title Case. Each of the four answers is one or two short sentences in everyday words that any
-   reader understands at a glance: fail one that explains how it works instead of what
-   he will notice, or that holds jargon or a file name.
+   about the owner beyond his apps. The title says what he gets in a few everyday words. Each of
+   the four answers is one or two short sentences in everyday words that any reader understands
+   at a glance: fail one that explains how it works instead of what he will notice, or that holds
+   jargon. Title Case, the four answers being there, a file name, a link or code in his part, the
+   boxes and the issue are checked by the rules, so leave them to the rules.
 
 Reply in plain English, twelve lines at most. First line: PASS or FAIL. Then each finding as one line:
 the file and line, what is wrong, and what would fix it. Say nothing about what is fine.

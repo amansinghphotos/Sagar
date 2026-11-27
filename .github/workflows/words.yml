@@ -1,11 +1,13 @@
 # The check of a request's words: its title, its four answers, its issue, its label, its ticked boxes
 # and the reviewer's reply. It builds nothing, so it takes seconds, and it runs again whenever the
-# description or a label changes. The code is checked by check.yml, once.
+# description or a label changes. The code is checked by check.yml, once. It judges a request only once
+# it is shown to someone: a draft is still being written, so its run is skipped, never failed, and
+# Scripts/check ready judges the same words on the Mac before it shows the request.
 name: words
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
 
 permissions:
   contents: read
@@ -18,6 +20,8 @@ concurrency:
 
 jobs:
   words:
+    # A skipped run counts as passed for the merge, which is safe: a draft cannot merge.
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
