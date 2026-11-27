@@ -21,11 +21,11 @@ this Mac unless you carry it.
    *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. Until you choose
    Allow there, macOS asks before each copy is kept.
 2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
-   You choose it in the welcome, and can change it in Settings, from three: Shift-Command-C, which
-   the earlier Chete used and is chosen at first, Control-Command-V and Control-Command-C. One that
-   macOS already uses is shown as in use, and cannot be chosen. It cannot know of another app's
-   shortcut. Picking any keys, on a keyboard that lights each key you press, comes in 1.1. It lives in
-   the menu bar and has no Dock icon.
+   You choose one of three in the welcome, and can change it in Settings. The first is
+   Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. One that macOS
+   already uses is shown as taken, and cannot be chosen. Chete cannot know of another app's
+   shortcut. Choosing any keys you like, on a keyboard that lights them, comes in 1.1. It lives in the
+   menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
 4. **It pastes for you** into the app you were in, or pastes as plain text if you hold Shift. If you
    have not allowed it to paste, it copies, and says to press Command-V.

@@ -18,11 +18,11 @@ package final class Shortcut {
         package let free: Bool
     }
 
-    /// The three as they are offered. One that is `taken` says it is in use, and cannot be chosen.
+    /// The three as they are offered. One that is `taken` says so, and cannot be chosen.
     package static func choices(taken: (KeyCombo) -> Bool) -> [Choice] {
         suggestions.map { keys in
             let free = !taken(keys)
-            return Choice(keys: keys, words: free ? keys.inWords : "\(keys.inWords), in use", free: free)
+            return Choice(keys: keys, words: free ? keys.inWords : "\(keys.inWords), taken", free: free)
         }
     }
 

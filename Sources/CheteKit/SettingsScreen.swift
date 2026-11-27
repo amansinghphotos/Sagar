@@ -128,7 +128,7 @@ package struct SettingsScreen: View {
 }
 
 /// The shortcut that opens Chete, one of three, and opening at login. One that macOS or another app holds is
-/// shown as in use, and cannot be chosen.
+/// shown as taken, and cannot be chosen.
 package struct General: View {
     @Bindable var choices: Choices
     @Binding var opensAtLogin: Bool

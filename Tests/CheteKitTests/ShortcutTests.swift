@@ -56,6 +56,6 @@ private let other = KeyCombo("f12", command: true, shift: true, option: true, co
 @Test func aShortcutAlreadyInUseIsShownSoAndCannotBeChosen() {
     let taken = Shortcut.suggestions[1]
     let choices = Shortcut.choices { $0 == taken }
-    #expect(choices.map(\.words) == ["Shift-Command-C", "Control-Command-V, in use", "Control-Command-C"])
+    #expect(choices.map(\.words) == ["Shift-Command-C", "Control-Command-V, taken", "Control-Command-C"])
     #expect(choices.map(\.free) == [true, false, true])
 }
