@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | apps | iphone | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -253,6 +253,35 @@ by_xcode_alone() { # true when the branch touches what only the app build compil
     # settings, the project, the package. Everything else is compiled by the tests on this Mac already.
     changed | grep -qE '^(Apps|Config|Sagar\.xcodeproj)/|^Package\.(swift|resolved)$'
 }
+reached() { # the test targets a change can reach, joined by |: what the tests before a commit run on this Mac.
+    # A module's change reaches the test targets that depend on it; a test target's change, itself. Only ScriptsTests
+    # reads the scripts and hooks; it also builds the real Keep for iPhone. PicturesTests reads every approved
+    # picture. An app's files are compiled by Xcode alone. Any other file, or any doubt, reaches every test: "all".
+    local paths graph
+    paths=$(changed)
+    [ -n "$paths" ] && graph=$(swift package --scratch-path .build/reached dump-package 2>/dev/null) || { echo all; return; }
+    jq -er --arg paths "$paths" '
+        [.targets[] | {name, type, folder: (.path // ((if .type == "test" then "Tests/" else "Sources/" end) + .name)),
+            uses: [.dependencies[] | (.byName // .target // empty)[0]]}] as $targets
+        | def reaches($target): [$target] + [$targets[] | select(.name == $target) | .uses[] | reaches(.)[]];
+        [$paths | split("\n")[] | select(. != "") as $file
+            | if ($file | test("^Apps/")) then empty
+              elif ($file | test("^(Scripts|\\.claude|\\.githooks)/")) then "ScriptsTests"
+              else ([$targets[] | select(.folder as $folder | $file | startswith($folder + "/")) | .name][0] // "*"),
+                  (if ($file | test("^Sources/Keep/")) then "ScriptsTests" else empty end),
+                  (if ($file | test("/Pictures/.*\\.png$")) then "PicturesTests" else empty end) end] as $touched
+        | if any($touched[]; . == "*") then "all"
+          else [$targets[] | select(.type == "test") | .name as $test
+              | select(any(reaches($test)[]; . as $module | any($touched[]; . == $module))) | $test] | join("|") end
+    ' <<<"$graph" || echo all
+}
+if [ "${1:-}" = reached ]; then # Scripts/check reached <file>…: the test targets a change to these files can reach
+    shift
+    files=("$@")
+    changed() { printf '%s\n' "${files[@]}"; }
+    reached
+    exit
+fi
 if [ "${1:-}" = apps ]; then # Scripts/check apps <file>…: says whether a change to these files builds the apps here
     shift
     files=("$@")
@@ -596,10 +625,17 @@ iphone() { # The shared parts still build for iPhone. Compiled for its SDK alone
     compile swift build "${targets[@]}" --triple "arm64-apple-ios$version.0" --sdk "$sdk"
 }
 
-tests() {
+tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those the change can reach.
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
-    swift test --quiet 2>&1
+    local reach=all
+    [ -n "${CI:-}" ] || reach=$(reached)
+    case $reach in
+        all) swift test --quiet 2>&1 ;;
+        "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
+        *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test"
+            swift test --quiet --filter "^($reach)\." 2>&1 ;;
+    esac
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
