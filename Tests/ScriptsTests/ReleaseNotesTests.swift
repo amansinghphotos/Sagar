@@ -37,7 +37,8 @@ func aLineWithNothingToSayCanBeLeftOut(notes: String, why: String) throws {
 
 @Test(arguments: [
     "", "\n", "New: \n", "Better:\nFixed: pasting no longer stalls.\n", "Fixed: it works.\nNew: and more.\n",
-    "New: one.\nNew: two.\n", "Fixed: it works.\nBetter: and faster.\n", "Added: a thing.\n", "New: fixes #12.\n",
+    "New:   \n", "Fixed: it works.\nBetter: \t\n", "New: one.\nNew: two.\n", "Fixed: it works.\nBetter: and faster.\n",
+    "Added: a thing.\n", "New: fixes #12.\n",
     "New: the `list` is faster.\n", "New: one.\n\nFixed: two.\n",
 ])
 func notesOutOfOrderEmptyOrWithCodeAreRefused(notes: String) throws {

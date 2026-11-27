@@ -23,11 +23,11 @@ why() { # why < notes: the owner's reason for a release, if its notes are allowe
     local notes first
     notes=$(cat)
     awk 'BEGIN { rank["New"] = 1; rank["Better"] = 2; rank["Fixed"] = 3 }
-        $0 !~ /^(New|Better|Fixed): ./ { bad = 1; next }
+        $0 !~ /^(New|Better|Fixed): +[^[:space:]]/ { bad = 1; next }
         { label = $0; sub(/: .*/, "", label); if (rank[label] <= last) bad = 1; last = rank[label] }
-        END { exit (bad || NR == 0) }' <<<"$notes" || return 1
+        END { exit bad }' <<<"$notes" || return 1
     ! grep -q '[#`]' <<<"$notes" || return 1
-    first=$(head -n 1 <<<"$notes" | sed 's/^[A-Za-z]*: //')
+    first=$(head -n 1 <<<"$notes" | sed 's/^[A-Za-z]*: *//')
     printf '%s%s\n' "$(tr '[:lower:]' '[:upper:]' <<<"${first:0:1}")" "${first:1}"
 }
 [ "${1:-}" != why ] || { why; exit; }
