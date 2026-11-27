@@ -43,7 +43,8 @@ private struct Commands {
         process.executableURL = URL(filePath: tool)
         process.arguments = arguments
         process.currentDirectoryURL = folder
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
+        // As on this Mac: GitHub's CI asks for origin/main, which this small repository has no need of.
+        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
         process.standardOutput = answer
         process.standardError = answer
         try process.run()
