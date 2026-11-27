@@ -258,3 +258,10 @@ package struct Choice: View {
         }
     }
 }
+
+/// The sizes of a welcome, which do not change: its window, as large as Search's welcome, and the small card
+/// that stays in front of System Settings.
+package enum WelcomeSize {
+    package static let window = CGSize(width: WindowSize.narrow.width, height: 480)
+    package static let card = CGSize(width: 340, height: 178)
+}
