@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | request | size | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | request | size | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | request | size | order | words | apps | tool | plain | shown | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | request | size | order | ready <number> | words <file>… | apps <file>… | tool <command>… | plain < description | shown <file>… < description | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -463,10 +463,29 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
     }'
 }
 
+order() { # The two lists every new part adds to are alphabetical, so two pieces of work add theirs in different places.
+    local list
+    list=$(sed -n '/^    targets: \[/,/^    \]/p' Package.swift | tr '\n' ' ' |
+        grep -oE '[tT]arget\([[:space:]]*name: "[^"]+"' | cut -d'"' -f2)
+    [ "$list" = "$(sort <<<"$list")" ] || { echo "Package.swift: the targets are not in alphabetical order."; return 1; }
+    # A blank line between two parts keeps a change to one apart from a change to the next: git merges them both.
+    sed -n '/^    targets: \[/,/^    \]/p' Package.swift | sed 's/^[[:space:]]*$/ GAP /' | tr '\n' ' ' |
+        grep -oE '[tT]arget\([[:space:]]*name: "[^"]+"| GAP ' | awk -F'"' '
+        / GAP / { gap = 1; next }
+        { part = $2; sub(/Tests$/, "", part) }
+        NR > 1 && part != last && !gap { print "Package.swift: put a blank line between " last " and " part "."; bad = 1 }
+        { last = part; gap = 0 }
+        END { exit bad }' || return 1
+    list=$(awk '/^## Line Budget/ { on = 1; next } /^## / { on = 0 } on && /^\| [A-Za-z]+ \|/ { print $2 }' CONSTRAINTS.md |
+        grep -vx Module)
+    [ "$list" = "$(sort <<<"$list")" ] || { echo "CONSTRAINTS.md: the line budget is not in alphabetical order."; return 1; }
+}
+
 # A request's words and label are judged by themselves, in seconds, whenever they change. Everything
 # else is judged once for each change to the code.
-[ "${1:-}" = request ] && rules="template" || rules="size scope lock template budget imports look network secrets format build tests tour"
+[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look network secrets format build tests tour"
 [ "${1:-}" != size ] || rules="size"
+[ "${1:-}" != order ] || rules="order"
 for name in $rules; do
     rule "$name"
 done
