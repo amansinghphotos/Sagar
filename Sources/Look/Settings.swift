@@ -1,14 +1,11 @@
-// Taken from Search at commit c92ea7c: GroupBlock, SettingRow and Steps (Settings.swift). Copyright (c) 2026
-// Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require:
-// Search's colours and motion are read from Look; the stepper's nearest stops are one function a test reads.
+// The parts a settings page is made of: a group under a small heading, a row with its control, and a stepper.
 import SwiftUI
 
-/// A group of a section: its small heading with an icon, then its card.
-/// No line under the heading: the rows say what they do.
+/// A group of settings under a small heading in capitals, with its symbol beside it.
 package struct GroupBlock<Content: View>: View {
-    let title: String
-    let icon: String
-    @ViewBuilder let content: () -> Content
+    private let title: String
+    private let icon: String
+    private let content: () -> Content
 
     package init(title: String, icon: String, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -20,112 +17,96 @@ package struct GroupBlock<Content: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 10.5, weight: .semibold))
-                Text(title.uppercased())
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .tracking(0.5)
+                Text(title.uppercased()).tracking(0.5)
             }
+            .font(.system(size: 10.5, weight: .semibold))
             .foregroundStyle(Role.ink.opacity(0.62))
             .padding(.leading, 2)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
             content()
         }
     }
 }
 
-/// One setting: its icon in a soft tile, what it is, one line on what it
-/// does (the rest behind the (i)), and its control. A wide control goes
-/// under the words.
+/// One setting: its symbol in a small tile, its name and a line on what it does, and its control at the end. A lit
+/// row stands out from the rest.
 package struct SettingRow<Control: View>: View {
-    let icon: String
-    let title: String
-    let detail: String
-    var more: String? = nil
-    var wide = false
-    var lit = false
-    @ViewBuilder let control: () -> Control
-
     @Environment(\.motion) private var motion
+    private let icon: String
+    private let title: String
+    private let detail: String
+    private let more: String?
+    private let lit: Bool
+    private let control: () -> Control
     @State private var open = false
 
+    /// `more`, when given, is a longer explanation the row shows when its name is clicked.
     package init(
-        icon: String, title: String, detail: String, more: String? = nil, wide: Bool = false, lit: Bool = false,
+        icon: String, title: String, detail: String, more: String? = nil, lit: Bool = false,
         @ViewBuilder control: @escaping () -> Control
     ) {
         self.icon = icon
         self.title = title
         self.detail = detail
         self.more = more
-        self.wide = wide
         self.lit = lit
         self.control = control
     }
 
     package var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Role.ink.opacity(0.78))
-                    .frame(width: 26, height: 26)
-                    .background(Role.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 5) {
-                        Text(title)
-                            .font(.system(size: 13))
-                            .foregroundStyle(Role.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-                        if more != nil {
-                            Button {
-                                withAnimation(motion.quick) { open.toggle() }
-                            } label: {
-                                Image(systemName: open ? "info.circle.fill" : "info.circle")
-                                    .font(.system(size: 10.5))
-                                    .foregroundStyle(Role.muted.opacity(0.8))
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help(more ?? "")
-                            .accessibilityLabel("More about \(title)")
-                        }
-                    }
-                    if !detail.isEmpty {
-                        Text(detail)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(Role.muted)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if open, let more {
-                        Text(more)
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(Role.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 3)
-                            .transition(.opacity)
-                    }
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Role.ink.opacity(0.8))
+                .frame(width: 26, height: 26)
+                .background(Role.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                name
+                Text(detail).type(.detail).foregroundStyle(Role.muted)
+                if open, let more {
+                    Text(more)
+                        .type(.detail)
+                        .foregroundStyle(Role.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 4)
+                        .transition(.opacity)
                 }
-                Spacer(minLength: 8)
-                if !wide { control() }
             }
-            if wide {
-                control()
-                    .padding(.leading, 38)
-            }
+            Spacer(minLength: 12)
+            control()
         }
-        .padding(.leading, 14)
-        .padding(.trailing, 14)
+        .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(lit ? AnyShapeStyle(Role.hover) : AnyShapeStyle(.clear))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Role.hover.opacity(lit ? 1 : 0))
+    }
+
+    /// The row's name, which opens and closes its longer explanation when it has one.
+    @ViewBuilder private var name: some View {
+        let words = Text(title).type(.body).foregroundStyle(Role.ink)
+        if more == nil {
+            words
+        } else {
+            Button {
+                withAnimation(motion.quick) { open.toggle() }
+            } label: {
+                words
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(open ? "Hides more" : "Shows more")
+        }
     }
 }
 
-/// A value moved one stop at a time: − and + either side of it, in the same
-/// outlined capsule as a pill. Pressing the value itself takes it home.
+/// A value chosen from a few stops, one step at a time: minus, the value in words, plus. Double-clicking the words
+/// goes back to `home`.
 package struct Steps: View {
-    let stops: [Double]
-    @Binding var value: Double
-    let home: Double
-    let label: (Double) -> String
+    private let stops: [Double]
+    @Binding private var value: Double
+    private let home: Double
+    private let label: (Double) -> String
 
     package init(stops: [Double], value: Binding<Double>, home: Double, label: @escaping (Double) -> String) {
         self.stops = stops
@@ -134,60 +115,59 @@ package struct Steps: View {
         self.label = label
     }
 
-    /// The nearest stop either way — a value between stops, from before
-    /// there were stops, still moves to a round one.
+    /// The nearest stop below `value` and the nearest above it, if there are any. A value between stops steps to
+    /// the stop on either side of it.
     static func neighbours(of value: Double, in stops: [Double]) -> (below: Double?, above: Double?) {
-        (stops.last { $0 < value - 0.001 }, stops.first { $0 > value + 0.001 })
+        let close = 0.000_1
+        let below = stops.filter { $0 < value - close }.max()
+        let above = stops.filter { $0 > value + close }.min()
+        return (below, above)
     }
-
-    private var below: Double? { Self.neighbours(of: value, in: stops).below }
-    private var above: Double? { Self.neighbours(of: value, in: stops).above }
 
     package var body: some View {
+        let near = Self.neighbours(of: value, in: stops)
         HStack(spacing: 0) {
-            Step(icon: "minus", to: below) { value = $0 }
-            Button {
-                value = home
-            } label: {
-                Text(label(value))
-                    .font(.system(size: 11.5))
-                    .monospacedDigit()
-                    .foregroundStyle(Role.ink)
-                    .frame(minWidth: 36)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("Back to \(label(home))")
-            Step(icon: "plus", to: above) { value = $0 }
+            Step(symbol: "minus", name: "Smaller", to: near.below) { value = $0 }
+            Text(label(value))
+                .type(.detail)
+                .monospacedDigit()
+                .foregroundStyle(Role.ink)
+                .fixedSize()
+                .frame(width: 32)
+                .onTapGesture(count: 2) { value = home }
+                .accessibilityLabel(label(value))
+            Step(symbol: "plus", name: "Larger", to: near.above) { value = $0 }
         }
-        .padding(.horizontal, 2)
         .frame(height: 24)
-        .background(Role.ground, in: Capsule())
         .overlay(Capsule().strokeBorder(Role.hairline, lineWidth: 1))
+        .accessibilityElement(children: .contain)
     }
 
+    /// One end of the stepper, lit under the pointer, and quiet when there is no stop further that way.
     private struct Step: View {
-        let icon: String
-        let to: Double?
-        let act: (Double) -> Void
         @Environment(\.motion) private var motion
+        let symbol: String
+        let name: String
+        let to: Double?
+        let go: (Double) -> Void
         @State private var hovering = false
 
         var body: some View {
             Button {
-                if let to { act(to) }
+                if let to { go(to) }
             } label: {
-                Image(systemName: icon)
+                Image(systemName: symbol)
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(to == nil ? Role.faint : Role.ink)
-                    .frame(width: 20, height: 20)
-                    .background(hovering && to != nil ? AnyShapeStyle(Role.hover) : AnyShapeStyle(.clear), in: Circle())
-                    .contentShape(Circle())
+                    .frame(width: 24, height: 24)
+                    .contentShape(Capsule())
+                    .background(Role.hover.opacity(hovering && to != nil ? 1 : 0), in: Capsule())
             }
             .buttonStyle(.plain)
+            .foregroundStyle(to == nil ? Role.faint : Role.ink)
             .disabled(to == nil)
             .onHover { hovering = $0 }
             .animation(motion.quick, value: hovering)
+            .accessibilityLabel(name)
         }
     }
 }
