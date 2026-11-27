@@ -15,12 +15,14 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 
 ## Must-Haves
 
-1. **Two themes, each light and dark.** Modern is plain and neutral, measured from Search: 13-point
-   text, 11.5 for details, 26-point icon buttons, cards rounded at 11 points and panels at 16. Lexicon
+1. **Two themes, each light and dark.** Modern is Search's look exactly, from Search at commit
+   `c92ea7c`: its typeface, colours, sizes, spacing, corners, shadows and parts, with nothing changed.
+   A part Search does not have is drawn the way Search draws its nearest one. Lexicon
    is paper and ink, set in Caslon, sharing Modern's parts and spacing. Modern comes first, and Lexicon
    follows once Modern's pictures are approved. An app chooses its theme once. No seasons, no variants.
 2. **Roles, not values.** Colour, type, spacing, corner radius, shadow and motion are each a short list
-   of names. Each colour pair carries its contrast as a number, and words meant to be read pass 4.5 to 1.
+   of names. Each colour pair carries its contrast as a number. Modern keeps Search's colours even
+   where words fall below 4.5 to 1.
 3. **Every part an app could need, built now,** not one at a time as apps ask:
    - *Actions:* buttons in four kinds (main, plain, quiet, destructive), icon button, button with a
      held menu, pull-down menu, link, small text action, toolbar, context menu.
@@ -47,15 +49,17 @@ a colour, a font or a size, so a change to the look reaches every app at once.
    instant, but for the sliding column's short fade, which Search keeps.
 5. **Keyboard and VoiceOver everywhere.** Controls are Apple's own with a style, so each is reached with
    Tab, shows a focus ring and is read aloud.
-6. **A Gallery.** One window, never shipped, showing every part in every state, with a bar to switch
-   theme, light or dark, and window size. Each page is pictured in four looks, Modern and Lexicon, light
-   and dark, and those pictures are what the owner approves.
+6. **A Gallery.** The agents' test window, never shipped, showing every part in every state, with a bar
+   to switch theme, light or dark, and window size. Each part is pictured there, and its pictures are
+   kept to catch any change no one meant.
 7. **Ready for iPhone.** The parts are plain SwiftUI and also build for iPhone. What only a Mac has
    (windows, the menu bar, cursors, blur) sits apart.
 
 ## What Proves It
 
-A part is done when its Gallery pictures are approved. Motion is done when the reviewer, reading it beside
+A Modern part is done when its picture matches the same part pictured from Search's own code at
+`c92ea7c`, in light and dark, kept beside it as the reference. A part Search does not have, and all of Lexicon, has no Search picture
+to match: the owner first sees it in an app's screen, and approves that screen's pictures. Motion is done when the reviewer, reading it beside
 Search's source, finds nothing changed beyond what must-have 4 allows, and a test shows each movement
 is instant under Reduce Motion, but for that one fade. Keyboard reach and labels are proven by the Gallery's tour and its audit.
 

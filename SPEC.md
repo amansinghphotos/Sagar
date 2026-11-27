@@ -13,7 +13,7 @@ the rules below.
 | More builds waiting than he can try | A release waiting for him locks its app: its other pull requests fail until he answers. | A check |
 | Home-made tools where standard ones exist | Standard tools only: Xcode, Swift Testing, XCUITest, GitHub issues, pull requests and Actions, Sparkle. | His approval of any dependency |
 | Work scattered, with no one record | Every change is a pull request of 400 changed lines at most that names one issue. Branches are deleted on merge. Status is the milestone page. | GitHub settings and a check |
-| The look changing unseen | The token file and the approved pictures change only with his approval. | His approval |
+| The look changing unseen | The token file and the approved pictures change only with his approval. The Gallery's pictures are checked against Search's instead. | His approval |
 | Rules that nothing enforces | A rule is a required check on `main`, or it is not written. | GitHub |
 | Checks added after features | An empty app goes through every gate, release and update included, before any feature. | Order of work |
 | A spec approved by anyone but him | A spec merges only with his approval, which agents cannot give. | His approval |
@@ -152,7 +152,7 @@ that does not talk to Claude never asks. This is built with the first app that n
 ## 8. The Look
 
 `spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
-Search's motion, shown in a Gallery where the owner approves it as pictures.
+Search's motion. Modern is Search's look exactly, proved part by part against Search's own pictures.
 
 ## 9. Boundaries
 
