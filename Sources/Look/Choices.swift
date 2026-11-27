@@ -40,12 +40,9 @@ package struct PictureChoices<Option: Hashable>: View {
                         .foregroundStyle(chosen ? Role.ink : Role.muted)
                 }
                 .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(motion.settle) { selection = option }
-                }
-                .accessibilityElement()
+                .pressed { withAnimation(motion.settle) { selection = option } }
                 .accessibilityLabel(Text(name))
-                .accessibilityAddTraits(chosen ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAddTraits(chosen ? .isSelected : [])
             }
         }
     }
@@ -81,10 +78,9 @@ package struct Swatches: View {
                     }
                     .frame(width: 24, height: 24)
                     .contentShape(Circle())
-                    .onTapGesture { selection = colour }
-                    .accessibilityElement()
-                    .accessibilityLabel(Text(verbatim: name))
-                    .accessibilityAddTraits(chosen ? [.isButton, .isSelected] : .isButton)
+                    .pressed { selection = colour }
+                    .accessibilityLabel(Text(verbatim: "Colour \(name)"))
+                    .accessibilityAddTraits(chosen ? .isSelected : [])
             }
             if let well {
                 HStack(spacing: Space.near.rawValue) {
@@ -120,8 +116,16 @@ package struct Writing: View {
             .font(.system(size: 12, design: .monospaced))
             .foregroundStyle(Role.ink)
             .scrollContentBackground(.hidden)
+            .autocorrectionDisabled()
             .padding(Space.near.rawValue)
             .frame(height: height)
             .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
+    }
+}
+
+extension View {
+    /// Makes a drawn choice a real button, so it is reached with Tab and pressed with Space.
+    fileprivate func pressed(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) { self }.buttonStyle(.plain)
     }
 }
