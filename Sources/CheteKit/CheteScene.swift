@@ -24,6 +24,7 @@ public struct CheteScene: Scene {
         // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
         .defaultLaunchBehavior(.presented)
         .commands { UpdateCommands() }
+        MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
     /// The clips the window shows. Picking one copies it, until pasting for you comes with the panel.
