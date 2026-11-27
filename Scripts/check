@@ -120,11 +120,14 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     clashing=$(Scripts/check clashes "$head") ||
         { [ -n "$clashing" ] && echo "#$request clashes with main in $(paste -sd ' ' - <<<"$clashing"). Bring it up to date with main first." ||
             echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
-    # Two checks count. The code's ran on the newest commit. The words' ran after the description last changed.
-    edited=$(gh api graphql -F owner="${repository%/*}" -F name="${repository#*/}" -F number="$request" -f query='
-        query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
-            pullRequest(number: $number) { createdAt lastEditedAt } } }' \
-        --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt] | map(select(. != null)) | max')
+    # The words are judged here first, by the very rules GitHub runs, so a fault is told now in its own lines. GitHub
+    # judges a request's words only once it is shown to someone: a draft is still being written.
+    owner=${repository%/*}
+    judged=$(PR_NUMBER=$request PR_BRANCH=$branch PR_HEAD=$head Scripts/check request) ||
+        { printf '%s\n' "$judged" | grep -vE '^(ok|--) |^[0-9]+ rules? failed\.$'; echo "Nobody was asked."; exit 1; }
+    # Given back after his review, it first tells him what changed since.
+    [ "$(gh pr view "$request" --json body,latestReviews | Scripts/check since "$owner")" = yes ] ||
+        { echo "He reviewed #$request: his part must answer **What Changed Since Your Review:** first. Nobody was asked."; exit 1; }
     unasked=0
     said=$(mktemp) # what gh says on the side, kept apart so that a warning is never read as GitHub's answer
     trap 'rm -f "$said"' EXIT
@@ -159,19 +162,25 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             answer=$(gh run view "$run" --json status,conclusion 2>"$said") && status=0 || status=$?
             case $(Scripts/check run "$status" <<<"$answer") in
                 passed) return 0 ;;
-                failed) echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
+                failed) # shown a moment ago, it becomes a draft again, which takes it out of his list
+                    [ "$1" != words ] || gh pr ready "$request" --undo >/dev/null 2>&1 || true
+                    echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
                 running) unasked=0; sleep 30 ;;
                 *) unanswered ;;
             esac
         done
     }
+    # Two checks count. The code's ran on the newest commit. The words' ran on GitHub once the request was shown, and
+    # after its description last changed.
     passed check ""
-    passed words "$edited"
-    # Given back after his review, it first tells him what changed since.
-    owner=${repository%/*}
-    [ "$(gh pr view "$request" --json body,latestReviews | Scripts/check since "$owner")" = yes ] ||
-        { echo "He reviewed #$request: his part must answer **What Changed Since Your Review:** first. Nobody was asked."; exit 1; }
     gh pr ready "$request" >/dev/null 2>&1
+    shown=$(gh api graphql -F owner="$owner" -F name="${repository#*/}" -F number="$request" -f query='
+        query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
+            pullRequest(number: $number) { createdAt lastEditedAt
+                timelineItems(itemTypes: [READY_FOR_REVIEW_EVENT], last: 1) { nodes { ... on ReadyForReviewEvent { createdAt } } } } } }' \
+        --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt, .timelineItems.nodes[0].createdAt] |
+            map(select(. != null)) | max')
+    passed words "$shown"
     # If the owner answered before, he is asked again: GitHub does not do that by itself.
     if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
         gh pr edit "$request" --add-reviewer "$owner" >/dev/null
@@ -209,11 +218,15 @@ rule() { # rule <name>: run the function of that name, print one line, show its 
 
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 now=$(tr -d '[:space:]' <NOW)
-base=$(git merge-base origin/main HEAD 2>/dev/null || true)
-[ -n "$base" ] || [ -z "${CI:-}" ] || { echo "origin/main is missing, so the pull request cannot be judged."; exit 1; }
+# The request's newest commit, when named, is judged instead of the folder: the ready step judges a request here as
+# GitHub will, from whatever copy it is run in.
+newest=${PR_HEAD:-HEAD}
+base=$(git merge-base origin/main "$newest" 2>/dev/null || true)
+[ -n "$base" ] || [ -z "${CI:-}${PR_HEAD:-}" ] ||
+    { echo "origin/main or the request's newest commit is missing, so the pull request cannot be judged."; exit 1; }
 branch=${PR_BRANCH:-$(git branch --show-current)}
 changed() { # changed [filter]: files this branch adds, changes or removes; a moved file counts on both sides
-    [ -z "$base" ] || git -c core.quotePath=false diff --no-renames --name-only ${1:+--diff-filter=$1} "$base"
+    [ -z "$base" ] || git -c core.quotePath=false diff --no-renames --name-only ${1:+--diff-filter=$1} "$base" ${PR_HEAD:+"$PR_HEAD"}
 }
 words_only() { # true when the branch changes only words: documents, specs, feeds, GitHub's templates.
     # CONSTRAINTS.md is not words: the tour reads its numbers. Nor is a file inside Apps, Sources or Tests.
@@ -350,7 +363,7 @@ size() {
     if git rev-parse -q --verify MERGE_HEAD >/dev/null && git merge-base --is-ancestor MERGE_HEAD origin/main; then
         from=MERGE_HEAD
     fi
-    total=$(git diff --numstat "$from" | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
+    total=$(git diff --numstat "$from" ${PR_HEAD:+"$PR_HEAD"} | awk '$1 != "-" { sum += $1 + $2 } END { print sum + 0 }')
     [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
 }
 
@@ -459,7 +472,7 @@ template() {
     head=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
     gh api "repos/{owner}/{repo}/issues/$PR_NUMBER/comments?per_page=100" | reviewed "$head" || {
         echo "The reviewer has not read this change as it now stands. Post its reply as a comment, folded in"
-        echo "<details>, that names ${head:0:7}, then edit the description, which runs the words check again."
+        echo "<details>, that names ${head:0:7}, then run Scripts/check ready $PR_NUMBER again."
         bad=1
     }
     return $bad
@@ -522,7 +535,7 @@ secrets() {
         grep -vE "$allowed" || true)
     [ -z "$found" ] || { echo "A key, an e-mail address or a home folder path:"; echo "$found"; bad=1; }
     if [ -n "$base" ]; then
-        found=$(git log --no-merges --format='%ae%n%ce' "$base"..HEAD | sort -u |
+        found=$(git log --no-merges --format='%ae%n%ce' "$base..$newest" | sort -u |
             grep -vE '@users\.noreply\.github\.com$|^noreply@github\.com$' || true)
         [ -z "$found" ] || { echo "A commit without GitHub's no-reply address: $found"; bad=1; }
     fi
