@@ -118,18 +118,18 @@ first of them, and a release will not start while its own has a box unticked.
 
 ### Mending a Shipped App
 
-A fault in an app that has shipped is mended beside the app in work, never instead of it. His report
-is enough to start: he approves nothing more until the mended build is ready to try.
+A fault in a shipped app is mended beside the app in work. It never takes its place. His report is
+enough to start. He approves nothing more until the mended build is ready to try.
 
-- The fault becomes an issue marked `fault`, in the milestone for that app's next number. Only that
-  issue's branch may touch the shipped app. (`Scripts/check` scope)
-- That milestone holds faults only. Nothing new is added to a shipped app until `NOW` names it again.
+- The fault becomes an issue marked `fault`. It goes in the milestone for the app's next number.
+  Only its branch may touch the shipped app. (`Scripts/check` scope)
+- That milestone holds faults only. Nothing new reaches a shipped app until `NOW` names it again.
   (`Scripts/release`)
-- The mend is made on `main`, like any slice, and GitHub's Mac runs that app's tour as well as the
-  tour of the app in work. (`Scripts/check` tour)
-- Its release is tried and shipped like any other, as soon as no other build is waiting for him. It
-  locks only the app it mends. (`Scripts/release` and `Scripts/check` lock)
-- The app in work goes on all the while. Its own pull requests never wait for the mend.
+- The mend is made on `main`, like any slice. GitHub's Mac tours that app too, as well as the app in
+  work. (`Scripts/check` tour)
+- Its release is tried and shipped like any other. It waits only while another build waits for him.
+  It locks only the app it mends. (`Scripts/release` and `Scripts/check` lock)
+- The app in work goes on all the while. Its pull requests never wait for the mend.
 
 ## 6. Keys
 
