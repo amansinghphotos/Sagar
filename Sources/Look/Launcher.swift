@@ -45,13 +45,9 @@ package struct LaunchField: View {
 
     /// Reddens the edge and shivers from the start.
     private func refuse() {
+        shake = 0
         refused = true
-        var still = Transaction()
-        still.disablesAnimations = true
-        withTransaction(still) { shake = 0 }
-        Task { @MainActor in
-            withAnimation(.easeOut(duration: 0.5)) { shake = 1 }
-        }
+        withAnimation(.easeOut(duration: 0.5)) { shake = 1 }
     }
 }
 
@@ -69,7 +65,7 @@ package struct LaunchList<Content: View>: View {
             .padding(Space.snug.rawValue)
             .background(shape.fill(Role.ground))
             .overlay(shape.strokeBorder(Role.hairline, lineWidth: 1))
-            .elevation(.banner)
+            .shadow(color: .black.opacity(0.14), radius: 20, y: 6)
             .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
     }
 }
