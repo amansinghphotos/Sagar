@@ -1,6 +1,6 @@
 # The check of the code. It runs every rule but the request's own words on a clean Mac: once for each
-# change to a pull request's code, and once for main as it stands after each merge. Editing a request's
-# words or its label starts words.yml instead, which takes seconds.
+# change to a pull request's code, and for main as it stands after merges. Editing a request's words or
+# its label starts words.yml instead, which takes seconds.
 name: check
 
 on:
@@ -14,9 +14,12 @@ permissions:
   pull-requests: read
   issues: read
 
+# GitHub lends this repository only a few Macs at once, and every run waits for one. A pull request's newer
+# commit cancels its older run. Main's runs are never cancelled: one runs, and of those waiting only the
+# newest is kept, since it holds every merge before it.
 concurrency:
-  group: check-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:

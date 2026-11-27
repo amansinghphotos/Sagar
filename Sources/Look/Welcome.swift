@@ -1,172 +1,260 @@
-// Taken from Search at commit c92ea7c: its welcome's frame, heading, foot, Big and Choice (Welcome.swift).
-// Copyright (c) 2026 Office Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's
-// rules require: Search's colours and motion are read from Look; its pages, which are Search's own, are given
-// by whoever uses it; and the page to open at is set when the welcome is made, not when it appears.
+// The pages an app shows the first time it opens: the frame that steps through them, their heading, their big
+// buttons and their choice rows.
 import SwiftUI
 
-/// The pages a person sees the first time an app opens: one at a time, on the
-/// ground, with dots for where they are, Back, Skip, and Continue until the last.
-package struct Welcome<Page: View>: View {
-    let pages: Int
-    /// What the last page's button says, such as "Start browsing".
-    let last: String
-    let finish: () -> Void
-    @ViewBuilder let page: (Int) -> Page
+/// How the welcome moves, by Look's motion: it arrives on the glide, rising a little as it fades in; its pages
+/// turn on the glide, sliding the way the person went; and it leaves on a quick fade before the app moves on.
+/// The app's own touch on the first page comes a beat after its page. Under Reduce Motion each is at once.
+nonisolated package struct WelcomeMoves: Sendable {
+    let motion: Motion
+
+    package init(motion: Motion) {
+        self.motion = motion
+    }
+
+    package var arrival: Animation? { motion.glide }
+    package var turn: Animation? { motion.glide }
+    package var leaving: Animation? { motion.quick }
+
+    /// How long leaving takes before the app is told the welcome is over.
+    package var away: TimeInterval { motion.reduced ? 0 : 0.14 }
+    /// How long the app's own touch waits after its page.
+    package var touchWaits: TimeInterval { motion.reduced ? 0 : 0.12 }
+    /// The touch arrives as its page does, once it has waited.
+    package var touchArrival: Animation? { arrival?.delay(touchWaits) }
+
+    /// How far, in points, the welcome rises as it arrives.
+    static let rise: CGFloat = 12
+    /// How far, in points, a page slides as it turns.
+    static let travel: CGFloat = 40
+}
+
+/// Pages shown the first time an app opens, one at a time: the page in the middle, and along the foot a dot for each
+/// page, then Back, Skip and a filled button that goes on, or finishes on the last page. The first page may carry
+/// a touch of the app's own above it. The pages arrive, turn and leave as `WelcomeMoves` says.
+package struct Welcome<Page: View, Touch: View>: View {
+    private let count: Int
+    private let lastTitle: String
+    private let finish: () -> Void
+    private let content: (Int) -> Page
+    private let touch: () -> Touch
 
     @Environment(\.motion) private var motion
-    @State private var index: Int
-    @State private var forward = true
+    @Environment(\.scenePhase) private var phase
+    @State private var shown: Int
+    /// Whether the last step went on rather than back, so the pages slide the way the person went.
+    @State private var onward = true
+    /// Whether the welcome has arrived, and whether it is leaving. It arrives only in a window on screen, so a
+    /// picture of it is the page as it stays.
+    @State private var here = true
+    @State private var leaving = false
+    @State private var arrived = false
 
     package init(
-        pages: Int, last: String, startPage: Int = 0, finish: @escaping () -> Void,
-        @ViewBuilder page: @escaping (Int) -> Page
+        pages: Int, last: String, startPage: Int = 0,
+        finish: @escaping () -> Void, @ViewBuilder page: @escaping (Int) -> Page,
+        @ViewBuilder touch: @escaping () -> Touch
     ) {
-        self.pages = pages
-        self.last = last
-        self.finish = finish
-        self.page = page
-        _index = State(initialValue: min(startPage, pages - 1))
+        (count, lastTitle, self.finish, content, self.touch) = (pages, last, finish, page, touch)
+        _shown = State(initialValue: min(max(startPage, 0), max(pages - 1, 0)))
     }
+
+    private var moves: WelcomeMoves { WelcomeMoves(motion: motion) }
+
+    private var onLast: Bool { shown >= count - 1 }
 
     package var body: some View {
-        ZStack {
-            Rectangle().fill(Role.ground).ignoresSafeArea()
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                ZStack {
-                    page(index)
-                }
-                .frame(maxWidth: 520)
-                .id(index)
-                .transition(
-                    .asymmetric(
-                        insertion: .offset(x: forward ? 40 : -40).combined(with: .opacity),
-                        removal: .offset(x: forward ? -40 : 40).combined(with: .opacity)
-                    ))
-                Spacer(minLength: 0)
-                foot
-            }
-            .padding(40)
+        VStack(spacing: .zero) {
+            Spacer(minLength: .zero)
+            current
+            Spacer(minLength: .zero)
+            foot
         }
-        .animation(motion.glide, value: index)
-        .transition(.opacity)
+        .opacity(here && !leaving ? 1 : 0)
+        .offset(y: here ? 0 : WelcomeMoves.rise)
+        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Role.ground, ignoresSafeAreaEdges: .all)
+        .animation(moves.turn, value: shown)
+        .onAppear(perform: arrive)
+        .onChange(of: phase) { arrive() }
     }
 
+    /// The page in view. It slides in from the side the person is heading to, and out the other.
+    private var current: some View {
+        let travel = onward ? WelcomeMoves.travel : -WelcomeMoves.travel
+        return VStack(alignment: .leading, spacing: Space.page.rawValue) {
+            if shown == 0 {
+                touch()
+                    .opacity(here ? 1 : 0)
+                    .animation(moves.touchArrival, value: here)
+            }
+            content(shown)
+        }
+        .frame(maxWidth: 520)
+        .id(shown)
+        .transition(
+            .asymmetric(
+                insertion: .opacity.combined(with: .offset(x: travel)),
+                removal: .opacity.combined(with: .offset(x: -travel))))
+    }
+
+    /// A dot for each page, then Back once past the first, Skip until the last, and the button that goes on.
     private var foot: some View {
-        HStack(spacing: 14) {
-            HStack(spacing: 6) {
-                ForEach(0..<pages, id: \.self) { i in
-                    Circle()
-                        .fill(i == index ? AnyShapeStyle(Role.ink) : AnyShapeStyle(Role.faint.opacity(0.6)))
-                        .frame(width: 6, height: 6)
-                }
-            }
+        HStack(spacing: Space.wide.rawValue) {
+            dots
             Spacer()
-            if index > 0 {
-                Button("Back") {
-                    forward = false
-                    index -= 1
-                }
-                .buttonStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundStyle(Role.muted)
-            }
-            if index < pages - 1 {
-                Button("Skip") { finish() }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Role.muted)
-            }
-            Big(index < pages - 1 ? "Continue" : last, filled: true) {
-                if index < pages - 1 {
-                    forward = true
-                    index += 1
-                } else {
-                    finish()
-                }
-            }
-            .keyboardShortcut(.defaultAction)
+            if shown > 0 { quiet("Back", act: back) }
+            if !onLast { quiet("Skip", act: leave) }
+            Big(onLast ? lastTitle : "Continue", filled: true, act: onLast ? leave : next)
+                .keyboardShortcut(.defaultAction)
         }
         .frame(maxWidth: 520)
     }
+
+    private var dots: some View {
+        HStack(spacing: Space.snug.rawValue) {
+            ForEach(0..<count, id: \.self) { page in
+                Circle().fill(tint(ofDot: page)).frame(width: 6, height: 6)
+            }
+        }
+    }
+
+    /// The dot of the page in view is in ink; the others are faint.
+    private func tint(ofDot page: Int) -> AnyShapeStyle {
+        if page == shown { return AnyShapeStyle(Role.ink) }
+        return AnyShapeStyle(Role.faint.opacity(0.6))
+    }
+
+    /// Back and Skip: words only, in the quieter grey.
+    private func quiet(_ title: String, act: @escaping () -> Void) -> some View {
+        Button(action: act) { Text(title).type(.body).foregroundStyle(Role.muted) }
+            .buttonStyle(.plain)
+    }
+
+    private func back() {
+        onward = false
+        shown -= 1
+    }
+
+    private func next() {
+        onward = true
+        shown += 1
+    }
+
+    /// Once, when its window is first on screen: starts below and clear, then rises into place, unless every
+    /// movement is at once.
+    private func arrive() {
+        guard phase == .active, !arrived else { return }
+        arrived = true
+        guard let arrival = moves.arrival else { return }
+        here = false
+        Task { @MainActor in withAnimation(arrival) { here = true } }
+    }
+
+    /// Fades the welcome away, then tells the app it is over.
+    private func leave() {
+        guard !leaving else { return }
+        withAnimation(moves.leaving) { leaving = true }
+        let away = moves.away
+        guard away > 0 else { return finish() }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(away))
+            finish()
+        }
+    }
 }
 
-/// A welcome page's heading: what it is about, and a line on it.
+extension Welcome where Touch == EmptyView {
+    /// Pages with no touch of the app's own.
+    package init(
+        pages: Int, last: String, startPage: Int = 0,
+        finish: @escaping () -> Void, @ViewBuilder page: @escaping (Int) -> Page
+    ) {
+        self.init(pages: pages, last: last, startPage: startPage, finish: finish, page: page, touch: { EmptyView() })
+    }
+}
+
+/// The big line a first-open page opens with, and the quieter sentence under it.
 package struct WelcomeHeading: View {
-    let title: String
-    let line: String
+    private let title: String
+    private let line: String
 
     package init(_ title: String, _ line: String) {
-        self.title = title
-        self.line = line
+        (self.title, self.line) = (title, line)
     }
 
     package var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 26, weight: .medium))
-                .foregroundStyle(Role.ink)
-            Text(line)
-                .font(.system(size: 14))
-                .foregroundStyle(Role.muted)
-                .lineSpacing(2)
+        VStack(alignment: .leading, spacing: Space.near.rawValue) {
+            Text(title).type(.display).foregroundStyle(Role.ink)
+            Text(line).font(.system(size: 14)).lineSpacing(2).foregroundStyle(Role.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
 
-/// A welcome's large button.
+/// A first-open page's large button.
 package struct Big: View {
-    let title: String
-    var filled = false
-    let act: () -> Void
-    @State private var hovering = false
+    @State private var underPointer = false
+    private let title: String
+    private let filled: Bool
+    private let act: () -> Void
 
     package init(_ title: String, filled: Bool = false, act: @escaping () -> Void) {
-        self.title = title
-        self.filled = filled
-        self.act = act
+        (self.title, self.filled, self.act) = (title, filled, act)
     }
 
     package var body: some View {
-        Button(action: act) {
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(filled ? Role.ground : Role.ink)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(filled ? Role.ink : (hovering ? Role.hover : Role.wash), in: Capsule())
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
+        Button(action: act) { label }
+            .buttonStyle(.plain)
+            .onHover { inside in underPointer = inside }
+    }
+
+    /// The title in a capsule: ground on ink when filled, otherwise ink on a soft grey that lightens under the
+    /// pointer.
+    private var label: some View {
+        Text(title)
+            .type(.body)
+            .fontWeight(.medium)
+            .padding(.horizontal, Space.page.rawValue)
+            .padding(.vertical, 9)
+            .foregroundStyle(filled ? Role.ground : Role.ink)
+            .background(fill, in: Capsule())
+            .contentShape(Capsule())
+    }
+
+    private var fill: Role {
+        if filled { return .ink }
+        return underPointer ? .hover : .wash
     }
 }
 
-/// A choice on a welcome page: what it is, a line on it, and its switch.
+/// A row a first-open page offers: what it is, a line on what it does, and a switch.
 package struct Choice: View {
-    let title: String
-    let detail: String
-    @Binding var on: Bool
-    /// The line under in the darker grey, for one that must be read.
-    var plain = false
+    private let title: String
+    private let detail: String
+    private let plain: Bool
+    @Binding private var on: Bool
 
     package init(_ title: String, _ detail: String, on: Binding<Bool>, plain: Bool = false) {
-        self.title = title
-        self.detail = detail
+        (self.title, self.detail, self.plain) = (title, detail, plain)
         _on = on
-        self.plain = plain
     }
 
     package var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13.5)).foregroundStyle(Role.ink)
-                Text(detail).font(.system(size: 11.5)).foregroundStyle(plain ? Role.muted : Role.faint)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        HStack(spacing: Space.apart.rawValue) {
+            labels
             Spacer()
             Switch(on: $on)
+        }
+    }
+
+    /// What the choice is, and the line under it: faint, or the darker grey when plain, for a line that must be read.
+    private var labels: some View {
+        VStack(alignment: .leading, spacing: Space.hair.rawValue) {
+            Text(title).foregroundStyle(Role.ink).font(.system(size: 13.5))
+            Text(detail).type(.detail).foregroundStyle(plain ? Role.muted : Role.faint)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

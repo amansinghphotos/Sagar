@@ -31,6 +31,7 @@ func theCountLooksAsSearchsDoes(dark: Bool) throws {
     let search = try #require(approvedPicture(at: file))
     let ours = try picture(of: Showcase(), width: 220, height: 80, dark: dark)
     #expect(differingPixels(ours, search) <= tolerance)
+    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
 }
 
 /// Search's reading fill, two fifths of the way, over its row's wash.

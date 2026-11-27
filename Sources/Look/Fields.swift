@@ -18,14 +18,12 @@ package struct Hunt: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Role.muted)
-            TextField(String(), text: $text, prompt: Text(verbatim: ""))
+            TextField(text: $text, prompt: Text(verbatim: "")) { Text(prompt) }
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
                 .foregroundStyle(Role.ink)
                 .focused(focus)
-                // The words shown in the box are hidden from VoiceOver, so the box carries them as its name. A label
-                // view would give it a second, unnamed child, which Apple's audit finds as a parent/child mismatch.
-                .accessibilityLabel(Text(prompt))
+                .line(16)
                 .overlay(alignment: .leading) {
                     if text.isEmpty {
                         Text(prompt)
@@ -49,7 +47,7 @@ package struct Hunt: View {
         }
         .padding(.horizontal, Space.apart.rawValue)
         .frame(height: 32)
-        .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous))
+        .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -100,6 +98,7 @@ private struct Tile<Box: View>: View {
             .textFieldStyle(.plain)
             .font(.system(size: 12.5, design: design))
             .foregroundStyle(Role.ink)
+            .line(15)
             .overlay(alignment: .leading) {
                 if empty {
                     Text(name)
@@ -112,5 +111,14 @@ private struct Tile<Box: View>: View {
             .padding(.horizontal, Space.gap.rawValue)
             .frame(height: 29)
             .background(Role.wash, in: RoundedRectangle(cornerRadius: Radius.row.rawValue, style: .continuous))
+    }
+}
+
+extension View {
+    /// Holds a text box to `height`, the height of one line of its words, with the box at its top. SwiftUI now
+    /// and then sizes a text box at another box's height; the box draws its words from its top, so they stay
+    /// where they belong whatever height it was given.
+    func line(_ height: CGFloat) -> some View {
+        frame(height: height, alignment: .top)
     }
 }

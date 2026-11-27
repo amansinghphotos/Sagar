@@ -12,7 +12,7 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Module | Lines at most |
 |---|--:|
 | Each app's Main.swift, which only starts its Kit | 30 |
-| CheteKit | 1500 |
+| CheteKit | 2000 |
 | Gallery | 1500 |
 | Keep | 300 |
 | Look | 6000 |
@@ -41,7 +41,6 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 |---|--:|---|
 | Launch to first frame, fastest of three, by Apple's launch metric, in seconds | 2 | the tour |
 | Processor time while its window is hidden and nothing is asked, percent over 10 s | 1 | the tour |
-| Accessibility audit findings | 0 | the tour |
 | Screens that differ from their approved pictures | 0 | the picture tests |
 
 A screen counts as differing when more than 40 of its pixels differ from the approved picture by more

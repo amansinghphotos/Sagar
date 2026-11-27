@@ -9,7 +9,8 @@
 **What to Do:**
 
 <!-- Answer each in one or two short sentences he could read aloud, in
-everyday words. Say what he will notice, never how it works. No file names, no code.
+everyday words. Say what he will notice, never how it works: not "each part is now drawn by
+our own code" but "everything looks just as before". No file names, no code.
 The title, above, says what he gets: a few everyday words, in Title Case.
 Once he has reviewed this, add a fifth answer before it is given back to him:
 **What Changed Since Your Review:** each thing he asked for, and what became of it.

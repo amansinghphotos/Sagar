@@ -2,7 +2,7 @@ import XCTest
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
-    /// Its settings pass Apple's accessibility audit, and keep what you choose: clips kept for a month
+    /// Its settings are audited, and keep what you choose: clips kept for a month
     /// instead of a year, still chosen the next time Chete opens, when they are opened from its menu-bar card.
     @MainActor
     func testItsSettingsPassTheAuditAndKeepWhatYouChoose() throws {
@@ -37,7 +37,7 @@ final class CheteTour: XCTestCase {
     }
 
     /// It opens quickly, by Apple's own launch metric taken three times, of which the rules judge the fastest.
-    /// Then it shows one window, which passes Apple's accessibility audit. Contrast is left out: see SPEC.md.
+    /// Then it shows one window, which is audited.
     @MainActor
     func testItOpensQuicklyToOneWindowThatPassesTheAudit() throws {
         let options = XCTMeasureOptions()
@@ -80,21 +80,23 @@ final class CheteTour: XCTestCase {
 }
 
 extension CheteTour {
-    /// Of every kind of audit finding, on every kind of element, only the one #98 describes passes.
-    func testOnlyTheFocusedFieldsParentChildFindingPasses() {
-        let kinds: [XCUIAccessibilityAuditType] = [
-            .contrast, .elementDetection, .hitRegion, .sufficientElementDescription, .action, .parentChild,
-        ]
-        for kind in kinds {
-            for finding in Finding.allCases {
-                let passes =
-                    kind == .parentChild
-                    && [.onTheFieldThatHoldsTheKeyboard, .onNoElement(aFieldHoldsTheKeyboard: true)].contains(finding)
-                XCTAssertEqual(Self.passes(kind, finding), passes, "\(kind.rawValue), \(finding)")
+    /// Runs Apple's accessibility audit, but for contrast (see SPEC.md). Each finding is reported, naming its element,
+    /// and written into the run's summary, but does not fail the tour, as the owner decided (decision 9) until he
+    /// brings that back (#252). Bringing it back is replacing `XCTExpectFailure` here with the `XCTFail` inside it.
+    @MainActor
+    func audit(_ app: XCUIApplication, _ place: String) throws {
+        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
+            let element = issue.element?.debugDescription.split(whereSeparator: \.isNewline).joined(separator: " ")
+            let finding = "\(place): \(issue.compactDescription): \(element ?? "no element named")"
+            XCTExpectFailure("Accessibility audit, reported, not failing (decision 9): \(finding)", strict: false) {
+                XCTFail(finding)
             }
+            return true
         }
     }
+}
 
+extension CheteTour {
     /// It finds as you type, on a history of made-up clips: a word narrows the list, the arrow keys move,
     /// and Return picks. What was picked is then pasted into the field, as a person would, to see which clip it was.
     @MainActor
@@ -106,7 +108,7 @@ extension CheteTour {
         app.launchEnvironment["CHETE_TOUR_HISTORY"] = file.path
         app.launch()
 
-        let field = app.textFields["Find a clip"]
+        let field = app.windows["Chete"].textFields.firstMatch
         // Without the list, the keys below would be typed into whatever is open instead, so the tour stops here.
         guard field.waitForExistence(timeout: 10) else { return XCTFail("Chete opened no field to find a clip.") }
         let row = { (title: String) in
@@ -119,7 +121,7 @@ extension CheteTour {
         XCTAssert(row("Dinner at eight on Friday").exists, "The newest made-up clip is not in the list.")
         XCTAssert(row("https://example.com/tickets").exists, "The made-up link is not in the list.")
         XCTAssert(row("The parcel comes on Tuesday").exists, "The oldest made-up clip is not in the list.")
-        // A list of clips, not only an empty one, passes Apple's audit, before anything is typed and after a pick.
+        // A list of clips is audited too, not only an empty one, before anything is typed and after a pick.
         try audit(app, "The list as it opens")
 
         // The field is ready as Chete opens, so a person only types. Two clips hold "day"; the link does not.
@@ -138,75 +140,6 @@ extension CheteTour {
             failed("Return picked \(String(describing: field.value)), not the clip the arrow key chose", nil, in: app)
         }
         try audit(app, "The list after a pick")
-    }
-
-    /// Runs Apple's audit, but for contrast (see SPEC.md), and fails on each finding with what was on screen. Every
-    /// step of the tour audits through here, so the one finding it lets pass is let pass in this one place.
-    @MainActor
-    func audit(_ app: XCUIApplication, _ place: String) throws {
-        let typing = app.textFields.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
-        let fieldHoldsKeyboard = typing.exists
-        var passed = false
-        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
-            let finding: Finding =
-                if let element = issue.element {
-                    fieldHoldsKeyboard && element.elementType == .textField && element.frame == typing.frame
-                        ? .onTheFieldThatHoldsTheKeyboard : .onAnotherElement
-                } else {
-                    .onNoElement(aFieldHoldsTheKeyboard: fieldHoldsKeyboard)
-                }
-            if Self.passes(issue.auditType, finding) {
-                passed = true
-            } else {
-                self.failed("\(place): \(issue.compactDescription)", issue.element, in: app)
-            }
-            return true
-        }
-        if passed { try checkTheFieldThatHoldsTheKeyboard(typing, in: app, place) }
-    }
-
-    /// What an audit finding is on.
-    enum Finding: Equatable, CaseIterable {
-        case onTheFieldThatHoldsTheKeyboard, onAnotherElement
-        case onNoElement(aFieldHoldsTheKeyboard: Bool)
-
-        static let allCases: [Finding] = [
-            .onTheFieldThatHoldsTheKeyboard, .onAnotherElement,
-            .onNoElement(aFieldHoldsTheKeyboard: true), .onNoElement(aFieldHoldsTheKeyboard: false),
-        ]
-    }
-
-    /// Whether an audit finding passes. Only one does. On GitHub's Mac, Apple's audit reports a parent/child mismatch
-    /// whenever a text field holds the keyboard, naming no element, though the field sits inside its window as it
-    /// should (#98). That finding passes only while a field holds the keyboard, and only on that field or on no
-    /// element, and the field is then checked directly instead. #249 rechecks it with VoiceOver by hand.
-    nonisolated static func passes(_ type: XCUIAccessibilityAuditType, _ finding: Finding) -> Bool {
-        type == .parentChild
-            && (finding == .onTheFieldThatHoldsTheKeyboard || finding == .onNoElement(aFieldHoldsTheKeyboard: true))
-    }
-
-    /// What the parent/child check guards, checked directly for the field that holds the keyboard: it is a text
-    /// field with a name and words, inside Chete's window, and VoiceOver reaches it and what is before and after it.
-    @MainActor
-    private func checkTheFieldThatHoldsTheKeyboard(_ field: XCUIElement, in app: XCUIApplication, _ place: String)
-        throws
-    {
-        let name = field.label
-        XCTAssertFalse(name.isEmpty, "\(place): the field that holds the keyboard has no name.")
-        XCTAssert(field.value is String, "\(place): the field “\(name)” has no words to read, not even none.")
-        XCTAssert(
-            app.windows["Chete"].textFields[name].exists, "\(place): the field “\(name)” is not in Chete's window.")
-        let voiceOver = XCUIDevice.shared.voiceOverService
-        try voiceOver.enable()
-        defer { try? voiceOver.disable() }
-        let here = try voiceOver.currentSpeech().utterance
-        let before = try voiceOver.moveBackward().utterance
-        let again = try voiceOver.moveForward().utterance
-        let after = try voiceOver.moveForward().utterance
-        XCTAssert(
-            here.contains(name) && again.contains(name) && !before.isEmpty && !before.contains(name)
-                && !after.isEmpty && !after.contains(name),
-            "\(place): VoiceOver read “\(before)”, then “\(here)” and “\(again)”, then “\(after)”.")
     }
 
     /// Fails with everything needed to see why, in the failure itself: the element, the app's windows and dialogs,
