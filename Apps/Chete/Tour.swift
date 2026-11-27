@@ -55,7 +55,7 @@ final class CheteTour: XCTestCase {
         XCTAssertEqual(app.windows.count, 1)
         // Each finding names its element in the failure itself, so the summary says where to look.
         try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
-            XCTFail("Window: \(issue.compactDescription): \(issue.element?.debugDescription ?? "no element")")
+            self.failed("Window: \(issue.compactDescription)", issue.element, in: app)
             return true
         }
     }
@@ -112,6 +112,8 @@ extension CheteTour {
         XCTAssert(row("Dinner at eight on Friday").exists, "The newest made-up clip is not in the list.")
         XCTAssert(row("https://example.com/tickets").exists, "The made-up link is not in the list.")
         XCTAssert(row("The parcel comes on Tuesday").exists, "The oldest made-up clip is not in the list.")
+        // A list of clips, not only an empty one, passes Apple's audit, before anything is typed and after a pick.
+        try audit(app, "The list as it opens")
 
         // The field is ready as Chete opens, so a person only types. Two clips hold "day"; the link does not.
         app.typeText("day")
@@ -126,8 +128,41 @@ extension CheteTour {
         if XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: picked, object: field)], timeout: 5)
             != .completed
         {
-            XCTFail("Return picked \(String(describing: field.value)), not the clip the arrow key chose.")
+            failed("Return picked \(String(describing: field.value)), not the clip the arrow key chose", nil, in: app)
         }
+        try audit(app, "The list after a pick")
+    }
+
+    /// Runs Apple's audit, but for contrast (see SPEC.md), and fails on each finding with what was on screen.
+    @MainActor
+    private func audit(_ app: XCUIApplication, _ place: String) throws {
+        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
+            self.failed("\(place): \(issue.compactDescription)", issue.element, in: app)
+            return true
+        }
+    }
+
+    /// Fails with everything needed to see why, in the failure itself: the element, the app's windows and dialogs,
+    /// what holds the keyboard and the top of what the app shows. A picture of the screen goes in the record.
+    @MainActor
+    func failed(_ what: String, _ element: XCUIElement?, in app: XCUIApplication) {
+        let screen = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screen.name = what
+        screen.lifetime = .keepAlways
+        add(screen)
+        let named = { (found: XCUIElementQuery) in
+            found.allElementsBoundByIndex.map { "\($0.elementType.rawValue) “\($0.title)” “\($0.label)”" }
+        }
+        let focused = app.descendants(matching: .any).matching(NSPredicate(format: "hasKeyboardFocus == true"))
+        let tree = app.debugDescription.split(separator: "\n").prefix(12).map { String($0.prefix(160)) }
+        XCTFail(
+            """
+            \(what)
+            element: \(element?.debugDescription ?? "none named")
+            windows: \(named(app.windows)); dialogs: \(named(app.dialogs) + named(app.sheets))
+            keyboard: \(named(focused).first ?? "nothing in Chete")
+            \(tree.joined(separator: "\n"))
+            """)
     }
 }
 
