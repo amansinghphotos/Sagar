@@ -2,7 +2,8 @@ import AppKit
 import Shell
 import SwiftUI
 
-/// Chete's card in the menu bar, kept up with what you copy. A clip clicked is copied, and the card closes.
+/// Chete's card in the menu bar, kept up with what you copy. A clip clicked is copied, and the card closes; so it does
+/// when Chete's window or its settings are opened, which would otherwise open behind it and leave it the keys.
 struct CheteMenuCard: View {
     let shelf: Shelf
     @Environment(\.openWindow) private var openWindow
@@ -18,10 +19,12 @@ struct CheteMenuCard: View {
                         NSApplication.shared.keyWindow?.close()
                     },
                     open: {
+                        NSApplication.shared.keyWindow?.close()
                         openWindow(id: "chete")
                         NSApplication.shared.activate()
                     },
                     settings: {
+                        NSApplication.shared.keyWindow?.close()
                         openSettings()
                         NSApplication.shared.activate()
                     },
