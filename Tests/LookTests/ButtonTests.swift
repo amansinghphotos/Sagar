@@ -33,3 +33,10 @@ func theButtonsLookAsSearchsDo(dark: Bool) throws {
     let ours = try picture(of: buttons, width: 320, height: 90, dark: dark)
     #expect(differingPixels(ours, search) <= tolerance)
 }
+
+/// A pressed thing gives to Search's 97 per cent, and not at all under Reduce Motion.
+@Test func aPressGivesAsSearchsDoes() {
+    #expect(Give.scale(pressed: true, motion: Motion(reduceMotion: false)) == 0.97)
+    #expect(Give.scale(pressed: false, motion: Motion(reduceMotion: false)) == 1)
+    #expect(Give.scale(pressed: true, motion: Motion(reduceMotion: true)) == 1)
+}

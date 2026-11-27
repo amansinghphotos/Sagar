@@ -142,7 +142,12 @@ package struct Give: ViewModifier {
 
     package func body(content: Content) -> some View {
         content.animation(pressed ? motion.quick : motion.settle) {
-            $0.scaleEffect(pressed && !motion.reduced ? Motion.give : 1)
+            $0.scaleEffect(Self.scale(pressed: pressed, motion: motion))
         }
+    }
+
+    /// How far a thing gives: Search's `pressed && !Motion.reduced ? Motion.give : 1`.
+    static func scale(pressed: Bool, motion: Motion) -> CGFloat {
+        pressed && !motion.reduced ? Motion.give : 1
     }
 }
