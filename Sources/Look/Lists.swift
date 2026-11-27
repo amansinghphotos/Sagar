@@ -8,36 +8,34 @@ package struct Line<Control: View>: View {
     private let control: () -> Control
 
     package init(_ title: String, _ detail: String? = nil, @ViewBuilder control: @escaping () -> Control) {
-        self.title = title
-        self.detail = detail
-        self.control = control
+        (self.title, self.detail, self.control) = (title, detail, control)
     }
 
     package var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).type(.body).foregroundStyle(Role.ink)
-                if let detail {
-                    Text(detail)
-                        .type(.detail)
-                        .foregroundStyle(Role.muted)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            Spacer(minLength: 0)
+        HStack(spacing: 16) {
+            words
+            Spacer(minLength: 8)
             control()
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(EdgeInsets(top: 11, leading: 14, bottom: 11, trailing: 14))
+    }
+
+    /// The name, and under it the detail, which wraps to at most three lines.
+    private var words: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).type(.body).foregroundStyle(Role.ink)
+            if let detail {
+                Text(detail).type(.detail).foregroundStyle(Role.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3)
+            }
+        }
     }
 }
 
 /// A row that waits quietly until the pointer comes to it: a symbol and words, faint at rest. A `centred` row shows
 /// its symbol alone, in the middle, for a narrow column of symbols.
 package struct Quiet: View {
-    @Environment(\.greys) private var greys
-    @Environment(\.motion) private var motion
     private let icon: String
     private let title: String
     private let height: CGFloat
@@ -45,95 +43,107 @@ package struct Quiet: View {
     private let centred: Bool
     private let act: () -> Void
     @State private var hovering = false
+    @Environment(\.greys) private var greys
+    @Environment(\.motion) private var motion
 
     package init(
         icon: String, title: String, height: CGFloat = 28, size: CGFloat = 12.5, centred: Bool = false,
         act: @escaping () -> Void
     ) {
-        self.icon = icon
-        self.title = title
-        self.height = height
-        self.size = size
-        self.centred = centred
-        self.act = act
+        (self.icon, self.title, self.act) = (icon, title, act)
+        (self.height, self.size, self.centred) = (height, size, centred)
     }
 
     package var body: some View {
-        Button(action: act) {
-            HStack(spacing: 10) {
-                if centred { Spacer(minLength: 0) }
-                Image(systemName: icon).font(.system(size: 10)).frame(width: 11)
-                if !title.isEmpty { Text(title).font(.system(size: size)) }
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.faint))
-            .padding(.horizontal, centred ? 0 : 12)
-            .frame(height: height)
-            .background(
-                greys.hover.opacity(hovering ? 1 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-            )
-            .contentShape(Rectangle())
+        Button(action: act) { face }
+            .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+            .animation(motion.quick, value: hovering)
+    }
+
+    /// Faint at rest, soft ink under the pointer.
+    private var tint: AnyShapeStyle { hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.faint) }
+
+    /// The rounded shape the row lights up in, and answers clicks in.
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 9, style: .continuous) }
+
+    /// The symbol and the words, faint at rest and in soft ink under the pointer, which also lights the row.
+    private var face: some View {
+        HStack(spacing: 8) {
+            if centred { Spacer(minLength: 0) }
+            Image(systemName: icon).font(.system(size: 10, weight: .medium)).frame(width: 15)
+            if !title.isEmpty { Text(title).font(.system(size: size)) }
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .animation(motion.quick, value: hovering)
+        .padding(.leading, centred ? 0 : 10)
+        .foregroundStyle(tint)
+        .frame(height: height)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(greys.hover.opacity(hovering ? 1 : 0), in: shape)
+        .contentShape(shape)
     }
 }
 
-/// What stands for a page or a thing in a list: its own picture when it has one, or else its first letter on a
-/// small tile. A template picture is drawn in ink, a little softened; a dim mark steps back. A `contrast` letter is in
+/// What stands for a page or a thing in a list: its own picture when it has one, or else its letter on a faint
+/// tile. A template picture is drawn in ink, a little softened; a dim mark steps back. A `contrast` letter is in
 /// full ink rather than the soft grey, so it still reads on glass.
 package struct Mark: View {
-    @Environment(\.greys) private var greys
-    @Environment(\.motion) private var motion
     private let icon: Image?
     private let template: Bool
     private let letter: String
     private let size: CGFloat
     private let dim: Bool
     private let contrast: Bool
+    @Environment(\.greys) private var greys
+    @Environment(\.motion) private var motion
 
     package init(
         icon: Image?, template: Bool = false, letter: String, size: CGFloat = 16, dim: Bool = false,
         contrast: Bool = false
     ) {
-        self.icon = icon
-        self.template = template
-        self.letter = letter
-        self.size = size
-        self.dim = dim
-        self.contrast = contrast
+        (self.icon, self.template, self.letter) = (icon, template, letter)
+        (self.size, self.dim, self.contrast) = (size, dim, contrast)
     }
 
     package var body: some View {
-        ZStack {
-            Group {
-                if let icon {
-                    if template {
-                        icon.renderingMode(.template).resizable().scaledToFit()
-                            .foregroundStyle(Role.ink.opacity(0.75))
-                            .frame(width: size * 0.875, height: size * 0.875)
-                    } else {
-                        icon.resizable().interpolation(.high).scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
-                    }
-                } else {
-                    RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
-                        .fill(greys.pinLive.opacity(0.5))
-                        .overlay {
-                            Text(letter)
-                                .font(.system(size: size * 0.56, weight: .medium))
-                                .foregroundStyle(contrast ? AnyShapeStyle(Role.ink) : AnyShapeStyle(greys.muted))
-                        }
-                }
-            }
-            .transition(.opacity)
+        face
+            .opacity(dim ? 0.45 : 1).transition(.opacity)
+            .animation(motion.quick, value: icon == nil)
+            .animation(motion.quick, value: dim)
+    }
+
+    /// The symbol, the picture, or the letter, whichever the mark has.
+    @ViewBuilder private var face: some View {
+        if let icon, template {
+            symbol(icon)
+        } else if let icon {
+            picture(icon)
+        } else {
+            tile
         }
-        .frame(width: size, height: size)
-        .opacity(dim ? 0.45 : 1)
-        .animation(motion.quick, value: icon == nil)
-        .animation(motion.quick, value: dim)
-        .accessibilityHidden(true)
+    }
+
+    /// One of the app's own symbols, in soft ink, light or dark, a little in from the edges.
+    private func symbol(_ icon: Image) -> some View {
+        icon.renderingMode(.template).resizable().scaledToFit()
+            .foregroundStyle(Role.ink.opacity(0.75))
+            .padding(size * 0.06)
+            .frame(width: size, height: size)
+    }
+
+    /// A picture of the thing's own, smoothed, with its corners rounded.
+    private func picture(_ icon: Image) -> some View {
+        icon.resizable().interpolation(.high)
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+    }
+
+    /// The letter, as given, on a faint rounded tile.
+    private var tile: some View {
+        let ink = contrast ? AnyShapeStyle(Role.ink) : AnyShapeStyle(greys.muted)
+        return RoundedRectangle(cornerRadius: size * 0.22, style: .continuous).fill(Role.ink.opacity(0.06))
+            .frame(width: size, height: size)
+            .overlay { Text(letter).foregroundStyle(ink).font(.system(size: size * 0.56, weight: .medium)) }
     }
 }
 
@@ -146,11 +156,8 @@ package struct Always: View {
     }
 
     package var body: some View {
-        Text(text)
-            .font(.system(size: 11))
-            .foregroundStyle(Role.muted)
-            .padding(.horizontal, 8)
-            .frame(height: 20)
+        Text(text).font(.system(size: 11)).foregroundStyle(Role.muted)
+            .padding(EdgeInsets(top: 3, leading: 8, bottom: 3, trailing: 8))
             .background(Role.wash, in: Capsule())
     }
 }
@@ -161,23 +168,22 @@ package struct Key: View {
     private let what: String
 
     package init(_ keys: String, _ what: String) {
-        self.keys = keys
-        self.what = what
+        (self.keys, self.what) = (keys, what)
     }
 
     package var body: some View {
         HStack(spacing: 10) {
-            Text(keys)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(Role.ink)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Role.wash, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .frame(minWidth: 44)
-            Text(what)
-                .type(.body)
-                .foregroundStyle(Role.muted)
+            cap
+            Text(what).type(.body).foregroundStyle(Role.muted)
         }
-        .accessibilityElement(children: .combine)
+    }
+
+    /// The keys in rounded type on a soft rounded cap, at least wide enough for a short word.
+    private var cap: some View {
+        Text(keys).foregroundStyle(Role.ink)
+            .font(.system(size: 12, weight: .medium, design: .rounded))
+            .padding(EdgeInsets(top: 3, leading: 7, bottom: 3, trailing: 7))
+            .background(Role.wash, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .frame(minWidth: 44)
     }
 }
