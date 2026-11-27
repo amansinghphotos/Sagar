@@ -18,12 +18,13 @@ package struct Hunt: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Role.muted)
-            TextField(text: $text, prompt: Text(verbatim: "")) { Text(prompt) }
+            TextField(String(), text: $text, prompt: Text(verbatim: ""))
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
                 .foregroundStyle(Role.ink)
                 .focused(focus)
-                // The words shown in the box are hidden from VoiceOver, so the box itself carries them as its name.
+                // The words shown in the box are hidden from VoiceOver, so the box carries them as its name. A label
+                // view would give it a second, unnamed child, which Apple's audit finds as a parent/child mismatch.
                 .accessibilityLabel(Text(prompt))
                 .overlay(alignment: .leading) {
                     if text.isEmpty {
