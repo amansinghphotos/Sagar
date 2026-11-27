@@ -8,7 +8,7 @@ private func merging(_ record: String) throws -> String {
     let process = Process()
     let answer = Pipe()
     process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = ["merging"]
+    process.arguments = ["merging", "amansinghphotos"]
     process.standardInput = try FileHandle(forReadingFrom: here.appending(path: "Fixtures/\(record).json"))
     process.standardOutput = answer
     try process.run()
@@ -27,7 +27,7 @@ private func merging(_ record: String) throws -> String {
     #expect(try merging("Still Blocked") == "wait\n")
 }
 
-/// Recorded from GitHub for a pull request just brought up to date, before it had worked out where it stands.
+/// Recorded from GitHub, asked only where it stands, for a pull request whose state it had not yet worked out.
 @Test func workGitHubHasNotWorkedOutIsNotMergedNow() throws {
     #expect(try merging("Not Yet Worked Out") == "wait\n")
 }
@@ -36,4 +36,14 @@ private func merging(_ record: String) throws -> String {
 /// itself would merge it, but his words still stand.
 @Test func workTheOwnerAskedToChangeIsNotMergedNow() throws {
     #expect(try merging("Changes Asked For") == "wait\n")
+}
+
+/// Made up: the owner approved, then a later push undid it. His answer is asked for again, even on files he does not own.
+@Test func workTheOwnerAnsweredBeforeIsNotMergedNow() throws {
+    #expect(try merging("Answered Before") == "wait\n")
+}
+
+/// Made up: the owner's approval stands and nothing else waits, so GitHub would refuse to wait for it.
+@Test func workTheOwnerApprovedIsMergedNow() throws {
+    #expect(try merging("Approved") == "now\n")
 }
