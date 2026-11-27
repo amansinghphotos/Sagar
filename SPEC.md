@@ -208,6 +208,10 @@ request that changes a check runs its own new version, and is read by the review
 Launch is judged by the fastest of three launches on GitHub's Mac. That shows what the code costs,
 not how an app feels on its very first open after an install, which he judges when he tries a build.
 
+Everything in the repository can be read by anyone. That keeps GitHub's Mac and its rules free.
+Before a spec needs something in the code that cannot be public, privacy is decided again
+(decision 3).
+
 The guards catch honest mistakes, not deliberate ones. The agents' app may push workflow files, so a
 branch could carry a workflow that reports a pass it did not earn. The network rule reads for the
 usual calls and cannot see every way to fetch a file.
