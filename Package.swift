@@ -11,6 +11,8 @@ let strict: [SwiftSetting] = noWarnings + [.defaultIsolation(MainActor.self)]
 let package = Package(
     name: "Sagar",
     platforms: [.macOS(.v27)],
+    // Each app's Kit, which its thin target in Sagar.xcodeproj links.
+    products: [.library(name: "CheteKit", targets: ["CheteKit"])],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.1")
     ],
@@ -19,6 +21,7 @@ let package = Package(
         .testTarget(name: "KeepTests", dependencies: ["Keep"], swiftSettings: strict),
         .target(name: "Shell", dependencies: [.product(name: "Sparkle", package: "Sparkle")], swiftSettings: strict),
         .testTarget(name: "ShellTests", dependencies: ["Shell"], swiftSettings: strict),
+        .target(name: "CheteKit", dependencies: ["Shell"], swiftSettings: strict),
         .testTarget(name: "ScriptsTests", exclude: ["Fixtures"], swiftSettings: strict),
         // Test support: pictures a screen from a window that is never shown.
         .target(name: "Pictures", path: "Tests/Pictures", swiftSettings: strict),
