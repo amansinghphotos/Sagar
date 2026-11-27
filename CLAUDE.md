@@ -100,7 +100,8 @@ Never, whatever the reason:
 - Write a rule as prose. A rule is a check in `Scripts/check`, or it is not written.
 - Weaken a check, skip a test, or silence a warning to get to green.
 - Mark anything approved. Only his GitHub approval approves.
-- Run a tour (`Tour.swift`) on his Mac: it takes the screen. Tours run on GitHub's runner.
+- Run a tour (`Tour.swift`) on his Mac itself: it takes the screen. Tours run on GitHub's runner, or
+  hidden in the virtual Mac by `Scripts/tour <App>`.
 
 ## How the Code Is Laid Out
 
