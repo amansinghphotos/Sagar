@@ -1,4 +1,5 @@
-// The states a page can be in besides full: nothing here yet, something went wrong, and work under way.
+// The states a page can be in other than showing its content: nothing here yet, something went wrong, and work
+// under way.
 import SwiftUI
 
 /// A quiet line where a list would be, when there is nothing in it yet.
@@ -8,40 +9,45 @@ package struct Nothing: View {
     package init(_ text: String) { self.text = text }
 
     package var body: some View {
-        Text(text)
-            .type(.body)
-            .foregroundStyle(Role.muted)
-            .padding(.horizontal, Space.wide.rawValue)
-            .padding(.vertical, 18)
+        Text(text).type(.body).foregroundStyle(Role.muted)
+            .padding(EdgeInsets(top: 18, leading: Space.wide.rawValue, bottom: 18, trailing: Space.wide.rawValue))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// What went wrong, centred: the first line in ink, the rest quieter, and a way to try again.
+/// What went wrong, centred on the page: the first line in ink, a hint under it if the message has a second, and
+/// a way to try again.
 package struct Trouble: View {
     private let message: String
     private let retry: () -> Void
 
     package init(message: String, retry: @escaping () -> Void) {
-        self.message = message
-        self.retry = retry
+        (self.message, self.retry) = (message, retry)
     }
 
     package var body: some View {
-        let lines = message.split(separator: "\n", maxSplits: 1).map(String.init)
-        VStack(spacing: Space.tight.rawValue) {
-            Text(lines.first ?? "").font(.system(size: 14)).foregroundStyle(Role.ink)
-            if lines.count > 1 {
-                Text(lines[1]).type(.row).foregroundStyle(Role.muted)
-            }
-            Button(action: retry) {
-                Text(verbatim: "Try again").type(.row).foregroundStyle(Role.muted)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, Space.snug.rawValue)
+        VStack(spacing: Space.gap.rawValue) {
+            wording
+            again
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Role.ground)
+    }
+
+    /// The message: its first line, and what follows the first break as a quieter hint.
+    private var wording: some View {
+        let lines = message.split(separator: "\n", maxSplits: 1)
+        return VStack(spacing: Space.tight.rawValue) {
+            Text(lines.first.map(String.init) ?? message).font(.system(size: 14)).foregroundStyle(Role.ink)
+            if let hint = lines.dropFirst().first {
+                Text(hint).type(.row).foregroundStyle(Role.muted)
+            }
+        }
+    }
+
+    private var again: some View {
+        Button(action: retry) { Text(verbatim: "Try again").type(.row).foregroundStyle(Role.muted) }
+            .buttonStyle(.plain)
     }
 }
 
@@ -49,7 +55,6 @@ package struct Trouble: View {
 /// a way to stop. With no total known, the bar stays empty and there is no count. Once asked to stop, the button
 /// says so and can't be pressed again. VoiceOver reads it as one thing: the name and what it is doing.
 package struct ProgressCard: View {
-    @Environment(\.greys) private var greys
     private let filename: String
     private let message: String
     private let completed: Int
@@ -58,67 +63,78 @@ package struct ProgressCard: View {
     private let cancel: () -> Void
 
     package init(
-        filename: String, message: String, completed: Int, total: Int?, cancelling: Bool = false,
-        cancel: @escaping () -> Void
+        filename: String, message: String, completed: Int, total: Int?,
+        cancelling: Bool = false, cancel: @escaping () -> Void
     ) {
-        self.filename = filename
-        self.message = message
-        self.completed = completed
-        self.total = total
-        self.cancelling = cancelling
-        self.cancel = cancel
+        (self.filename, self.message) = (filename, message)
+        (self.completed, self.total) = (completed, total)
+        (self.cancelling, self.cancel) = (cancelling, cancel)
     }
 
     /// The whole the count is out of, when one is known.
     private var whole: Int? { total.flatMap { $0 > 0 ? $0 : nil } }
 
     package var body: some View {
-        let shape = RoundedRectangle(cornerRadius: Radius.card.rawValue, style: .continuous)
-        VStack(alignment: .leading, spacing: 0) {
-            Text(filename).type(.body).fontWeight(.medium).foregroundStyle(Role.ink)
-                .lineLimit(1).truncationMode(.middle)
-            Text(message).type(.row).foregroundStyle(Role.muted).lineLimit(1).padding(.top, 7)
-            bar.padding(.top, 7)
-            HStack {
-                if let whole {
-                    Text("\(completed.formatted()) of \(whole.formatted())")
-                        .font(.system(size: 11)).foregroundStyle(Role.muted)
-                }
-                Spacer(minLength: 0)
-                Button(action: cancel) {
-                    Text(verbatim: cancelling ? "Cancelling…" : "Cancel").type(.row).foregroundStyle(Role.ink)
-                        .padding(.horizontal, Space.gap.rawValue)
-                        .frame(height: 22)
-                        .background(greys.wash, in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .disabled(cancelling)
-            }
-            .padding(.top, 7)
+        let outline = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        VStack(alignment: .leading, spacing: 7) {
+            heading
+            bar
+            footing
         }
         .padding(Space.wide.rawValue)
-        .frame(width: 250)
-        .background(Role.ground, in: shape)
-        .overlay(shape.strokeBorder(Role.hairline, lineWidth: 1))
-        .elevation(.status)
-        .padding(20)
-        .transition(.opacity)
+        .frame(width: 250, alignment: .leading)
+        .background(Role.ground, in: outline)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(filename), \(message)")
+        .overlay(outline.strokeBorder(Role.hairline, lineWidth: 1))
+        .shadow(color: .black.opacity(0.08), radius: 16, y: 5)
+        .padding(20)
+        .transition(.opacity)
+    }
+
+    /// The name of what is being worked on, cut in its middle, and what is being done to it, on one line each.
+    @ViewBuilder private var heading: some View {
+        Text(filename).type(.body).fontWeight(.medium).foregroundStyle(Role.ink).lineLimit(1).truncationMode(.middle)
+        Text(message).type(.row).foregroundStyle(Role.muted).lineLimit(1)
     }
 
     /// How far the work has come, as a filled part of a thin track; an empty track while the whole is unknown.
     private var bar: some View {
         Capsule()
-            .fill(Role.hairline)
+            .foregroundStyle(Role.hairline)
             .overlay(alignment: .leading) {
                 if let whole {
-                    GeometryReader { space in
+                    GeometryReader { track in
                         Capsule().fill(Role.ink.opacity(0.7))
-                            .frame(width: space.size.width * min(1, max(0, Double(completed) / Double(whole))))
+                            .frame(width: track.size.width * min(1, Double(completed) / Double(whole)))
                     }
                 }
             }
             .frame(height: 3)
+    }
+
+    /// The count, when the whole is known, and the button to stop at the far end.
+    private var footing: some View {
+        HStack {
+            if let whole {
+                Text("\(completed.formatted()) of \(whole.formatted())")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Role.muted)
+            }
+            Spacer(minLength: .zero)
+            stopButton
+        }
+    }
+
+    /// Cancel, in a faint capsule; once pressed, it says it is cancelling and can't be pressed again.
+    private var stopButton: some View {
+        Button(action: cancel) {
+            Text(verbatim: cancelling ? "Cancelling…" : "Cancel").type(.row).foregroundStyle(Role.ink)
+                .padding(.horizontal, Space.gap.rawValue)
+                .frame(height: 22)
+                .background { Capsule().fill(Role.ink.opacity(0.07)) }
+        }
+        .disabled(cancelling)
+        .buttonStyle(.plain)
     }
 }
