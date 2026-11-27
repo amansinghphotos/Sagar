@@ -242,7 +242,11 @@ final class Host: NSObject, VZVirtualMachineDelegate {
                 print("kept as the clean guest")
                 exit(0)
             } catch {
-                try? FileManager.default.removeItem(at: machine.file("Kept"))  // no half-kept guest left on the drive
+                // No half-kept guest is left on the drive, and a disk already moved into it goes back.
+                for name in ["Disk.img", "AuxiliaryStorage"] {
+                    try? FileManager.default.moveItem(at: machine.file("Kept/\(name)"), to: machine.file(name))
+                }
+                try? FileManager.default.removeItem(at: machine.file("Kept"))
                 fail("Could not keep the guest: \(error)")
             }
         }
@@ -259,7 +263,7 @@ func serve(_ folder: URL) async throws {
     let machine = Machine(folder: folder)
     let host: Host
     do { host = try Host(machine) } catch {
-        machine.discard()  // a guest that cannot start leaves no copy behind
+        if machine.frozen { machine.discard() }  // a copy that cannot start is not left behind
         throw error
     }
     host.listenForSignals()
