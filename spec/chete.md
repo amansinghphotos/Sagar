@@ -7,15 +7,17 @@ already given to that one carries over.
 ## What It Is For
 
 You copy as you always do. Later, in any app, you press one key, type a few letters of what you want,
-and press Return: Chete pastes it where you were. Nothing you copy leaves your Mac unless you carry it.
+and press Return: Chete pastes it where you were. Chete sends nothing anywhere: your history stays on
+this Mac unless you carry it.
 
 ## Must-Haves
 
 1. **It keeps what you copy.** Text, links, pictures, and files copied in Finder, newest first.
    For a file it keeps where the file is, not a second copy. Everything is encrypted on this Mac.
    Passwords, and anything an app marks as private or only passing through, are never kept. What you
-   copy on your iPhone or another Mac arrives too, unless you turn that off.
-2. **It opens from any app,** with the same key the Chete before it opened with, and from its item in
+   copy on your own iPhone or another of your Macs, which macOS hands over by itself, is kept too,
+   unless you turn that off.
+2. **It opens from any app,** with the same keyboard shortcut the Chete before it used, and from its item in
    the menu bar. It lives in the menu bar and has no Dock icon.
 3. **It finds as you type.** Each letter narrows the list. The arrow keys move, and Return picks.
 4. **It pastes for you** into the app you were in, or pastes as plain text if you hold Shift. If you
