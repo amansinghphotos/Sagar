@@ -47,7 +47,7 @@ private struct Branch {
     let folder: URL
     private(set) var read = ""
 
-    init(changing changed: String = "changed.txt") throws {
+    init(changing changed: [String] = ["changed.txt"]) throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "reviewed-\(UUID().uuidString)")
         let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
@@ -58,7 +58,7 @@ private struct Branch {
         try commit("The first page")
         try git("update-ref", "refs/remotes/origin/main", "HEAD")
         try git("checkout", "-q", "-b", "work")
-        try write("the change", to: changed)
+        for name in changed { try write("the change", to: name) }
         try commit("The change the reviewer read")
         read = try git("rev-parse", "HEAD")
         try git("checkout", "-q", "main")
@@ -82,9 +82,14 @@ private struct Branch {
         try run("/usr/bin/env", ["git"] + arguments, input: nil)
     }
 
-    /// A commit after the reading, as a mend of what it found.
-    @discardableResult mutating func mend(_ words: String) throws -> String {
-        try write(words, to: "mend.txt")
+    /// A commit after the reading, as a mend of what it found: in a file the reading saw, unless another is named.
+    /// A mend with no words takes the file out.
+    @discardableResult mutating func mend(_ words: String?, to name: String = "changed.txt") throws -> String {
+        if let words {
+            try write(words, to: name)
+        } else {
+            try git("rm", "-q", name)
+        }
         try commit("A mend of the reading")
         return try git("rev-parse", "HEAD").trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -144,6 +149,20 @@ private struct Branch {
     #expect(try branch.countsAsRead(reply) == "yes")
 }
 
+/// The ways replies said it on 27 November count too: "reading of", "<commit>: FAIL", "mended in", "taken in".
+@Test(arguments: [
+    "<details><summary>The reviewer's reading of {read}</summary> Mended in {mend}.",
+    "<details>**{read}: FAIL** Taken in {mend}.",
+])
+func theOneMendCountsAsTheRepliesSaidIt(reply: String) throws {
+    var branch = try Branch()
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend("mended")
+    let said = reply.replacingOccurrences(of: "{read}", with: String(branch.read.prefix(7)))
+        .replacingOccurrences(of: "{mend}", with: String(mend.prefix(7)))
+    #expect(try branch.countsAsRead(said) == "yes")
+}
+
 /// A second commit after the reading is more than its mend.
 @Test func aSecondCommitAfterTheReadingNeedsANewReading() throws {
     var branch = try Branch()
@@ -164,9 +183,27 @@ private struct Branch {
     )
 }
 
+/// A mend that touches a file the reading never saw is new work, and is read.
+@Test func aMendBeyondWhatWasReadNeedsANewReading() throws {
+    var branch = try Branch()
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend("a new page", to: "new.txt")
+    let reply = "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(mend.prefix(7))</summary>"
+    #expect(try branch.countsAsRead(reply) == "no")
+}
+
+/// A mend that takes a working rule back out of the change was still a change to the working rules.
+@Test func aMendThatUndoesARulesEditIsReadAgain() throws {
+    var branch = try Branch(changing: ["changed.txt", "Scripts/rule.txt"])
+    defer { try? FileManager.default.removeItem(at: branch.folder) }
+    let mend = try branch.mend(nil, to: "Scripts/rule.txt")
+    let reply = "<details><summary>The reviewer read \(branch.read.prefix(7)), answered at \(mend.prefix(7))</summary>"
+    #expect(try branch.countsAsRead(reply) == "no")
+}
+
 /// A change to the working rules could weaken a check, so its mend is read again, and that reading counts.
 @Test func aMendOfTheWorkingRulesIsReadAgain() throws {
-    var branch = try Branch(changing: "Scripts/rule.txt")
+    var branch = try Branch(changing: ["Scripts/rule.txt"])
     defer { try? FileManager.default.removeItem(at: branch.folder) }
     let mend = try branch.mend("mended")
     let answered =

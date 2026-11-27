@@ -345,27 +345,31 @@ change_of() { # change_of <commit>: a mark of what its branch changes, whatever 
     from=$(git merge-base origin/main "$1" 2>/dev/null) || return 1
     git diff "$from" "$1" | git patch-id --stable | cut -d' ' -f1
 }
-read_again() { # true when a mend must be read again: the working rules, which could weaken a check, or a plan
-    changed | grep -qE "$working_rules|^(spec/|SPEC\.md$|Decisions/)"
+files_of() { # files_of <commit>: the files its branch changes, whatever main has become since
+    git diff --name-only "$(git merge-base origin/main "$1")" "$1"
 }
 reviewed() { # reviewed <commit>: reads GitHub's list of a pull request's comments. True if a folded reply from the
     # agents' app says the reviewer read this change as it now stands, whatever main has become since: "read
-    # <commit>". Its one mend, the only commit since, is answered there and not read again ("answered at <commit>"),
-    # but for a change to the working rules or a plan, whose mend is read again.
+    # <commit>". Its one mend, the only commit since and in files the reading saw, is answered there and not read
+    # again ("answered at <commit>"), but for a change to the working rules or a plan, whose mend is read again.
     [ "${#1}" -ge 7 ] || return 1
-    local mark reply read answered
+    local mark reply read answered seen mend
     same() { git cat-file -e "$1^{commit}" 2>/dev/null && [ "$(change_of "$1")" = "$mark" ]; }
     hashes() { grep -oiE "(^|[^a-z])$1 [0-9a-f]{7,40}" | grep -oE '[0-9a-f]{7,40}$' || true; }
     mark=$(change_of "$1" 2>/dev/null) || mark=""
     while IFS= read -r reply; do
-        for read in $(hashes 'read( at| of| commit)?' <<<"$reply"); do
+        for read in $(hashes 'read(ing)?( at| of| commit)?' <<<"$reply"; grep -oiE '[0-9a-f]{7,40}[*]*: *[*]*(pass|fail)' <<<"$reply" |
+            grep -oE '^[0-9a-f]{7,40}'); do
             [[ $1 == "$read"* ]] && return 0
             [ -n "$mark" ] || continue
             same "$read" && return 0
-            ! read_again || continue
-            for answered in $(hashes 'answered (at|in)' <<<"$reply"); do
-                same "$answered" && [ "$(git rev-list --no-merges --count "$answered" "^$read" ^origin/main 2>/dev/null)" = 1 ] &&
-                    return 0
+            seen=$(files_of "$read" 2>/dev/null) || continue
+            ! { changed; printf '%s\n' "$seen"; } | grep -qE "$working_rules|^(spec/|SPEC\.md$|Decisions/)" || continue
+            for answered in $(hashes '(answered|mended|taken) (at|in)' <<<"$reply"); do
+                same "$answered" || continue
+                mend=$(git rev-list --no-merges "$answered" "^$read" ^origin/main 2>/dev/null) || continue
+                [ "$(wc -l <<<"$mend")" -eq 1 ] && [ -n "$mend" ] || continue
+                git diff-tree --no-commit-id --name-only -r "$mend" | grep -qvxF -- "$seen" || return 0
             done
         done
     done < <(jq -r '.[] | select(.user.login == "sagar-agent[bot]" and (.body | contains("<details"))) |
