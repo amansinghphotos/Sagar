@@ -79,11 +79,13 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             pullRequest(number: $number) { createdAt lastEditedAt } } }' \
         --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt] | map(select(. != null)) | max')
     unasked=0
+    said=$(mktemp) # what gh says on the side, kept apart so that a warning is never read as GitHub's answer
+    trap 'rm -f "$said"' EXIT
     unanswered() { # GitHub gave no answer, as when the agents' hourly allowance runs out. It is asked again a minute
-        # later; after a quarter of an hour of no answers, this says so, and when GitHub can next be asked.
+        # later; after a quarter of an hour of no answers in a row, this says so, and when GitHub can next be asked.
         unasked=$((unasked + 1))
         [ "$unasked" -ge 15 ] || { sleep 60; return; }
-        echo "GitHub gave no answer about #$request for a quarter of an hour: $(head -n 1 <<<"$1" | cut -c 1-150)"
+        echo "GitHub gave no answer about #$request for a quarter of an hour: $(head -n 1 "$said" | cut -c 1-150)"
         echo "It can be asked again from $(gh api rate_limit --jq '.resources.core.reset | strftime("%H:%M UTC")' \
             2>/dev/null || echo "the next hour"). Nobody was asked."
         exit 1
@@ -92,13 +94,14 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
         local run="" answer status looked=0
         until [ -n "$run" ]; do
             answer=$(gh run list --workflow "$1" --branch "$branch" --limit 10 --json databaseId,createdAt,headSha \
-                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty" 2>&1) &&
+                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty" 2>"$said") &&
                 status=0 || status=$?
             if [ "$status" -ne 0 ]; then
-                unanswered "$answer"
+                unanswered
             elif [ -n "$answer" ]; then
-                run=$answer
+                run=$answer unasked=0
             else
+                unasked=0
                 looked=$((looked + 1))
                 [ "$looked" -lt 30 ] ||
                     { echo "No $1 has run on the newest commit of #$request since its last change. Nobody was asked."; exit 1; }
@@ -106,12 +109,12 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             fi
         done
         while :; do # asked every half minute, which spends far less of the allowance than gh run watch
-            answer=$(gh run view "$run" --json status,conclusion 2>&1) && status=0 || status=$?
+            answer=$(gh run view "$run" --json status,conclusion 2>"$said") && status=0 || status=$?
             case $(Scripts/check run "$status" <<<"$answer") in
                 passed) return 0 ;;
                 failed) echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
-                running) sleep 30 ;;
-                *) unanswered "$answer" ;;
+                running) unasked=0; sleep 30 ;;
+                *) unanswered ;;
             esac
         done
     }
