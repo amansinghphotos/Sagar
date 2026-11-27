@@ -68,4 +68,4 @@ Motion, but for that one fade. Keyboard reach and labels are proven by the Galle
 ## Out of Scope
 
 More themes, seasons or variants. Window and menu-bar plumbing, which is Shell's. Anything from a third
-party but Search's motion.
+party.

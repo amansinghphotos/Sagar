@@ -12,5 +12,5 @@ at every moment, measured against a record of Search's own. When the last copied
 notice leaves the acknowledgements and the About window, and a check keeps it from returning. Look is
 still built whole, ahead of need, as decision 7 allows.
 
-**Consequences.** Every copied file is replaced, one slice at a time, each proven by the pictures and
-motion records it already matches. Until the last slice lands, the notice stays.
+**Consequences.** Each copied file is replaced in its own slice, proven by the pictures and motion
+records it already matches; the notice stays until the last.
