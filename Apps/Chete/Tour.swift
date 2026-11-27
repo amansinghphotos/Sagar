@@ -48,10 +48,10 @@ final class CheteTour: XCTestCase {
         app.launch()
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
-        // Each finding is kept with the element it is about, so a failure says where to look.
+        // Each finding names its element in the failure itself, so the summary says where to look.
         try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
-            self.add(XCTAttachment(string: "\(issue.compactDescription)\n\(issue.element?.debugDescription ?? "")"))
-            return false
+            XCTFail("Window: \(issue.compactDescription): \(issue.element?.debugDescription ?? "no element")")
+            return true
         }
     }
 
