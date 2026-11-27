@@ -14,7 +14,7 @@ private let nothing = WelcomeActs(
 private func pages(at page: WelcomePage, _ given: WelcomeGiven = WelcomeGiven()) -> some View {
     var given = given
     if page == .oldClips { given.hasOldClips = true }
-    return WelcomePages(startPage: page, given: given, act: nothing, finish: {})
+    return WelcomePages(startPage: page, given: .constant(given), act: nothing, finish: {})
 }
 
 @Test(arguments: WelcomePage.allCases, [false, true])

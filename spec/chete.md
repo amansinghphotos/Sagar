@@ -20,7 +20,8 @@ this Mac unless you carry it.
    by itself, is kept too, unless you turn that off.
    *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. macOS lists
    Chete there only once Chete has asked, so the welcome has it ask. Until you choose Allow there,
-   Chete keeps nothing, so that macOS never asks you later.
+   Chete keeps nothing, so that macOS never asks you later. Its card in the menu bar says so, with a
+   button back to that step.
 2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
    You choose the shortcut in the welcome, and can change it in Settings. Chete suggests three. The
    first is Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. A

@@ -49,14 +49,17 @@ package struct WelcomePages: View {
     private let startPage: WelcomePage
     private let act: WelcomeActs
     private let finish: () -> Void
-    @State private var given: WelcomeGiven
+    /// Held by whoever shows the welcome, so that what the Mac allows shows here as it changes, and the
+    /// shortcut chosen here is theirs to keep.
+    @Binding private var given: WelcomeGiven
     @State private var broughtBack: String?
 
     package init(
-        startPage: WelcomePage = .greeting, given: WelcomeGiven, act: WelcomeActs, finish: @escaping () -> Void
+        startPage: WelcomePage = .greeting, given: Binding<WelcomeGiven>, act: WelcomeActs,
+        finish: @escaping () -> Void
     ) {
         (self.startPage, self.act, self.finish) = (startPage, act, finish)
-        _given = State(initialValue: given)
+        _given = given
     }
 
     /// The pages a person meets. The one for old clips is there only on a Mac that has some.
