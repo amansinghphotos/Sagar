@@ -17,6 +17,11 @@ package final class Updates {
         try updater.start()
     }
 
+    /// Whether Sparkle's update window would offer this app's people a box to install updates without asking.
+    package static func offersSilentInstalls(for app: Bundle) -> Bool {
+        SPUUpdaterSettings(hostBundle: app).allowsAutomaticUpdates
+    }
+
     /// Where this app looks for updates.
     package var feed: URL? { updater.feedURL }
 
