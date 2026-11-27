@@ -23,6 +23,13 @@ let package = Package(
         .testTarget(name: "ShellTests", dependencies: ["Shell"], swiftSettings: strict),
         .target(name: "CheteKit", dependencies: ["Keep", "Shell"], swiftSettings: strict),
         .testTarget(name: "CheteKitTests", dependencies: ["CheteKit", "Keep"], swiftSettings: strict),
+        .target(name: "Look", swiftSettings: strict),
+        .testTarget(name: "LookTests", dependencies: ["Look"], swiftSettings: strict),
+        // The test window where each part of the look is checked against Search. Never shipped.
+        .executableTarget(name: "Gallery", dependencies: ["Look"], swiftSettings: strict),
+        .testTarget(
+            name: "GalleryTests", dependencies: ["Gallery", "Look", "Pictures"], exclude: ["Pictures"],
+            swiftSettings: strict),
         .testTarget(name: "ScriptsTests", exclude: ["Fixtures"], swiftSettings: strict),
         // Test support: pictures a screen from a window that is never shown.
         .target(name: "Pictures", path: "Tests/Pictures", swiftSettings: strict),

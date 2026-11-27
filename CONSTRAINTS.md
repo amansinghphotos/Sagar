@@ -15,6 +15,8 @@ Held by `Scripts/check` budget.
 | Keep | 300 |
 | Shell | 600 |
 | CheteKit | 1500 |
+| Look | 6000 |
+| Gallery | 1500 |
 
 ## Every Pull Request
 
