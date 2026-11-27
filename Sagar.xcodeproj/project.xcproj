@@ -8,7 +8,21 @@
     { "kind": "local", "path": "." },
   ],
   "files": [
-    { "kind": "group", "path": "Config", "children": [ { "path": "Shared.xcconfig" } ] },
+    { "kind": "group", "path": "Config", "children": [ { "path": "Shared.xcconfig" }, { "path": "Chete.xcconfig" } ] },
+    {
+      "kind": "group",
+      "path": "Apps",
+      "children": [
+        {
+          "kind": "group",
+          "path": "Chete",
+          "children": [
+            { "path": "Main.swift", "target-membership": [ "Chete/compile-sources" ] },
+            { "path": "Tour.swift", "target-membership": [ "CheteTour/compile-sources" ] },
+          ],
+        },
+      ],
+    },
     {
       "kind": "group",
       "path": "Tests",
@@ -25,6 +39,8 @@
       "name": "Products",
       "children": [
         { "path": "<PRODUCTS>/UpdateTour.xctest" },
+        { "path": "<PRODUCTS>/Chete.app", "id": "42DB423D30B937EB00D863D9", "type": "wrapper.application", "index": false },
+        { "path": "<PRODUCTS>/CheteTour.xctest", "id": "42F9AA7430B937920001A314", "type": "wrapper.cfbundle", "index": false },
       ],
     },
   ],
@@ -36,6 +52,26 @@
       "product-type": "bundle.ui-testing",
       "build-phases": [ "compile-sources", "frameworks", "resources" ],
       "build-settings": { "INFOPLIST_FILE": "", "SWIFT_DEFAULT_ACTOR_ISOLATION": "nonisolated" },
+    },
+    {
+      "name": "Chete",
+      "id": "42DB423C30B937EA00D863D9",
+      "product": "Products/Chete.app",
+      "product-type": "application",
+      "specialized-configurations": [ { "name": "Release", "file": "Config/Chete.xcconfig" } ],
+      "build-phases": [ "compile-sources", "frameworks" ],
+      "package-product-members": [
+        { "package": ".", "product-name": "CheteKit", "build-phase": { "build-phase": "frameworks" } },
+      ],
+    },
+    {
+      "name": "CheteTour",
+      "id": "42F9AA7330B937920001A314",
+      "product": "Products/CheteTour.xctest",
+      "product-type": "bundle.ui-testing",
+      "dependencies": [ "Chete" ],
+      "build-phases": [ "compile-sources" ],
+      "build-settings": { "INFOPLIST_FILE": "", "SWIFT_DEFAULT_ACTOR_ISOLATION": "nonisolated", "TEST_TARGET_NAME": "Chete" },
     },
   ],
 }

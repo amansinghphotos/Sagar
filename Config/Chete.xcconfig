@@ -1,0 +1,2 @@
+// Chete: what it is for is in spec/chete.md. Its identifier, com.amansingh.chete, never changes.
+#include "Shared.xcconfig"

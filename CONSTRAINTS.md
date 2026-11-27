@@ -14,6 +14,7 @@ Held by `Scripts/check` budget.
 | Each app's Main.swift, which only starts its Kit | 30 |
 | Keep | 300 |
 | Shell | 600 |
+| CheteKit | 1500 |
 
 ## Every Pull Request
 
