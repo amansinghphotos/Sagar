@@ -108,13 +108,15 @@ first of them, and a release will not start while its own has a box unticked.
 - There is no third number: every copy is offered each update, so no old version is ever mended. Under the
   version each build carries its commit's date and time, which always rises and is what Sparkle compares.
 - One build waiting for him at a time, and one app in work.
-- Each GitHub release carries three plain lines: New, Better, Fixed.
+- Each GitHub release carries up to three plain lines: New, Better, Fixed. A line with nothing to say is
+  left out, never filled. A release has at least one. The request that asks him to try it gives its reason
+  from the first line that is there: what is new, else what is better, else what is mended.
 - A fault he describes becomes an issue, and the release that mends it says so in plain words. An
   app's issue stays open until he approves that release: an open issue means not yet confirmed by him.
 - An update is always offered and never forced or silent: the app shows what is new and the person
   chooses to install it, to be reminded later, or to skip that version.
 - The first time an app's window opens on a new build, it shows Look's card for what is new, once,
-  with that release's three lines. On his Mac it tells him a build to try is in place and what to
+  with that release's lines. On his Mac it tells him a build to try is in place and what to
   look for. For everyone else it follows the update. A mended build under the same number shows it
   again. An app's very first open shows its welcome instead.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
