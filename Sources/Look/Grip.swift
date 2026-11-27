@@ -25,7 +25,7 @@ package struct EdgeGrip: View {
     }
 
     package var body: some View {
-        Capsule(style: .continuous)
+        Capsule()
             .fill(lit ? Role.muted : Role.faint)
             .frame(width: Grip.width, height: lit ? Grip.lit : Grip.rest)
             .opacity(lit || resting ? 1 : 0)
