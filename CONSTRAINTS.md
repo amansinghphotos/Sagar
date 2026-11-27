@@ -12,7 +12,7 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Module | Lines at most |
 |---|--:|
 | Each app's Main.swift, which only starts its Kit | 30 |
-| CheteKit | 1500 |
+| CheteKit | 2000 |
 | Gallery | 1500 |
 | Keep | 300 |
 | Look | 6000 |

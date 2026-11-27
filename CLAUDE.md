@@ -8,7 +8,8 @@ this folder, in `Sagar Private`.
 ## Commands
 
 ```
-Scripts/check                          every rule, and all the testing a change gets; git runs it before a commit
+Scripts/check                          every rule; git runs it before a commit, with the tests a change can reach,
+                                       and GitHub with every test
 Scripts/check ready <number>           the one way a pull request is shown to the owner and set to merge
 Scripts/build <App>                    a signed build of one app
 printf 'New: …\nBetter: …\nFixed: …\n' | Scripts/release <App> <version>
@@ -101,7 +102,8 @@ Never, whatever the reason:
 - Write a rule as prose. A rule is a check in `Scripts/check`, or it is not written.
 - Weaken a check, skip a test, or silence a warning to get to green.
 - Mark anything approved. Only his GitHub approval approves.
-- Run a tour (`Tour.swift`) on his Mac: it takes the screen. Tours run on GitHub's runner.
+- Run a tour (`Tour.swift`) on his Mac itself: it takes the screen. Tours run on GitHub's runner, or
+  hidden in the virtual Mac by `Scripts/tour <App>`.
 
 ## How the Code Is Laid Out
 
