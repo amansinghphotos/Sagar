@@ -39,11 +39,16 @@ func theCardSitsAtTheRightOfTheScreenHalfwayUp(screen: CGRect, place: CGPoint) {
 @Test @MainActor func theCardLeavesWhenTheSwitchIsOn() {
     _ = NSApplication.shared
     let card = SettingsCard(steppingAside: nil) { Text("Accessibility") }
-    var closed = false
-    let watch = NotificationCenter.default.addObserver(
-        forName: NSWindow.willCloseNotification, object: card.panel, queue: nil
-    ) { _ in closed = true }
+    let watch = Watch()
+    NotificationCenter.default.addObserver(
+        watch, selector: #selector(Watch.closing), name: NSWindow.willCloseNotification, object: card.panel)
     defer { NotificationCenter.default.removeObserver(watch) }
     card.switchIsOn()
-    #expect(closed)
+    #expect(watch.closed)
+}
+
+/// Told when a window closes. AppKit tells it on the main thread, as it closes.
+@MainActor private final class Watch: NSObject {
+    var closed = false
+    @objc func closing() { closed = true }
 }
