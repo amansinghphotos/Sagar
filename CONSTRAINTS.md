@@ -30,6 +30,7 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Apps touched other than the one in `NOW` | 0 | `Scripts/check` scope |
 | Pull requests for an app with a release waiting | 0 | `Scripts/check` lock |
 | AppKit imports outside Shell, Taps and a Kit's `Mac/` | 0 | `Scripts/check` imports |
+| Errors building Keep for iPhone (Look joins it with #153) | 0 | `Scripts/check` iphone |
 | Raw colours or fonts outside Look | 0 | `Scripts/check` look |
 | Network code outside Shell and Minds | 0 | `Scripts/check` network |
 | Secrets, e-mail addresses, or authors without GitHub's no-reply address | 0 | `Scripts/check` secrets |
