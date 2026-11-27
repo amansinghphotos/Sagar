@@ -24,7 +24,7 @@ On a pull request he answers with its review: he approves, or he asks for change
 "His approval" is a GitHub approval from his own account. Agents work as a GitHub App with no admin
 rights, which cannot approve for him. He approves his decisions and only those: what an app must do,
 how a screen looks, each release, and anything involving money, keys or an outside dependency
-(`.github/CODEOWNERS` is the list). A change to the working rules is checked by GitHub's Mac and the
+(`.github/CODEOWNERS` is the list). A change to the working rules is checked by GitHub and the
 reviewer, and carries the label `rules`, so he can read every one of them in one list at any time.
 His pending approvals are the only list of things waiting on him.
 
@@ -41,6 +41,9 @@ His pending approvals are the only list of things waiting on him.
    Claude layer is thin and only points at those files. Apps work offline unless their spec names what
    they need from the network.
 7. Checklists, as in aviation: every repeated procedure is a short list that is read every time.
+8. Every check is sized to the change: it tests and reads what the change could break, and nothing
+   that cannot prove anything about it. Nothing that guards his decisions or a check's own strength
+   is ever lighter.
 
 Until Look's first set of parts is approved, decision 7 sets principle 5 aside for Look alone.
 
@@ -79,7 +82,9 @@ screen is pictured narrow, default and wide.
 2. **Plan.** The spec becomes issues in one GitHub milestone, one thin slice each.
 3. **Build.** A fresh session per slice: a failing test, the code, the test passing.
 4. **Pull request,** naming its issue: "For" one in a milestone, which its release closes, and
-   "Closes" for any other. `Scripts/check` runs on a clean macOS 27 runner.
+   "Closes" for any other. `Scripts/check` runs on a clean macOS 27 runner, or on Linux, without
+   waiting for a Mac, when the change is words alone, for which it builds, tests and tours nothing:
+   documents, plans, checklists and GitHub's templates.
 5. **Review.** A reviewer agent that can only read files reads each finished change once, against
    the spec and `CONSTRAINTS.md`. Its mend, in one commit, is not read again, but for a change to the
    working rules or a plan, where a mend has often brought a new fault.
