@@ -30,53 +30,50 @@ package struct GroupBlock<Content: View>: View {
     }
 }
 
-/// One setting: its symbol in a small tile, its name and a line on what it does, and its control at the end. A lit
-/// row stands out from the rest.
+/// One setting: its symbol in a small tile, its name and a line on what it does, and its control at the end, or under
+/// the words when the control is `wide`. A lit row stands out from the rest. `more`, when given, is a longer
+/// explanation kept behind a small (i) beside the name.
 package struct SettingRow<Control: View>: View {
     @Environment(\.motion) private var motion
     private let icon: String
     private let title: String
     private let detail: String
     private let more: String?
+    private let wide: Bool
     private let lit: Bool
     private let control: () -> Control
     @State private var open = false
 
-    /// `more`, when given, is a longer explanation the row shows when its name is clicked.
     package init(
-        icon: String, title: String, detail: String, more: String? = nil, lit: Bool = false,
+        icon: String, title: String, detail: String, more: String? = nil, wide: Bool = false, lit: Bool = false,
         @ViewBuilder control: @escaping () -> Control
     ) {
         self.icon = icon
         self.title = title
         self.detail = detail
         self.more = more
+        self.wide = wide
         self.lit = lit
         self.control = control
     }
 
+    /// How far a wide control sits in, so it lines up with the words: the tile and the gap after it.
+    private let underWords: CGFloat = 26 + 12
+
     package var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Role.ink.opacity(0.8))
-                .frame(width: 26, height: 26)
-                .background(Role.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                name
-                Text(detail).type(.detail).foregroundStyle(Role.muted)
-                if open, let more {
-                    Text(more)
-                        .type(.detail)
-                        .foregroundStyle(Role.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 4)
-                        .transition(.opacity)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Role.ink.opacity(0.8))
+                    .frame(width: 26, height: 26)
+                    .background(Role.wash, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .accessibilityHidden(true)
+                words
+                Spacer(minLength: 12)
+                if !wide { control() }
             }
-            Spacer(minLength: 12)
-            control()
+            if wide { control().padding(.leading, underWords) }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -84,25 +81,46 @@ package struct SettingRow<Control: View>: View {
         .background(Role.hover.opacity(lit ? 1 : 0))
     }
 
-    /// The row's name, which opens and closes its longer explanation when it has one.
-    @ViewBuilder private var name: some View {
-        let words = Text(title).type(.body).foregroundStyle(Role.ink)
-        if more == nil {
-            words
-        } else {
-            Button {
-                withAnimation(motion.quick) { open.toggle() }
-            } label: {
-                words
+    /// The name with its (i), the line under it when there is one, and the longer explanation while it is open.
+    private var words: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 5) {
+                Text(title).type(.body).foregroundStyle(Role.ink)
+                if let more { info(more) }
             }
-            .buttonStyle(.plain)
-            .accessibilityHint(open ? "Hides more" : "Shows more")
+            if !detail.isEmpty {
+                Text(detail).type(.detail).foregroundStyle(Role.muted).lineLimit(2)
+            }
+            if open, let more {
+                Text(more)
+                    .type(.detail)
+                    .foregroundStyle(Role.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+                    .transition(.opacity)
+            }
         }
+    }
+
+    /// The (i) that opens and closes the longer explanation. Its tooltip already holds the whole of it.
+    private func info(_ more: String) -> some View {
+        Button {
+            withAnimation(motion.quick) { open.toggle() }
+        } label: {
+            Image(systemName: "info.circle")
+                .symbolVariant(open ? .fill : .none)
+                .font(.system(size: 10.5))
+                .foregroundStyle(Role.muted.opacity(0.8))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(more)
+        .accessibilityLabel("More about \(title)")
     }
 }
 
-/// A value chosen from a few stops, one step at a time: minus, the value in words, plus. Double-clicking the words
-/// goes back to `home`.
+/// A value chosen from a few stops, one step at a time: minus, the value in words, plus. Pressing the words goes back
+/// to `home`.
 package struct Steps: View {
     private let stops: [Double]
     @Binding private var value: Double
@@ -129,14 +147,19 @@ package struct Steps: View {
         let near = Self.neighbours(of: value, in: stops)
         HStack(spacing: 0) {
             Step(symbol: "minus", name: "Smaller", to: near.below) { value = $0 }
-            Text(label(value))
-                .type(.detail)
-                .monospacedDigit()
-                .foregroundStyle(Role.ink)
-                .fixedSize()
-                .frame(width: 32)
-                .onTapGesture(count: 2) { value = home }
-                .accessibilityLabel(label(value))
+            Button {
+                value = home
+            } label: {
+                Text(label(value))
+                    .type(.detail)
+                    .monospacedDigit()
+                    .foregroundStyle(Role.ink)
+                    .fixedSize()
+                    .frame(width: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Back to \(label(home))")
             Step(symbol: "plus", name: "Larger", to: near.above) { value = $0 }
         }
         .frame(height: 24)
