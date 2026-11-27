@@ -3,11 +3,21 @@ import SwiftUI
 
 /// The pages of Chete's welcome, in the order a person meets them.
 package enum WelcomePage: String, CaseIterable, Sendable {
-    case greeting, keeping, pasting, last
+    case greeting, shortcut, keeping, pasting, last
 }
 
 /// What the Mac already gives Chete, and what the person has chosen, when the welcome opens.
 package struct WelcomeGiven: Equatable, Sendable {
+    /// The shortcuts the welcome suggests. The first is the one the earlier Chete used.
+    package static let suggestions = [
+        KeyCombo("c", shift: true), KeyCombo("v", control: true), KeyCombo("c", control: true),
+    ]
+
+    package var shortcut = suggestions[0]
+    /// The keys held down right now, which the keyboard lights, or nothing.
+    package var held: KeyCombo?
+    /// Why the keys held will not do, in words, or nothing if they will.
+    package var warning: String?
     package var keeping = false
     package var pasting = false
     package var opensAtLogin = false
@@ -47,6 +57,7 @@ package struct WelcomePages: View {
         Welcome(pages: pages.count, last: "Start", startPage: pages.firstIndex(of: startPage) ?? 0, finish: finish) {
             switch pages[$0] {
             case .greeting: greeting
+            case .shortcut: shortcut
             case .keeping:
                 step(
                     "Let Chete keep what you copy.",
@@ -78,6 +89,19 @@ package struct WelcomePages: View {
             .type(.body).lineSpacing(Space.tight.rawValue).foregroundStyle(Role.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The three suggestions, and the keyboard that lights the one chosen or the keys held.
+    private var shortcut: some View {
+        VStack(alignment: .leading, spacing: Space.wide.rawValue + Space.near.rawValue) {
+            WelcomeHeading(
+                "Choose your shortcut.", "Pick one, or press the keys you'd like. They open Chete from any app.")
+            VStack(spacing: Space.page.rawValue) {
+                Segmented(options: WelcomeGiven.suggestions.map { ($0, $0.display) }, selection: $given.shortcut)
+                Keyboard(shortcut: given.shortcut, held: given.held, warning: given.warning)
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 
     /// A page for one thing the Mac must allow: why, and a button that opens System Settings at its place.

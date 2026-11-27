@@ -1,3 +1,4 @@
+import Look
 import Pictures
 import SwiftUI
 import Testing
@@ -23,6 +24,20 @@ func eachPageLooksAsApproved(page: WelcomePage, dark: Bool) throws {
     try expectPicture(
         of: pages(at: .pasting, WelcomeGiven(keeping: true, pasting: true)),
         width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-pasting-given")
+}
+
+@Test func keysHeldLightTheKeyboard() throws {
+    try expectPicture(
+        of: pages(at: .shortcut, WelcomeGiven(held: KeyCombo("v", control: true))),
+        width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-shortcut-held")
+}
+
+@Test func keysThatWillNotDoAreWarnedOf() throws {
+    try expectPicture(
+        of: pages(
+            at: .shortcut,
+            WelcomeGiven(held: KeyCombo("3", shift: true), warning: "macOS already uses these keys. Try others.")),
+        width: WelcomePages.size.width, height: WelcomePages.size.height, named: "welcome-shortcut-warning")
 }
 
 @Test(arguments: ["keeping", "pasting"], [false, true])
