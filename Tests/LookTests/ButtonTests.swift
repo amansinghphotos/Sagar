@@ -18,7 +18,6 @@ private var buttons: some View {
         HStack(spacing: 8) {
             Door(icon: "sidebar.left") {}
             Door(icon: "sidebar.left", on: true) {}
-            Text("Pressed").modifier(Give(pressed: true))
         }
     }
     .padding(12)

@@ -14,7 +14,6 @@ struct Controls: View {
             HStack(spacing: Space.near.rawValue) {
                 Door(icon: "sidebar.left", help: "Show Sidebar") {}
                 Door(icon: "sidebar.left", on: true, help: "Hide Sidebar") {}
-                Text(verbatim: "Pressed").modifier(Give(pressed: true))
             }
         }
         .padding(Space.page.rawValue)
