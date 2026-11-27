@@ -1,0 +1,91 @@
+{
+  "devices": [
+    {
+      "architecture": "arm64",
+      "deviceId": "00006000-000809143AD8801E",
+      "deviceName": "My Mac",
+      "modelName": "MacBook Pro",
+      "osBuildNumber": "26A434",
+      "osVersion": "27.0.1",
+      "platform": "macOS"
+    }
+  ],
+  "testNodes": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "name": "Accessibility audit, reported, not failing (decision 9): Window: Parent/Child mismatch: element: none named",
+                      "nodeType": "Expected Failure"
+                    },
+                    {
+                      "name": "Accessibility audit, reported, not failing (decision 9): Settings: Element has no description: TextField “”",
+                      "nodeType": "Expected Failure"
+                    }
+                  ],
+                  "duration": "0.078s",
+                  "durationInSeconds": 0.07795000076293945,
+                  "name": "testAFindingIsReported()",
+                  "nodeIdentifier": "MadeUpTour/testAFindingIsReported()",
+                  "nodeIdentifierURL": "test://com.apple.xcode/MadeUpTour/MadeUpTour/MadeUpTour/testAFindingIsReported",
+                  "nodeType": "Test Case",
+                  "result": "Expected Failure"
+                },
+                {
+                  "children": [
+                    {
+                      "name": "failed - Typing did not narrow the list.",
+                      "nodeType": "Failure Message",
+                      "sourceLocation": {
+                        "filePath": "/Volumes/Example/MadeUpTour/MadeUpTour.swift",
+                        "lineNumber": 17
+                      }
+                    }
+                  ],
+                  "duration": "0.0013s",
+                  "durationInSeconds": 0.0012630224227905273,
+                  "name": "testAStepThatFails()",
+                  "nodeIdentifier": "MadeUpTour/testAStepThatFails()",
+                  "nodeIdentifierURL": "test://com.apple.xcode/MadeUpTour/MadeUpTour/MadeUpTour/testAStepThatFails",
+                  "nodeType": "Test Case",
+                  "result": "Failed"
+                },
+                {
+                  "duration": "0.00046s",
+                  "durationInSeconds": 0.00045502185821533203,
+                  "name": "testAStepThatPasses()",
+                  "nodeIdentifier": "MadeUpTour/testAStepThatPasses()",
+                  "nodeIdentifierURL": "test://com.apple.xcode/MadeUpTour/MadeUpTour/MadeUpTour/testAStepThatPasses",
+                  "nodeType": "Test Case",
+                  "result": "Passed"
+                }
+              ],
+              "name": "MadeUpTour",
+              "nodeIdentifierURL": "test://com.apple.xcode/MadeUpTour/MadeUpTour/MadeUpTour",
+              "nodeType": "Test Suite",
+              "result": "Failed"
+            }
+          ],
+          "name": "MadeUpTour",
+          "nodeIdentifierURL": "test://com.apple.xcode/MadeUpTour/MadeUpTour",
+          "nodeType": "Unit test bundle",
+          "result": "Failed"
+        }
+      ],
+      "name": "MadeUpTour-Package",
+      "nodeType": "Test Plan",
+      "result": "Failed"
+    }
+  ],
+  "testPlanConfigurations": [
+    {
+      "configurationId": "1",
+      "configurationName": "Test Scheme Action"
+    }
+  ]
+}
