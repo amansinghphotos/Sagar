@@ -39,6 +39,6 @@ jobs:
         with:
           name: pictures-and-tour
           path: |
-            .build/Tour.xcresult
+            .build/Tours
             .build/Pictures
           if-no-files-found: ignore
