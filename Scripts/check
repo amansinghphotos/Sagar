@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | findings | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | findings < tests | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -363,6 +363,11 @@ fastest_launch() { # reads a tour's record of its launches; prints the fastest a
     printf '%s\n' "$fastest"
     awk -v fastest="$fastest" -v most="$1" 'BEGIN { exit !(fastest > 0 && fastest <= most) }'
 }
+if [ "${1:-}" = findings ]; then # Scripts/check findings < a tour's tests, as xcresulttool lists them: each audit
+    # finding the tour reported as an expected failure, which does not fail it (decision 9), as a note for the summary
+    jq -r '.. | objects | select(.nodeType? == "Expected Failure") | "note: \(.name)"'
+    exit
+fi
 if [ "${1:-}" = launch ]; then
     fastest=$(fastest_launch "${2:-0}") && echo "yes $fastest" || echo "no $fastest"
     exit
@@ -664,6 +669,8 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
         return 1
     }
+    xcrun xcresulttool get test-results tests --path "$result" | Scripts/check findings ||
+        { echo "$app's tour: its audit findings could not be read."; return 1; }
 
     # Launch, by Apple's own launch metric, which the tour must take.
     launch=$(xcrun xcresulttool get test-results metrics --path "$result" |
