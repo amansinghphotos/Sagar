@@ -61,7 +61,8 @@ final class CheteTour: XCTestCase {
     }
 
     /// It lives in the menu bar. Its item there drops a card with Settings, Check for Updates and Quit, since an
-    /// app with no Dock icon shows no menus of its own, and the card opens Chete's window again after it was closed.
+    /// app with no Dock icon shows no menus of its own, so none of them is kept in one. The card opens Chete's
+    /// window again after it was closed.
     @MainActor
     func testItsItemInTheMenuBarDropsItsCard() throws {
         let app = XCUIApplication()
@@ -78,6 +79,8 @@ final class CheteTour: XCTestCase {
         XCTAssert(open.waitForExistence(timeout: 5), "The menu-bar item dropped no card.")
         XCTAssert(app.buttons["Settings"].exists, "The card has no way to Settings.")
         XCTAssert(app.buttons["Check for Updates"].exists, "The card offers no Check for Updates.")
+        XCTAssertFalse(
+            app.menuItems["Check for Updates…"].exists, "Check for Updates… is still in a menu that never shows.")
         XCTAssert(app.buttons["Quit Chete"].exists, "The card has no way to quit.")
         open.click()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "The card did not open Chete.")

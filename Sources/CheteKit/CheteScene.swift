@@ -10,7 +10,7 @@ public struct CheteScene: Scene {
         Self.startWatching()
     }
 
-    /// One window, with Check for Updates… in the app's menu.
+    /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
     public var body: some Scene {
         SwiftUI.Settings { CheteSettings(changed: Self.reread) }.restorationBehavior(.disabled)
         Window("Chete", id: "chete") {
@@ -21,7 +21,6 @@ public struct CheteScene: Scene {
             .windowName("Your clips")
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
-        .commands { UpdateCommands() }
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
