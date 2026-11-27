@@ -11,6 +11,7 @@ package struct ClipList: View {
     @State private var typed: String
     @State private var choice = Choice(nil)
     @FocusState private var finding: Bool
+    @Environment(\.appearsActive) private var active
 
     package init(
         clips: [Clip], now: Date = .now, typed: String = "", pick: @escaping (Clip, _ plainText: Bool) -> Void
@@ -70,8 +71,11 @@ package struct ClipList: View {
             pick(clip, press.modifiers.contains(.shift))
             return .handled
         }
-        // Typing goes to the field as the window opens, so a person only types.
-        .defaultFocus($finding, true)
+        // Each time the window comes forward, typing goes to the field, so a person only types. The focus is set
+        // once the window is ready for it: set as the list appears, macOS drops it.
+        .onChange(of: active, initial: true) {
+            if active { Task { finding = true } }
+        }
     }
 }
 
