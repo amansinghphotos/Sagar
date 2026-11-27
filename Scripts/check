@@ -3,21 +3,29 @@
 # The numbers come from CONSTRAINTS.md. GitHub also sets PR_NUMBER and PR_BRANCH.
 set -u
 cd "$(dirname "$0")/.." || exit 1
-if [ "${1:-}" = mending ]; then # Scripts/check mending <now> < state: the shipped app a branch mends beside the
-    # app in work (the platform spec, Mending a Shipped App), from its issue as gh issue view --json state,labels,milestone
-    # gives it and every release tag: {"issue": …, "tags": […]}. Only an open fault in the milestone of an app that has
-    # shipped, and is not the app in work, names one: a wish waits until NOW names the app again.
-    jq -r --arg now "${2:?Scripts/check mending <now> < state}" '
-        .tags as $tags | .issue // {} | select(.state == "OPEN" and any(.labels[]?; .name == "fault"))
+case ${1:-} in mending | locked | touring) # questions about a branch, asked with <now> and its state on standard input:
+    # {"issue": its issue, as gh issue view --json state,labels,milestone gives it, "tags": [every release tag],
+    #  "waiting": [every open branch], "branch": its own name, "faults": [every open fault issue]}. The platform
+    # spec, Mending a Shipped App.
+    # mending: the shipped app the branch mends beside the app in work, or nothing. Only an open fault in the
+    #   milestone of an app that has shipped, and is not the app in work, names one: a wish waits for NOW.
+    # locked: the waiting release that locks the branch: its own app's, the mended app or the app in work.
+    # touring: the apps GitHub's Mac tours: the app in work, then each shipped app with an open fault.
+    mends='.tags as $tags | .issue // {} | select(.state == "OPEN" and any(.labels[]?; .name == "fault"))
         | (.milestone.title // "" | capture("^(?<app>[A-Za-z]+) [0-9]+\\.[0-9]+$").app) as $app
         | ($app | ascii_downcase) as $name
         | select($name != ($now | ascii_downcase) and any($tags[]; startswith($name + "-")))
         | $app'
-    exit
-fi
+    [ "$1" != touring ] || mends='[$now] + ([.tags as $tags | .faults[]? | {issue: ., tags: $tags} | '"$mends"'] | unique)
+        | .[]'
+    [ "$1" != locked ] || mends='. as $state | ([('"$mends"')][0] // $now | ascii_downcase) as $app
+        | $state.waiting[]? | select(. != $state.branch and (ascii_downcase | startswith("release/" + $app + "-")))'
+    jq -r --arg now "${2:?Scripts/check $1 <now> < state}" "$mends"
+    exit ;;
+esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | merging | run | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -64,6 +72,16 @@ if [ "${1:-}" = merging ]; then # Scripts/check merging <owner> < GitHub's state
     exit
 fi
 
+if [ "${1:-}" = run ]; then # Scripts/check run <gh's exit status> < what gh run view --json status,conclusion said:
+    # passed, failed, running or unanswered. A pass is only ever a finished run GitHub itself called a success, and an
+    # error, such as GitHub's hourly allowance running out, is no verdict either way.
+    [ "${2:-1}" = 0 ] || { echo unanswered; exit; }
+    jq -er 'if .status == "completed" then (if .conclusion == "success" then "passed" else "failed" end)
+        elif (.status | type) == "string" and .status != "" then "running" else "unanswered" end' 2>/dev/null ||
+        echo unanswered
+    exit
+fi
+
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
     set -e
     request=${2:?Scripts/check ready <number>}
@@ -80,16 +98,45 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
         query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
             pullRequest(number: $number) { createdAt lastEditedAt } } }' \
         --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt] | map(select(. != null)) | max')
+    unasked=0
+    said=$(mktemp) # what gh says on the side, kept apart so that a warning is never read as GitHub's answer
+    trap 'rm -f "$said"' EXIT
+    unanswered() { # GitHub gave no answer, as when the agents' hourly allowance runs out. It is asked again a minute
+        # later; after a quarter of an hour of no answers in a row, this says so, and when GitHub can next be asked.
+        unasked=$((unasked + 1))
+        [ "$unasked" -ge 15 ] || { sleep 60; return; }
+        echo "GitHub gave no answer about #$request for a quarter of an hour: $(head -n 1 "$said" | cut -c 1-150)"
+        echo "It can be asked again from $(gh api rate_limit --jq '.resources.core.reset | strftime("%H:%M UTC")' \
+            2>/dev/null || echo "the next hour"). Nobody was asked."
+        exit 1
+    }
     passed() { # passed <check> <since>: its newest run on the newest commit, started no earlier than <since>, passed
-        local run=""
-        for _ in $(seq 30); do
-            run=$(gh run list --workflow "$1" --branch "$branch" --limit 10 --json databaseId,createdAt,headSha \
-                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty")
-            [ -z "$run" ] || break
-            sleep 10
+        local run="" answer status looked=0
+        until [ -n "$run" ]; do
+            answer=$(gh run list --workflow "$1" --branch "$branch" --limit 10 --json databaseId,createdAt,headSha \
+                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty" 2>"$said") &&
+                status=0 || status=$?
+            if [ "$status" -ne 0 ]; then
+                unanswered
+            elif [ -n "$answer" ]; then
+                run=$answer unasked=0
+            else
+                unasked=0
+                looked=$((looked + 1))
+                [ "$looked" -lt 30 ] ||
+                    { echo "No $1 has run on the newest commit of #$request since its last change. Nobody was asked."; exit 1; }
+                sleep 10
+            fi
         done
-        [ -n "$run" ] || { echo "No $1 has run on the newest commit of #$request since its last change. Nobody was asked."; exit 1; }
-        gh run watch "$run" --exit-status >/dev/null 2>&1 || { echo "The $1 on #$request failed. Nobody was asked."; exit 1; }
+        while :; do # asked every half minute, which spends far less of the allowance than gh run watch
+            answer=$(gh run view "$run" --json status,conclusion 2>"$said") && status=0 || status=$?
+            case $(Scripts/check run "$status" <<<"$answer") in
+                passed) return 0 ;;
+                failed) echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
+                running) unasked=0; sleep 30 ;;
+                *) unanswered ;;
+            esac
+        done
     }
     passed check ""
     passed words "$edited"
@@ -280,13 +327,15 @@ size() {
     [ "$total" -le "$most" ] || { echo "$total changed lines; a pull request has $most at most."; return 1; }
 }
 
-mended() { # the shipped app this branch mends beside the app in work, named by its issue, or nothing
-    local issue=${branch%%-*} state tags
-    [[ $issue =~ ^[0-9]+$ ]] || return 0
-    state=$(gh issue view "$issue" --json state,labels,milestone 2>/dev/null) || state=null
-    tags=$(git ls-remote --tags origin 2>/dev/null | sed -n 's|.*refs/tags/||p' | jq -R . | jq -s .)
-    jq -n --argjson issue "$state" --argjson tags "${tags:-[]}" '{issue: $issue, tags: $tags}' | Scripts/check mending "$now"
+release_tags() { git ls-remote --tags origin 2>/dev/null | sed -n 's|.*refs/tags/||p' | jq -R . | jq -s .; }
+branch_state() { # branch_state [open branches]: what the questions about this branch read, from its issue
+    local issue=${branch%%-*} state=null tags
+    [[ ! $issue =~ ^[0-9]+$ ]] || state=$(gh issue view "$issue" --json state,labels,milestone 2>/dev/null) || state=null
+    tags=$(release_tags)
+    jq -n --argjson issue "$state" --argjson tags "${tags:-[]}" --arg branch "$branch" --arg waiting "${1:-}" \
+        '{issue: $issue, tags: $tags, branch: $branch, waiting: ($waiting | split("\n") | map(select(. != "")))}'
 }
+mended() { branch_state | Scripts/check mending "$now"; } # the shipped app this branch mends, or nothing
 
 scope() {
     [ -n "$base" ] || return $nothing
@@ -309,7 +358,7 @@ scope() {
 
 lock() {
     [ -n "$base" ] || return $nothing
-    local feeds waiting other
+    local feeds waiting other state
     feeds=$(changed M | grep -E '^docs/.*/appcast\.xml$' || true)
     if [ -n "$feeds" ] && [[ $branch != release/* ]]; then
         echo "Only a release/<app>-<version> branch may change a feed: $feeds"
@@ -321,13 +370,14 @@ lock() {
         return 1
     fi
     changed | grep -qE '^(Apps|Sources|Tests)/' || return 0
-    if ! waiting=$(gh pr list --state open --json headRefName --jq '.[].headRefName' 2>&1); then
+    if ! waiting=$(gh pr list --state open --limit 1000 --json headRefName --jq '.[].headRefName' 2>&1); then
         [ -n "${CI:-}" ] || return $nothing
         echo "Could not ask GitHub which releases are waiting: $waiting"
         return 1
     fi
-    waiting=$(printf '%s\n' "$waiting" | grep -i "^release/$now-" | grep -vFx "$branch" || true)
-    [ -z "$waiting" ] || { echo "$now is locked: $waiting is waiting on the owner."; return 1; }
+    state=$(branch_state "$waiting") && waiting=$(Scripts/check locked "$now" <<<"$state") ||
+        { echo "Could not tell which release locks this branch."; return 1; }
+    [ -z "$waiting" ] || { echo "This branch's app is locked: $waiting is waiting on the owner."; return 1; }
 }
 
 template() {
@@ -505,35 +555,50 @@ tests() {
 }
 
 tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
-    [ -n "${CI:-}" ] && [ -f "Apps/$now/Tour.swift" ] || return $nothing
+    [ -n "${CI:-}" ] || return $nothing
     ! words_only || return $nothing
-    local log launch before after
-    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${now}Tour" -derivedDataPath .build/Xcode \
-        -resultBundlePath .build/Tour.xcresult test \
+    local faults tags apps app toured=no
+    faults=$(gh issue list --state open --label fault --limit 100 --json state,labels,milestone) &&
+        tags=$(release_tags) &&
+        apps=$(jq -n --argjson faults "$faults" --argjson tags "$tags" '{faults: $faults, tags: $tags}' |
+            Scripts/check touring "$now") || { echo "Could not tell which apps to tour."; return 1; }
+    mkdir -p .build/Tours
+    for app in $apps; do # the app in work, then each shipped app whose fault is being mended
+        [ -f "Apps/$app/Tour.swift" ] || continue
+        tour_of "$app" || return 1
+        toured=yes
+    done
+    [ $toured = yes ] || return $nothing
+}
+
+tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are within the numbers
+    local app=$1 log launch before after result=.build/Tours/$1.xcresult
+    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode \
+        -resultBundlePath "$result" test \
         CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) || {
-        xcrun xcresulttool get test-results summary --path .build/Tour.xcresult |
+        xcrun xcresulttool get test-results summary --path "$result" |
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
         return 1
     }
 
     # Launch, by Apple's own launch metric, which the tour must take.
-    launch=$(xcrun xcresulttool get test-results metrics --path .build/Tour.xcresult |
+    launch=$(xcrun xcresulttool get test-results metrics --path "$result" |
         fastest_launch "$(number 'Launch to first frame')") ||
-        { echo "The tour's fastest launch was $launch s."; return 1; }
-    echo "note: fastest of its launches $launch s"
+        { echo "$app's tour: its fastest launch was $launch s."; return 1; }
+    echo "note: $app, fastest of its launches $launch s"
 
     # At rest: opened hidden, left alone, and measured from outside.
     used() {
-        ps -xo cputime=,comm= | awk -v app="/$now.app/Contents/MacOS/$now" \
+        ps -xo cputime=,comm= | awk -v app="/$app.app/Contents/MacOS/$app" \
             'index($0, app) { split($1, part, ":"); print part[1] * 60 + part[2] }'
     }
-    open -g -j ".build/Xcode/Build/Products/Release/$now.app" && sleep 5
+    open -g -j ".build/Xcode/Build/Products/Release/$app.app" && sleep 5
     before=$(used) && sleep 10 && after=$(used)
-    pkill -f "/$now.app/Contents/MacOS/$now"
-    [ -n "$before" ] && [ -n "$after" ] || { echo "$now did not stay open."; return 1; }
-    awk -v before="$before" -v after="$after" -v most="$(number 'Processor time while')" 'BEGIN {
+    pkill -f "/$app.app/Contents/MacOS/$app"
+    [ -n "$before" ] && [ -n "$after" ] || { echo "$app did not stay open."; return 1; }
+    awk -v app="$app" -v before="$before" -v after="$after" -v most="$(number 'Processor time while')" 'BEGIN {
         percent = (after - before) * 10
-        printf "note: hidden for 10 s it used %.1f%% of a processor\n", percent
+        printf "note: " app ", hidden for 10 s it used %.1f%% of a processor\n", percent
         exit !(percent <= most)
     }'
 }

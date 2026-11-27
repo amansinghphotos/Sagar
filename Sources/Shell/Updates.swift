@@ -1,5 +1,5 @@
+import Foundation
 import Sparkle
-import SwiftUI
 
 /// Sparkle, started for one app: it checks the app's feed daily and when asked.
 package final class Updates {
@@ -17,6 +17,11 @@ package final class Updates {
         try updater.start()
     }
 
+    /// Whether Sparkle's update window would offer this app's people a box to install updates without asking.
+    package static func offersSilentInstalls(for app: Bundle) -> Bool {
+        SPUUpdaterSettings(hostBundle: app).allowsAutomaticUpdates
+    }
+
     /// Where this app looks for updates.
     package var feed: URL? { updater.feedURL }
 
@@ -27,16 +32,4 @@ package final class Updates {
 /// Why updates could not start.
 package enum UpdatesError: Error {
     case noFeed
-}
-
-/// The Check for Updates… item, under the app's About item.
-package struct UpdateCommands: Commands {
-    package init() {}
-
-    package var body: some Commands {
-        CommandGroup(after: .appInfo) {
-            Button("Check for Updates…") { Updates.shared?.check() }
-                .disabled(Updates.shared == nil)
-        }
-    }
 }
