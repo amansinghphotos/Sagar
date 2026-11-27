@@ -1,7 +1,6 @@
 # The check of the code. It runs every rule but the request's own words on a clean Mac, or on Linux for a
 # change of words alone (SPEC.md, step 4): once for each change to a pull request's code, and for main as it
-# stands after merges. Editing a request's words or
-# its label starts words.yml instead, which takes seconds.
+# stands after merges. Editing a request's words or its label starts words.yml instead, which takes seconds.
 name: check
 
 on:

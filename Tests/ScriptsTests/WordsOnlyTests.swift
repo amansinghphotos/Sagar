@@ -49,6 +49,7 @@ private func branchIsWordsOnly(_ files: [String]) throws -> String {
         process.standardOutput = answer
         try process.run()
         process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw CocoaError(.executableLoad) }
         return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
     }
     func commit() throws {
