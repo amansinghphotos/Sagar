@@ -24,8 +24,8 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | apps | iphone | owed | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -648,11 +648,28 @@ order() { # The two lists every new part adds to are alphabetical, so two pieces
     [ "$list" = "$(sort <<<"$list")" ] || { echo "CONSTRAINTS.md: the line budget is not in alphabetical order."; return 1; }
 }
 
+# Nothing of Search's is pasted, so nothing is owed to it, and its notice stays gone (decision 8). Judges the files
+# named after `owed`, or every file the repository keeps.
+owed() {
+    local found pasted='Office Commun|Taken from Search'
+    if [ ${#named[@]} -gt 0 ]; then
+        found=$(grep -nIE "$pasted" "${named[@]}" || true)
+    else
+        found=$(git grep -nIE "$pasted" -- . ':!Decisions/' ':!Scripts/check' || true)
+    fi
+    [ -z "$found" ] || { echo "Search's notice or a line taken from Search, though nothing of it is pasted (decision 8):"; echo "$found"; return 1; }
+}
+
 # A request's words and label are judged by themselves, in seconds, whenever they change. Everything
 # else is judged once for each change to the code.
-[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look network secrets format build iphone tests tour"
+[ "${1:-}" = request ] && rules="template" || rules="size scope lock template order budget imports look owed network secrets format build iphone tests tour"
 [ "${1:-}" != size ] || rules="size"
 [ "${1:-}" != order ] || rules="order"
+named=()
+if [ "${1:-}" = owed ]; then # Scripts/check owed [<file>…]: that rule alone, of the files named or the whole repository
+    rules="owed"
+    named=("${@:2}")
+fi
 if [ "${1:-}" = iphone ]; then # Scripts/check iphone [<module>…]: that rule alone, of the modules named or its own
     rules="iphone"
     [ $# -lt 2 ] || phone="${*:2}"
