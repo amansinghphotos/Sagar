@@ -53,7 +53,10 @@ package struct SettingsScreen: View {
                 SettingRow(
                     icon: "iphone", title: "Copies from your other devices",
                     detail: "What you copy on your iPhone or another Mac."
-                ) { Switch(on: $choices.settings.keepsCopiesFromOtherDevices) }
+                ) {
+                    Switch(on: $choices.settings.keepsCopiesFromOtherDevices).accessibilityLabel(
+                        "Copies from your other devices")
+                }
                 SettingRow(
                     icon: "trash", title: "Delete everything", detail: "Every clip, at once. This cannot be undone."
                 ) {
@@ -74,7 +77,7 @@ package struct SettingsScreen: View {
             }
             GroupBlock(title: "Chete", icon: "gearshape") {
                 SettingRow(icon: "power", title: "Open at login", detail: "Ready from the moment you log in.") {
-                    Switch(on: $opensAtLogin)
+                    Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
                 }
             }
             if let failure = choices.failure {

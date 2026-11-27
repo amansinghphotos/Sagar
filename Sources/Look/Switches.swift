@@ -1,6 +1,7 @@
 // Taken from Search at commit c92ea7c: Switch, Ticks and Segmented (Settings.swift). Copyright (c) 2026 Office
 // Commun, MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's
-// colours and motion are read from Look, and a sliding choice tells VoiceOver which option is chosen.
+// colours and motion are read from Look, a switch is a switch to VoiceOver, named by
+// whoever uses it, and a sliding choice tells VoiceOver which option is chosen.
 import SwiftUI
 
 /// On or off, in ink rather than in blue.
@@ -25,6 +26,7 @@ package struct Switch: View {
             .contentShape(Capsule())
             .onTapGesture { withAnimation(motion.settle) { on.toggle() } }
             .animation(motion.settle, value: on)
+            .accessibilityRepresentation { Toggle("", isOn: $on) }
     }
 }
 

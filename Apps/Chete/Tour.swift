@@ -12,12 +12,15 @@ final class CheteTour: XCTestCase {
         let month = app.buttons["A month"]
         XCTAssert(month.waitForExistence(timeout: 10), "Chete's settings did not open.")
         month.click()
+        // Closed, so that macOS does not open it again with Chete's window next time.
+        app.typeKey("w", modifierFlags: .command)
         app.terminate()
         app.launch()
         app.typeKey(",", modifierFlags: .command)
         XCTAssert(app.buttons["A month"].waitForExistence(timeout: 10), "Chete's settings did not open again.")
         XCTAssert(app.buttons["A month"].isSelected, "A month was not kept.")
         app.buttons["A year"].click()
+        app.typeKey("w", modifierFlags: .command)
     }
 
     /// It opens quickly, by Apple's own launch metric taken three times, of which the rules judge the fastest.
