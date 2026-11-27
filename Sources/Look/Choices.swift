@@ -86,6 +86,7 @@ package struct Swatches: View {
                 HStack(spacing: Space.near.rawValue) {
                     Text(well)
                         .foregroundStyle(Role.ink)
+                        .accessibilityHidden(true)
                     ColorPicker(well, selection: $selection, supportsOpacity: false)
                         .labelsHidden()
                 }

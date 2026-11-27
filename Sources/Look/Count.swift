@@ -5,7 +5,7 @@ import SwiftUI
 private let countRed = Color(.sRGB, red: 0.93, green: 0.24, blue: 0.21)
 
 /// A count in white on a red pill. With a ring, the pill is cut out of what lies behind it by a band of
-/// `ring`; without, it lifts off on a small shadow.
+/// `ring`; without, it lifts off on a small shadow. VoiceOver reads it as so many unread.
 package struct UnreadBadge: View {
     private let count: String
     private let icon: CGFloat
@@ -34,6 +34,7 @@ package struct UnreadBadge: View {
             .frame(height: height)
             .fixedSize()
             .background(countRed, in: Capsule())
+            .accessibilityLabel(Text(verbatim: "\(count) unread"))
         if let ring {
             pill.padding(1.5).background(ring, in: Capsule())
         } else {
