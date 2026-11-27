@@ -7,68 +7,77 @@ package struct SideSplit<Side: View, Page: View>: View {
     private let page: () -> Page
 
     package init(@ViewBuilder side: @escaping () -> Side, @ViewBuilder page: @escaping () -> Page) {
-        self.side = side
-        self.page = page
+        (self.side, self.page) = (side, page)
     }
 
     package var body: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: Space.hair.rawValue) { side() }
-                .padding(.horizontal, Space.gap.rawValue)
-                .padding(.top, Space.near.rawValue)
-                .frame(width: 232, alignment: .leading)
-                .frame(maxHeight: .infinity, alignment: .top)
-                // The column lies on the window's frame, so its rows take the greys made for that ground.
-                .environment(\.greys, Greys.frame)
-            page()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .modifier(CardEdge(on: true))
-                .padding(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 8))
+        HStack(spacing: .zero) {
+            column
+            pageCard
         }
         .background(Role.frame)
+    }
+
+    /// The column's rows from the top, on the window's frame, so they take the greys made for that ground.
+    private var column: some View {
+        VStack(alignment: .leading, spacing: Space.hair.rawValue) { side() }
+            .environment(\.greys, Greys.frame)
+            .padding(.horizontal, Space.gap.rawValue)
+            .padding(.vertical, Space.near.rawValue)
+            .frame(minWidth: 232, maxWidth: 232, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// The page as a card, held off the window's edges on all sides but the column's.
+    private var pageCard: some View {
+        let gap = Space.near.rawValue
+        return page()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .modifier(CardEdge(on: true))
+            .padding(EdgeInsets(top: gap, leading: 0, bottom: gap, trailing: gap))
     }
 }
 
 /// Lays what it wraps as a card: the page's ground, a rounded edge and a faint shadow. Off, the content lies
 /// flat with nothing drawn around it, and the clip reaches far past it.
 package struct CardEdge: ViewModifier {
-    private let on: Bool
-    /// Where the card lies inside the view, for a card smaller than the page laid out under it: the clip, the
-    /// ground and the edge follow these, and animate when they change; the content keeps its own layout.
-    private let insets: EdgeInsets
-    private let corner: CGFloat
-    /// The screen's scale, for a card that must meet the frame on a sharp line: its sides on whole pixels, an
+    /// The outline the card is clipped to, filled and edged along.
+    private let outline: CardOutline
+
+    /// The insets say where the card lies inside the view, for a card smaller than the page laid out under it: the
+    /// clip, the ground and the edge follow them, and animate when they change; the content keeps its layout. The
+    /// scale is the screen's, for a card that must meet the frame on a sharp line: its sides on whole pixels, an
     /// edge one pixel wide and no shadow. Zero keeps the soft card.
-    private let scale: CGFloat
-
-    /// How dark the card's shadow is.
-    static let shadow: Double = 0.07
-    /// How strong the card's edge is.
-    static let edge: Double = 0.08
-
     package init(on: Bool, insets: EdgeInsets = EdgeInsets(), corner: CGFloat = 10, scale: CGFloat = 0) {
-        self.on = on
-        self.insets = insets
-        self.corner = corner
-        self.scale = scale
+        outline = CardOutline(on: on, insets: insets, corner: corner, scale: scale)
     }
 
     package func body(content: Content) -> some View {
-        let outline = CardOutline(on: on, insets: insets, corner: corner, scale: scale)
-        let sharp = scale > 0
+        let sharp = outline.scale > 0
+        let edged = outline.on && outline.corner > 0
         content
             .clipShape(outline)
             .background {
-                outline
-                    .fill(on ? AnyShapeStyle(Role.ground) : AnyShapeStyle(Color.clear))
-                    .shadow(color: .black.opacity(on && !sharp ? Self.shadow : 0), radius: 6, y: 1)
+                let ground = outline.fill(outline.on ? AnyShapeStyle(Role.ground) : AnyShapeStyle(Color.clear))
+                // A sharp card casts no shadow at all, so its ground meets the frame on a clean line.
+                if sharp {
+                    ground
+                } else {
+                    ground.shadow(color: .black.opacity(outline.on ? Self.shadow : 0), radius: 6, y: 1)
+                }
             }
             .overlay {
                 outline
-                    .strokeBorder(Role.ink.opacity(on && corner > 0 ? Self.edge : 0), lineWidth: sharp ? 1 / scale : 1)
+                    .strokeBorder(
+                        Color.primary.opacity(edged ? Self.edge : 0), lineWidth: sharp ? 1 / outline.scale : 1
+                    )
                     .allowsHitTesting(false)
             }
     }
+
+    /// How dark the card's shadow is.
+    static let shadow = 0.07
+    /// How strong the card's edge is.
+    static let edge = 0.08
 }
 
 /// The card's outline within the view. Off, a rectangle far larger than the view, so clipping to it cuts nothing.
@@ -88,14 +97,25 @@ nonisolated private struct CardOutline: InsettableShape {
     }
 
     func path(in rect: CGRect) -> Path {
-        guard on else { return Path(rect.insetBy(dx: -10_000, dy: -10_000)) }
-        func whole(_ x: CGFloat) -> CGFloat { scale > 0 ? (x * scale).rounded() / scale : x }
-        let left = whole(rect.minX + insets.leading)
-        let top = whole(rect.minY + insets.top)
-        let right = whole(rect.maxX - insets.trailing)
-        let bottom = whole(rect.maxY - insets.bottom)
-        let card = CGRect(x: left, y: top, width: right - left, height: bottom - top).insetBy(dx: inward, dy: inward)
+        if !on {
+            let far: CGFloat = 10_000
+            return Path(
+                CGRect(
+                    x: rect.minX - far, y: rect.minY - far, width: rect.width + 2 * far, height: rect.height + 2 * far))
+        }
+        let origin = CGPoint(x: snapped(rect.minX + insets.leading), y: snapped(rect.minY + insets.top))
+        let size = CGSize(
+            width: snapped(rect.width - insets.leading - insets.trailing),
+            height: snapped(rect.height - insets.top - insets.bottom))
+        let card = CGRect(origin: origin, size: size).insetBy(dx: inward, dy: inward)
         return Path(roundedRect: card, cornerRadius: max(0, corner), style: .continuous)
+    }
+
+    /// A length laid on the screen's whole pixels, when the card is sharp; as it is, when not.
+    private func snapped(_ length: CGFloat) -> CGFloat {
+        guard scale > 0 else { return length }
+        let pixels = (length * scale).rounded(.toNearestOrAwayFromZero)
+        return pixels / scale
     }
 
     func inset(by amount: CGFloat) -> CardOutline {
