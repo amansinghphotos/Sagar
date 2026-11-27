@@ -16,8 +16,8 @@ if [ "${1:-}" = mending ]; then # Scripts/check mending <now> < state: the shipp
     exit
 fi
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | clashes | merging | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
+case ${1:-} in "" | folder | clashes | merging | run | request | size | order | words | apps | iphone | tool | plain | shown | since | title | launch | reviewed | ready) ;; *)
+    echo "Usage: Scripts/check [folder | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | apps <file>… | iphone [<module>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | reviewed <commit> < comments]"
     exit 2 ;;
 esac
 export LC_ALL=C
@@ -64,6 +64,16 @@ if [ "${1:-}" = merging ]; then # Scripts/check merging <owner> < GitHub's state
     exit
 fi
 
+if [ "${1:-}" = run ]; then # Scripts/check run <gh's exit status> < what gh run view --json status,conclusion said:
+    # passed, failed, running or unanswered. A pass is only ever a finished run GitHub itself called a success, and an
+    # error, such as GitHub's hourly allowance running out, is no verdict either way.
+    [ "${2:-1}" = 0 ] || { echo unanswered; exit; }
+    jq -er 'if .status == "completed" then (if .conclusion == "success" then "passed" else "failed" end)
+        elif (.status | type) == "string" and .status != "" then "running" else "unanswered" end' 2>/dev/null ||
+        echo unanswered
+    exit
+fi
+
 if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull request is shown to the owner
     set -e
     request=${2:?Scripts/check ready <number>}
@@ -80,16 +90,45 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
         query($owner: String!, $name: String!, $number: Int!) { repository(owner: $owner, name: $name) {
             pullRequest(number: $number) { createdAt lastEditedAt } } }' \
         --jq '.data.repository.pullRequest | [.createdAt, .lastEditedAt] | map(select(. != null)) | max')
+    unasked=0
+    said=$(mktemp) # what gh says on the side, kept apart so that a warning is never read as GitHub's answer
+    trap 'rm -f "$said"' EXIT
+    unanswered() { # GitHub gave no answer, as when the agents' hourly allowance runs out. It is asked again a minute
+        # later; after a quarter of an hour of no answers in a row, this says so, and when GitHub can next be asked.
+        unasked=$((unasked + 1))
+        [ "$unasked" -ge 15 ] || { sleep 60; return; }
+        echo "GitHub gave no answer about #$request for a quarter of an hour: $(head -n 1 "$said" | cut -c 1-150)"
+        echo "It can be asked again from $(gh api rate_limit --jq '.resources.core.reset | strftime("%H:%M UTC")' \
+            2>/dev/null || echo "the next hour"). Nobody was asked."
+        exit 1
+    }
     passed() { # passed <check> <since>: its newest run on the newest commit, started no earlier than <since>, passed
-        local run=""
-        for _ in $(seq 30); do
-            run=$(gh run list --workflow "$1" --branch "$branch" --limit 10 --json databaseId,createdAt,headSha \
-                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty")
-            [ -z "$run" ] || break
-            sleep 10
+        local run="" answer status looked=0
+        until [ -n "$run" ]; do
+            answer=$(gh run list --workflow "$1" --branch "$branch" --limit 10 --json databaseId,createdAt,headSha \
+                --jq "[.[] | select(.headSha == \"$head\" and .createdAt >= \"$2\")][0].databaseId // empty" 2>"$said") &&
+                status=0 || status=$?
+            if [ "$status" -ne 0 ]; then
+                unanswered
+            elif [ -n "$answer" ]; then
+                run=$answer unasked=0
+            else
+                unasked=0
+                looked=$((looked + 1))
+                [ "$looked" -lt 30 ] ||
+                    { echo "No $1 has run on the newest commit of #$request since its last change. Nobody was asked."; exit 1; }
+                sleep 10
+            fi
         done
-        [ -n "$run" ] || { echo "No $1 has run on the newest commit of #$request since its last change. Nobody was asked."; exit 1; }
-        gh run watch "$run" --exit-status >/dev/null 2>&1 || { echo "The $1 on #$request failed. Nobody was asked."; exit 1; }
+        while :; do # asked every half minute, which spends far less of the allowance than gh run watch
+            answer=$(gh run view "$run" --json status,conclusion 2>"$said") && status=0 || status=$?
+            case $(Scripts/check run "$status" <<<"$answer") in
+                passed) return 0 ;;
+                failed) echo "The $1 on #$request failed. Nobody was asked."; exit 1 ;;
+                running) unasked=0; sleep 30 ;;
+                *) unanswered ;;
+            esac
+        done
     }
     passed check ""
     passed words "$edited"
