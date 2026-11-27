@@ -649,14 +649,16 @@ order() { # The two lists every new part adds to are alphabetical, so two pieces
 }
 
 # Nothing of Search's is pasted, so nothing is owed to it, and its notice stays gone (decision 8). Judges the files
-# named after `owed`, or every file the repository keeps.
+# named after `owed`, or every file the repository keeps but the decisions, which record the history, and this
+# script, which holds the words it looks for. A named file that cannot be read fails.
 owed() {
-    local found pasted='Office Commun|Taken from Search'
+    local found status pasted='Office Commun|Taken from Search'
     if [ ${#named[@]} -gt 0 ]; then
-        found=$(grep -nIE "$pasted" "${named[@]}" || true)
+        found=$(grep -nIE "$pasted" "${named[@]}") && status=0 || status=$?
     else
-        found=$(git grep -nIE "$pasted" -- . ':!Decisions/' ':!Scripts/check' || true)
+        found=$(git grep -nIE "$pasted" -- . ':!Decisions/' ':!Scripts/check') && status=0 || status=$?
     fi
+    [ "$status" -le 1 ] || { echo "Could not read what was named."; return 1; }
     [ -z "$found" ] || { echo "Search's notice or a line taken from Search, though nothing of it is pasted (decision 8):"; echo "$found"; return 1; }
 }
 
