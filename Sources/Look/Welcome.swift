@@ -5,7 +5,7 @@ import SwiftUI
 /// How the welcome moves, by Look's motion: it arrives on the glide, rising a little as it fades in; its pages
 /// turn on the glide, sliding the way the person went; and it leaves on a quick fade before the app moves on.
 /// The app's own touch on the first page comes a beat after its page. Under Reduce Motion each is at once.
-package struct WelcomeMoves {
+nonisolated package struct WelcomeMoves: Sendable {
     let motion: Motion
 
     package init(motion: Motion) {
@@ -20,6 +20,8 @@ package struct WelcomeMoves {
     package var away: TimeInterval { motion.reduced ? 0 : 0.14 }
     /// How long the app's own touch waits after its page.
     package var touchWaits: TimeInterval { motion.reduced ? 0 : 0.12 }
+    /// The touch arrives as its page does, once it has waited.
+    package var touchArrival: Animation? { arrival?.delay(touchWaits) }
 
     /// How far, in points, the welcome rises as it arrives.
     static let rise: CGFloat = 12
@@ -85,7 +87,7 @@ package struct Welcome<Page: View, Touch: View>: View {
             if shown == 0 {
                 touch()
                     .opacity(here ? 1 : 0)
-                    .animation(moves.arrival?.delay(moves.touchWaits), value: here)
+                    .animation(moves.touchArrival, value: here)
             }
             content(shown)
         }
