@@ -98,3 +98,10 @@ func theListMatchesItsPicture(size: WindowSize) throws {
     try expectPicture(
         of: ClipList(clips: [], now: now) { _, _ in }, width: size.width, height: size.height, named: "list-empty")
 }
+
+@Test func aSearchThatFindsNothingSaysSo() throws {
+    let size = WindowSize.narrow
+    try expectPicture(
+        of: ClipList(clips: history, now: now, typed: "train") { _, _ in }, width: size.width, height: size.height,
+        named: "list-nothing-found")
+}
