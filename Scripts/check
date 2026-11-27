@@ -24,7 +24,7 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     exit ;;
 esac
 # Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | findings | reviewed | ready) ;; *)
+case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reaches | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | findings | reviewed | ready) ;; *)
     echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | findings < tests | reviewed <commit> < comments]"
     exit 2 ;;
 esac
@@ -253,28 +253,54 @@ by_xcode_alone() { # true when the branch touches what only the app build compil
     # settings, the project, the package. Everything else is compiled by the tests on this Mac already.
     changed | grep -qE '^(Apps|Config|Sagar\.xcodeproj)/|^Package\.(swift|resolved)$'
 }
-reached() { # the test targets a change can reach, joined by |: what the tests before a commit run on this Mac.
-    # A module's change reaches the test targets that depend on it; a test target's change, itself. Only ScriptsTests
-    # reads the scripts and hooks; it also builds the real Keep for iPhone. PicturesTests reads every approved
-    # picture. An app's files are compiled by Xcode alone. Any other file, or any doubt, reaches every test: "all".
-    local paths graph
+phone="Keep" # the shared modules that build for iPhone today. Look joins them when issue 153 is mended.
+reach() { # what a change can reach, one to a line: "tests <target>|…" for the test targets that depend on what it
+    # touches, "app <App>" for each app whose own files or Kit's modules it touches, "iphone" if it touches a module
+    # that builds for iPhone; or the one line "all". A module's change reaches what depends on it, by the package's
+    # own dependencies. Only ScriptsTests reads the scripts and hooks, and it builds the real Keep for iPhone;
+    # PicturesTests reads every approved picture; an app's own files are compiled by Xcode alone. On GitHub a change
+    # to the scripts or hooks reaches everything, as they are the rules themselves. Any other file, any doubt: "all".
+    local paths graph apps
     paths=$(changed)
+    apps=$(for app in Apps/*/; do [ -d "$app" ] && basename "$app"; done)
     [ -n "$paths" ] && graph=$(swift package --scratch-path .build/reached dump-package 2>/dev/null) || { echo all; return; }
-    jq -er --arg paths "$paths" '
+    jq -er --arg paths "$paths" --arg apps "$apps" --arg phone "$phone" --arg ci "${CI:-}" '
         [.targets[] | {name, type, folder: (.path // ((if .type == "test" then "Tests/" else "Sources/" end) + .name)),
             uses: [.dependencies[] | (.byName // .target // empty)[0]]}] as $targets
         | def reaches($target): [$target] + [$targets[] | select(.name == $target) | .uses[] | reaches(.)[]];
         [$paths | split("\n")[] | select(. != "") as $file
-            | if ($file | test("^Apps/")) then empty
-              elif ($file | test("^(Scripts|\\.claude|\\.githooks)/")) then "ScriptsTests"
+            | if ($file | test("^Apps/[^/]+/")) then "app:" + ($file | split("/")[1])
+              elif ($file | test("^(Scripts|\\.claude|\\.githooks)/")) then (if $ci != "" then "*" else "ScriptsTests" end)
               else ([$targets[] | select(.folder as $folder | $file | startswith($folder + "/")) | .name][0] // "*"),
                   (if ($file | test("^Sources/Keep/")) then "ScriptsTests" else empty end),
                   (if ($file | test("/Pictures/.*\\.png$")) then "PicturesTests" else empty end) end] as $touched
-        | if any($touched[]; . == "*") then "all"
-          else [$targets[] | select(.type == "test") | .name as $test
-              | select(any(reaches($test)[]; . as $module | any($touched[]; . == $module))) | $test] | join("|") end
+        | def touches($names): any($names[]; . as $module | any($touched[]; . == $module));
+        if any($touched[]; . == "*") then "all"
+          else "tests " + ([$targets[] | select(.type == "test") | .name as $test | select(touches(reaches($test))) | $test]
+                  | join("|")),
+              ($apps | split("\n")[] | select(. != "") as $app
+                  | select(any($touched[]; . == "app:" + $app) or touches(reaches($app + "Kit"))) | "app " + $app),
+              (if touches([$phone | split(" ")[] | select(. != "") | reaches(.)[]]) then "iphone" else empty end) end
     ' <<<"$graph" || echo all
 }
+reached() { # the test targets a change can reach, joined by |, or "all"
+    local answer
+    answer=$(reach)
+    [ "$answer" != all ] || { echo all; return; }
+    sed -n 's/^tests //p' <<<"$answer"
+}
+reaches() { # reaches app <App> | iphone: true if the change can reach it
+    local answer
+    answer=$(reach)
+    [ "$answer" = all ] || grep -qx -- "$*" <<<"$answer"
+}
+if [ "${1:-}" = reaches ]; then # Scripts/check reaches <file>…: all that a change to these files can reach
+    shift
+    files=("$@")
+    changed() { printf '%s\n' "${files[@]}"; }
+    reach
+    exit
+fi
 if [ "${1:-}" = reached ]; then # Scripts/check reached <file>…: the test targets a change to these files can reach
     shift
     files=("$@")
@@ -620,8 +646,10 @@ build() {
     compile swift build --build-tests || return 1
     for app in Apps/*/; do
         [ -d "$app" ] || continue
-        # GitHub's Mac builds every app. This Mac does only when the change touches what nothing else here compiles.
+        # GitHub's Mac builds each app the change can reach. This Mac does only when the change touches what nothing
+        # else here compiles.
         [ -n "${CI:-}" ] || by_xcode_alone || { echo "note: the apps are built on GitHub's Mac"; break; }
+        reaches app "$(basename "$app")" || { echo "note: $(basename "$app") is not reached, so not built"; continue; }
         compile xcodebuild -project Sagar.xcodeproj -scheme "$(basename "$app")" -derivedDataPath .build/Xcode \
             -quiet build CODE_SIGNING_ALLOWED=NO || return 1
     done
@@ -636,10 +664,10 @@ compile() { # run a build; any warning or error fails it, and only those lines a
     [ "$status" -eq 0 ] || { printf '%s\n' "$log" | tail -n 15 | cut -c 1-300; return 1; }
 }
 
-phone="Keep" # the shared modules that build for iPhone today. Look joins them when issue 153 is mended.
 iphone() { # The shared parts still build for iPhone. Compiled for its SDK alone: no Simulator, nothing on screen.
     # The first build in a folder takes some 10 s and each one after about 3, so it runs before every commit.
     ! words_only || return $nothing
+    reaches iphone || return $nothing
     local module version sdk targets=()
     for module in $phone; do
         [ -d "Sources/$module" ] || { echo "$module is listed for iPhone, and is no module in Sources."; return 1; }
@@ -653,15 +681,15 @@ iphone() { # The shared parts still build for iPhone. Compiled for its SDK alone
     compile swift build "${targets[@]}" --triple "arm64-apple-ios$version.0" --sdk "$sdk"
 }
 
-tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those the change can reach.
+tests() { # the test targets the change can reach: on GitHub every one when the rules themselves change
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
-    local reach=all
-    [ -n "${CI:-}" ] || reach=$(reached)
+    local reach
+    reach=$(reached)
     case $reach in
         all) swift test --quiet 2>&1 ;;
         "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
-        *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test"
+        *) echo "note: these tests run: ${reach//|/, }"
             swift test --quiet --filter "^($reach)\." 2>&1 ;;
     esac
 }
@@ -677,6 +705,7 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
     mkdir -p .build/Tours
     for app in $apps; do # the app in work, then each shipped app whose fault is being mended
         [ -f "Apps/$app/Tour.swift" ] || continue
+        reaches app "$app" || { echo "note: $app is not reached, so not toured"; continue; }
         tour_of "$app" || return 1
         toured=yes
     done
