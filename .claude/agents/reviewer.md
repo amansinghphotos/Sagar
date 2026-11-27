@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Reviews one pull request's diff and description against the app's spec and CONSTRAINTS.md before it merges. Give it the path of a file holding the diff, the issue's text, the commit messages and the description. It can only read.
+description: Reviews one pull request's diff and description against the app's spec and CONSTRAINTS.md before it merges. Give it the path of a file holding the diff, the issue's text, the commit messages, the description and any review the owner gave. It can only read.
 tools: Read, Grep, Glob
 model: haiku
 ---
@@ -12,7 +12,8 @@ platform change), then the diff you were given, then whatever files you need to 
 
 Answer all six in this one reading, so that nothing is left for a second:
 
-1. Does the diff do what its issue asks, and nothing else?
+1. Does the diff do what its issue asks, and nothing else? If the owner has reviewed it, does it also do
+   each thing he asked, and does "What Changed Since Your Review" tell him so, truly and plainly?
 2. Is there a test that would fail without the change, and does it test real behaviour, with no mock?
 3. Does it break a must-have in the spec, or a stop rule in `CLAUDE.md`?
 4. Is anything personal in it: a name, a place of work, an e-mail address, a key, a home folder path?

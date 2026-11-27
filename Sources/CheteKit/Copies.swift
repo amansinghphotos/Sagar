@@ -42,6 +42,12 @@ package actor Copies {
         try clips.all()
     }
 
+    /// Deletes every clip copied longer ago than the settings say to keep things, and says which went.
+    @discardableResult
+    package func trim(now: Date = .now, calendar: Calendar = .current) throws -> [Clip] {
+        try clips.trim(Settings.read(in: folder).keeping, now: now, calendar: calendar)
+    }
+
     private func fingerprint(_ kinds: [Clip.Kind]) throws -> SHA256Digest {
         SHA256.hash(data: try PropertyListEncoder().encode(kinds))
     }
