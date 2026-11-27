@@ -77,6 +77,53 @@ final class CheteTour: XCTestCase {
         open.click()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "The card did not open Chete.")
     }
+
+    /// The first time a new build opens, it shows what is new, once. Told it last saw another build, Chete shows
+    /// the line this build was made with; opened again, it does not.
+    @MainActor
+    func testANewBuildShowsWhatIsNewOnce() throws {
+        let app = XCUIApplication()
+        let line = app.staticTexts["A line the tour looks for."]
+        app.launchArguments = ["-Shell.LastBuildSeen", "an older build"]
+        app.launch()
+        XCTAssert(line.waitForExistence(timeout: 10), "A new build did not show what is new.")
+        try audit(app, "What is new")
+        line.click()  // once clicked, the card takes the keyboard, and Escape closes it
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssert(line.waitForNonExistence(timeout: 5), "The card for what is new did not close.")
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
+        XCTAssertFalse(line.waitForExistence(timeout: 5), "What is new showed a second time.")
+    }
+
+    /// Each address Chete opens System Settings at lands on the place it names: Paste from Other Apps, and
+    /// Accessibility, which macOS 27 calls Device Control and Data Access. A screenshot of each is kept.
+    @MainActor
+    func testSystemSettingsOpensWhereCheteSendsYou() throws {
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
+        let places = [
+            ("Privacy_Pasteboard", ["Paste from Other Apps"]),
+            ("Privacy_Accessibility", ["Device Control and Data Access", "Accessibility"]),
+        ]
+        for (pane, names) in places {
+            settings.open(
+                try XCTUnwrap(URL(string: "x-apple.systempreferences:com.apple.preference.security?\(pane)")))
+            XCTAssert(settings.wait(for: .runningForeground, timeout: 15), "System Settings did not open.")
+            // The place's name is the window's title: the sidebar names Accessibility whatever is open.
+            let window = settings.windows.firstMatch
+            let titled = expectation(for: NSPredicate(format: "title IN %@", names), evaluatedWith: window)
+            _ = XCTWaiter.wait(for: [titled], timeout: 10)
+            let found = names.first { $0 == window.title }
+            let shot = XCTAttachment(screenshot: settings.screenshot())
+            shot.name = "\(pane): \(found ?? "none of \(names)")"
+            shot.lifetime = .keepAlways
+            add(shot)
+            XCTAssertNotNil(found, "\(pane) did not land on \(names.joined(separator: " or ")).")
+        }
+        settings.terminate()
+    }
 }
 
 extension CheteTour {
