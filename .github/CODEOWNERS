@@ -1,7 +1,8 @@
 # The owner approves his decisions, and only those. Everything else merges once GitHub's check is
 # green and the reviewer is answered; a change to the working rules carries the label "rules".
 
-# What an app must do, and which app is in work.
+# What the platform and each app must do, and which app is in work.
+/SPEC.md                  @amansinghphotos
 /spec/                    @amansinghphotos
 /NOW                      @amansinghphotos
 
