@@ -16,9 +16,12 @@ package actor Copies {
         clips = try Clips(cheteFolder: folder, keyName: keyName)
     }
 
+    /// Chete's own folder on this Mac, where its clips, settings and first open are kept.
+    package static let folderOnThisMac = URL.applicationSupportDirectory.appending(path: "Chete")
+
     /// Copies kept in Chete's own folder on this Mac, sealed by its own key.
     package static func onThisMac() throws -> Copies {
-        try Copies(folder: .applicationSupportDirectory.appending(path: "Chete"), keyName: Clips.keyName)
+        try Copies(folder: folderOnThisMac, keyName: Clips.keyName)
     }
 
     /// Keeps one copy, unless it holds nothing Chete keeps, or it came from another device and the

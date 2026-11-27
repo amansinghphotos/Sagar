@@ -11,6 +11,7 @@ public struct CheteScene: Scene {
 
     /// One window, with Check for Updates… in the app's menu.
     public var body: some Scene {
+        FirstOpenWindow()
         Window("Chete", id: "chete") {
             Text("What You Copy Appears Here")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

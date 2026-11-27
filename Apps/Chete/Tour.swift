@@ -13,6 +13,15 @@ final class CheteTour: XCTestCase {
         }
         let app = XCUIApplication()
         app.launch()
+        // GitHub's Mac is new, so the first open comes first: audited, then walked through as a person would,
+        // asking for nothing.
+        let welcome = app.windows["Welcome to Chete"]
+        XCTAssert(welcome.waitForExistence(timeout: 10), "The first open did not show on a new Mac.")
+        try app.performAccessibilityAudit(for: .all.subtracting(.contrast))
+        welcome.buttons["Continue"].click()
+        welcome.buttons["Continue"].click()
+        welcome.buttons["Start"].click()
+        XCTAssert(welcome.waitForNonExistence(timeout: 5), "The first open did not close.")
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
         // Each finding is kept with the element it is about, so a failure says where to look.
