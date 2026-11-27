@@ -2,7 +2,7 @@ import XCTest
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
-    /// Its settings pass Apple's accessibility audit, and keep what you choose: clips kept for a month
+    /// Its settings are audited, and keep what you choose: clips kept for a month
     /// instead of a year, still chosen the next time Chete opens, when they are opened from its menu-bar card.
     @MainActor
     func testItsSettingsPassTheAuditAndKeepWhatYouChoose() throws {
@@ -11,11 +11,7 @@ final class CheteTour: XCTestCase {
         app.typeKey(",", modifierFlags: .command)
         let month = app.buttons["A month"]
         XCTAssert(month.waitForExistence(timeout: 10), "Chete's settings did not open.")
-        // Each finding names its element in the failure itself, so the summary says where to look.
-        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
-            XCTFail("Settings: \(issue.compactDescription): \(issue.element?.debugDescription ?? "no element")")
-            return true
-        }
+        try audit(app, "Settings")
         month.click()
         close(settingsOf: app)
         app.terminate()
@@ -41,7 +37,7 @@ final class CheteTour: XCTestCase {
     }
 
     /// It opens quickly, by Apple's own launch metric taken three times, of which the rules judge the fastest.
-    /// Then it shows one window, which passes Apple's accessibility audit. Contrast is left out: see SPEC.md.
+    /// Then it shows one window, which is audited.
     @MainActor
     func testItOpensQuicklyToOneWindowThatPassesTheAudit() throws {
         let options = XCTMeasureOptions()
@@ -53,11 +49,7 @@ final class CheteTour: XCTestCase {
         app.launch()
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
-        // Each finding is kept with the element it is about, so a failure says where to look.
-        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
-            self.add(XCTAttachment(string: "\(issue.compactDescription)\n\(issue.element?.debugDescription ?? "")"))
-            return false
-        }
+        try audit(app, "Window")
     }
 
     /// It lives in the menu bar. Its item there drops a card with Settings, Check for Updates and Quit, since an
@@ -111,5 +103,22 @@ final class CheteTour: XCTestCase {
             XCTAssertNotNil(found, "\(pane) did not land on \(names.joined(separator: " or ")).")
         }
         settings.terminate()
+    }
+}
+
+extension CheteTour {
+    /// Runs Apple's accessibility audit, but for contrast (see SPEC.md). Each finding is reported, naming its element,
+    /// and written into the run's summary, but does not fail the tour, as the owner decided (decision 9) until he
+    /// brings that back (#252). Bringing it back is replacing `XCTExpectFailure` here with the `XCTFail` inside it.
+    @MainActor
+    func audit(_ app: XCUIApplication, _ place: String) throws {
+        try app.performAccessibilityAudit(for: .all.subtracting(.contrast)) { issue in
+            let element = issue.element?.debugDescription.split(whereSeparator: \.isNewline).joined(separator: " ")
+            let finding = "\(place): \(issue.compactDescription): \(element ?? "no element named")"
+            XCTExpectFailure("Accessibility audit, reported, not failing (decision 9): \(finding)", strict: false) {
+                XCTFail(finding)
+            }
+            return true
+        }
     }
 }
