@@ -41,12 +41,13 @@ a colour, a font or a size, so a change to the look reaches every app at once.
    - *Status:* progress bar, spinner, loading placeholder, badge, key cap, count, meter, sound level,
      banner, nothing-here-yet, and an error with Try Again.
    - *Reading:* long text, code, a picture, Quick Look preview, and a style for charts.
-4. **Motion from Search, as written.** Search's springs and timings (glide, settle, quick, the shrink
-   to 97 per cent when pressed, the sliding column) and the transitions its parts use are taken word
-   for word from Search at commit `c92ea7c`, with its MIT notice kept. Left out: Search's quicker motion
-   in Low Power Mode or when the Mac is hot, since power is the owner's to manage, and its test
-   switches. Changed only where this repository's rules require. Under Reduce Motion every movement is
-   instant, but for the sliding column's short fade, which Search keeps.
+4. **Motion like Search's, written here.** Each spring and timing (glide, settle, quick, the shrink to
+   97 per cent when pressed, the sliding column) and each transition the parts use is our own code,
+   written from how Search's moves at commit `c92ea7c`, and kept close enough that a hand cannot tell
+   them apart. Nothing of Search's is pasted, so nothing is owed. Left out: Search's quicker motion in
+   Low Power Mode or when the Mac is hot, since power is the owner's to manage, and its test switches.
+   Under Reduce Motion every movement is instant, but for the sliding column's short fade, which Search
+   keeps.
 5. **Keyboard and VoiceOver everywhere.** Controls are Apple's own with a style, so each is reached with
    Tab, shows a focus ring and is read aloud.
 6. **A Gallery.** The agents' test window, never shipped, showing every part in every state, with a bar
@@ -59,11 +60,12 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 
 A Modern part is done when its picture matches the same part pictured from Search's own code at
 `c92ea7c`, in light and dark, kept beside it as the reference. A part Search does not have, and all of Lexicon, has no Search picture
-to match: the owner first sees it in an app's screen, and approves that screen's pictures. Motion is done when the reviewer, reading it beside
-Search's source, finds nothing changed beyond what must-have 4 allows, and a test shows each movement
-is instant under Reduce Motion, but for that one fade. Keyboard reach and labels are proven by the Gallery's tour and its audit.
+to match: the owner first sees it in an app's screen, and approves that screen's pictures. Motion is done when each movement, measured
+through time, stays within two hundredths of the same movement measured from Search's own code at
+`c92ea7c`, kept beside it as the reference, and a test shows each movement is instant under Reduce
+Motion, but for that one fade. Keyboard reach and labels are proven by the Gallery's tour and its audit.
 
 ## Out of Scope
 
 More themes, seasons or variants. Window and menu-bar plumbing, which is Shell's. Anything from a third
-party but Search's motion.
+party.

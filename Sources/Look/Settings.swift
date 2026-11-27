@@ -17,6 +17,7 @@ package struct GroupBlock<Content: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
+                    .accessibilityHidden(true)
                 Text(title.uppercased()).tracking(0.5)
             }
             .font(.system(size: 10.5, weight: .semibold))
