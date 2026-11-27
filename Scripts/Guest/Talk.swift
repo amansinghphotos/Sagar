@@ -1,6 +1,5 @@
-// How this Mac and the hidden Mac speak: Scripts/tour asks, and the agent in the guest answers.
-// Commands travel over the virtual machine's own socket, never over IP: a connection from this Mac to the
-// guest's address would need the Local Network permission, which asks on the owner's screen.
+// Scripts/tour asks; the agent in the guest answers over the machine's own socket, never over IP, which
+// from this Mac would need the Local Network permission and ask on the owner's screen.
 import Foundation
 
 let port: UInt32 = 7
@@ -16,40 +15,25 @@ enum Frame: UInt8 { case command, input, inputEnd, output, error, exit }
 
 @discardableResult
 func writeAll(_ fd: Int32, _ data: Data) -> Bool {
-    data.withUnsafeBytes { raw in
-        var offset = 0
-        while offset < raw.count {
-            let count = write(fd, raw.baseAddress! + offset, raw.count - offset)
-            if count < 0 && errno == EINTR { continue }
-            if count <= 0 { return false }
-            offset += count
-        }
-        return true
-    }
+    (try? FileHandle(fileDescriptor: fd).write(contentsOf: data)) != nil
 }
 
 func readExactly(_ fd: Int32, _ count: Int) -> Data? {
-    var data = Data(count: count)
-    let complete = data.withUnsafeMutableBytes { raw in
-        var offset = 0
-        while offset < count {
-            let got = read(fd, raw.baseAddress! + offset, count - offset)
-            if got < 0 && errno == EINTR { continue }
-            if got <= 0 { return false }
-            offset += got
-        }
-        return true
+    var data = Data()
+    while data.count < count {
+        guard let more = try? FileHandle(fileDescriptor: fd).read(upToCount: count - data.count), !more.isEmpty
+        else { return nil }
+        data += more
     }
-    return complete ? data : nil
+    return data
 }
+
+/// Four bytes, the high one first.
+func bytes(_ value: UInt32) -> Data { Data([24, 16, 8, 0].map { UInt8(value >> $0 & 255) }) }
 
 @discardableResult
 func send(_ fd: Int32, _ kind: Frame, _ body: Data = Data()) -> Bool {
-    let length = UInt32(body.count)
-    let header = Data([
-        kind.rawValue, UInt8(length >> 24), UInt8(length >> 16 & 255), UInt8(length >> 8 & 255), UInt8(length & 255),
-    ])
-    return writeAll(fd, header + body)
+    writeAll(fd, Data([kind.rawValue]) + bytes(UInt32(body.count)) + body)
 }
 
 func receive(_ fd: Int32) -> (Frame, Data)? {
@@ -63,24 +47,30 @@ func number(_ body: Data) -> Int32 { Int32(bitPattern: body.reduce(0) { $0 << 8 
 
 // MARK: In the guest
 
-func agent() -> Never {
-    let listener = socket(AF_VSOCK, SOCK_STREAM, 0)
-    var address = sockaddr_vm()
-    address.svm_len = UInt8(MemoryLayout<sockaddr_vm>.size)
-    address.svm_family = sa_family_t(AF_VSOCK)
-    address.svm_port = port
-    address.svm_cid = UInt32.max  // any
-    let bound = withUnsafePointer(to: &address) {
-        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-            bind(listener, $0, socklen_t(MemoryLayout<sockaddr_vm>.size))
+/// Answers commands: in the guest on the virtual machine's own socket; given a path, on a local one, as the tests do.
+func agent(at path: String?) -> Never {
+    let listener: Int32
+    if let path {
+        listener = listenUnix(path)
+    } else {
+        listener = socket(AF_VSOCK, SOCK_STREAM, 0)
+        var address = sockaddr_vm()
+        address.svm_len = UInt8(MemoryLayout<sockaddr_vm>.size)
+        address.svm_family = sa_family_t(AF_VSOCK)
+        address.svm_port = port
+        address.svm_cid = UInt32.max  // any
+        let bound = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(listener, $0, socklen_t(MemoryLayout<sockaddr_vm>.size))
+            }
         }
-    }
-    guard listener >= 0, bound == 0, listen(listener, 16) == 0 else {
-        fail("agent: cannot listen on the virtual socket: \(String(cString: strerror(errno)))")
+        guard listener >= 0, bound == 0, listen(listener, 16) == 0 else {
+            fail("agent: cannot listen on the virtual socket: \(String(cString: strerror(errno)))")
+        }
     }
     while true {
         let connection = accept(listener, nil, nil)
-        if connection >= 0 { Thread.detachNewThread { answer(connection) } }
+        if connection >= 0 { Thread.detachNewThread { answer(connection) } } else { usleep(100_000) }
     }
 }
 
@@ -100,7 +90,7 @@ func answer(_ fd: Int32) {
     process.standardError = error
     do { try process.run() } catch {
         send(fd, .error, Data("agent: \(error)\n".utf8))
-        send(fd, .exit, Data([0, 0, 0, 127]))
+        send(fd, .exit, bytes(127))
         return
     }
     // The command leads a process group of its own: when its asker goes, all it started is stopped, so a
@@ -138,14 +128,11 @@ func answer(_ fd: Int32) {
         asker.leave()
     }
     process.waitUntilExit()
+    state.stop()  // what it left running in the background goes too, and lets go of the output
     readers.wait()
     let status = UInt32(
         bitPattern: process.terminationReason == .exit ? process.terminationStatus : 128 + process.terminationStatus)
-    state.finish {
-        send(
-            fd, .exit,
-            Data([UInt8(status >> 24), UInt8(status >> 16 & 255), UInt8(status >> 8 & 255), UInt8(status & 255)]))
-    }
+    state.finish { send(fd, .exit, bytes(status)) }
     shutdown(fd, SHUT_RDWR)  // wakes the reader of the asker, so the socket is closed only after it has let go
     asker.wait()
 }
@@ -176,6 +163,19 @@ func unixAddress(_ path: String) -> sockaddr_un {
         raw.copyBytes(from: Array(path.utf8) + [0])
     }
     return address
+}
+
+func listenUnix(_ path: String) -> Int32 {
+    unlink(path)
+    let listener = socket(AF_UNIX, SOCK_STREAM, 0)
+    var address = unixAddress(path)
+    let bound = withUnsafePointer(to: &address) {
+        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+            bind(listener, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+        }
+    }
+    guard bound == 0, listen(listener, 16) == 0 else { fail("Cannot listen at \(path).") }
+    return listener
 }
 
 // MARK: On this Mac: asking
@@ -214,23 +214,6 @@ func run(_ folder: URL, _ command: String) -> Never {
         }
     }
     fail("The hidden Mac stopped answering.")
-}
-
-/// Starts `serve` in a session of its own, so it outlives the chat that asked, holding none of its files open.
-func start(_ folder: URL) -> Never {
-    var attributes: posix_spawnattr_t?
-    posix_spawnattr_init(&attributes)
-    posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETSID | POSIX_SPAWN_CLOEXEC_DEFAULT))
-    var actions: posix_spawn_file_actions_t?
-    posix_spawn_file_actions_init(&actions)
-    posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
-    posix_spawn_file_actions_addopen(
-        &actions, 1, folder.appending(path: "serve.log").path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
-    posix_spawn_file_actions_adddup2(&actions, 1, 2)
-    let me = Bundle.main.executablePath ?? CommandLine.arguments[0]
-    let argv = [me, "serve", folder.path].map { strdup($0) } + [nil]
-    var pid: pid_t = 0
-    exit(posix_spawn(&pid, me, &actions, &attributes, argv, environ) == 0 ? 0 : 1)
 }
 
 /// Runs a program once no other chat's is running: one tour at a time, in the order asked.
