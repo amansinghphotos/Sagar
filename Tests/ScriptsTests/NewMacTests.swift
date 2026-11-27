@@ -83,7 +83,8 @@ private struct Mac {
     #expect(!told.contains("private notes"))
 }
 
-/// Once the Claude instructions, plugins and skill are in, nothing is missing; a later change to the instructions
+/// Once the Claude instructions, plugins and skill are in, only the drive is missing, as a temporary folder is on
+/// the home folder's own disk; a later change to the instructions
 /// asks for a fresh copy in the notes, so the copy that travels is never old.
 @Test func aMacWithEverythingIsToldNothingUntilItsInstructionsChange() throws {
     let mac = try Mac()
@@ -94,7 +95,7 @@ private struct Mac {
     try mac.write(
         #"{"plugins": {"agent-skills@addy-agent-skills": [{}], "taste-skill@taste-skill": [{}]}}"#,
         to: mac.home.appending(path: ".claude/plugins/installed_plugins.json"))
-    #expect(try mac.ready() == "")
+    #expect(try mac.ready() == "The project on its own drive, off the disk that holds the home folder\n")
 
     try mac.write("Be brief. Be kind.\n", to: mac.home.appending(path: ".claude/CLAUDE.md"))
     #expect(try mac.ready().contains("A fresh copy of ~/.claude/CLAUDE.md in the private notes"))
