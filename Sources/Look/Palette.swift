@@ -1,24 +1,22 @@
-// The row is taken from Search at commit c92ea7c: Omnibox.Row (Omnibox.swift). Copyright (c) 2026 Office Commun,
-// MIT licence (ACKNOWLEDGEMENTS.md). Changed only where this repository's rules require: Search's colours and
-// motion are read from Look, and what a row shows is given as an item rather than read from Search's own
-// suggestions. Search keeps its arrows and Return in its AppKit field; here they are SwiftUI's, written fresh.
+// The command palette: things to pick from by typing, how typed words rank them, and how each shows in the list.
 import SwiftUI
 
-/// One thing the palette offers: what it is, a quieter word on it, and what leads its row.
+/// One thing a palette offers.
 nonisolated package struct PaletteItem: Identifiable, Sendable, Equatable {
     package let id: String
+    /// The words it is found by, and shows first.
     package let key: String
+    /// Quieter words beside them, also found by.
     package let title: String
-    /// A letter in a mark, as Search's places wear one.
+    /// A letter on a small tile before it.
     package var letter: String? = nil
-    /// A symbol, as Search's commands wear one.
+    /// Or a symbol before it, by its system name.
     package var symbol: String? = nil
-    /// A command's key, shown at the end of its row.
+    /// The keys that take it, shown at the end.
     package var keyLabel: String? = nil
 
     package init(
-        id: String, key: String, title: String, letter: String? = nil, symbol: String? = nil,
-        keyLabel: String? = nil
+        id: String, key: String, title: String, letter: String? = nil, symbol: String? = nil, keyLabel: String? = nil
     ) {
         self.id = id
         self.key = key
@@ -29,29 +27,26 @@ nonisolated package struct PaletteItem: Identifiable, Sendable, Equatable {
     }
 }
 
-/// How the palette narrows what it offers as you type.
+/// How a palette chooses what to offer.
 nonisolated package enum Palette {
-    /// Every item whose words hold each word typed, in its own order; those that
-    /// needed a typo forgiven come after those that did not, as in Search.
+    /// The items whose words hold every typed word, those typed exactly before those that needed a typo forgiven,
+    /// and otherwise in their own order. Nothing typed offers them all.
     package static func rank(_ items: [PaletteItem], for typed: String) -> [PaletteItem] {
-        let words = typed.lowercased().split(separator: " ").map { Array($0.utf8) }
+        let words = typed.lowercased().split(whereSeparator: \.isWhitespace).map { Array($0.utf8) }
         guard !words.isEmpty else { return items }
-        let scored = items.compactMap { item in
-            Fuzzy.match(words, in: (item.key + " " + item.title).lowercased()).map { (item, $0) }
+        let found = items.compactMap { item in
+            Fuzzy.match(words, in: "\(item.key) \(item.title)".lowercased()).map { (item: item, score: $0) }
         }
-        return scored.filter { $0.1 == 1 }.map(\.0) + scored.filter { $0.1 == 0 }.map(\.0)
+        return found.sorted { $0.score > $1.score }.map(\.item)
     }
 }
 
-/// A row of the palette: what leads it, its words, and a command's key.
+/// One line of a palette: its tile or symbol, its words, and the keys that take it.
 package struct PaletteRow: View {
-    let item: PaletteItem
-    /// Where the arrow keys have walked to. The pointer gets its own,
-    /// quieter mark, and changes nothing but the look of the row.
-    let picked: Bool
-
     @Environment(\.motion) private var motion
     @State private var hovering = false
+    private let item: PaletteItem
+    private let picked: Bool
 
     package init(item: PaletteItem, picked: Bool) {
         self.item = item
@@ -59,68 +54,61 @@ package struct PaletteRow: View {
     }
 
     package var body: some View {
-        HStack(spacing: 10) {
-            // Every row has the same column before its words, so the
-            // words line up whatever stands in it.
-            Group {
-                if let letter = item.letter {
-                    Mark(icon: nil, letter: letter, size: 14)
-                } else {
-                    symbol(item.symbol ?? "magnifyingglass")
-                }
-            }
-            .frame(width: 14, height: 14)
-            Text(item.key)
-                .font(.system(size: 13))
-                .foregroundStyle(Role.ink)
-                .lineLimit(1)
+        HStack(spacing: Space.gap.rawValue) {
+            mark.frame(width: Self.mark, height: Self.mark)
+            Text(item.key).type(.body).foregroundStyle(Role.ink)
             if !item.title.isEmpty {
-                Text(item.title)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Role.muted)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                Text(item.title).type(.row).foregroundStyle(Role.muted)
             }
             Spacer(minLength: 0)
-            if let key = item.keyLabel {
-                Text(key)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Role.muted)
+            if let keys = item.keyLabel {
+                Text(keys).type(.row).foregroundStyle(Role.muted)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .lineLimit(1)
+        .padding(.horizontal, Space.apart.rawValue)
+        .frame(height: 34)
         .background {
-            if picked {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Role.wash)
-            } else if hovering {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Role.hover)
-            }
+            RoundedRectangle(cornerRadius: Radius.row.rawValue, style: .continuous)
+                .fill(picked ? Role.wash : Role.hover)
+                .opacity(picked || hovering ? 1 : 0)
         }
+        .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .animation(motion.quick, value: hovering)
     }
 
-    private func symbol(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(Role.muted)
+    /// The tile with a letter, or the symbol, before the words.
+    @ViewBuilder private var mark: some View {
+        if let letter = item.letter {
+            Text(letter)
+                .font(.system(size: 7.75, weight: .medium))
+                .offset(y: 0.5)
+                .foregroundStyle(Greys.white.muted)
+                .frame(width: Self.mark, height: Self.mark)
+                .background(Role.ink.opacity(0.06), in: RoundedRectangle(cornerRadius: 3, style: .continuous))
+        } else if let symbol = item.symbol {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Role.muted)
+        }
     }
+
+    /// The side of the tile, in points.
+    private static let mark: CGFloat = 14
 }
 
-/// The palette: a field that narrows a list as you type, the arrows to walk it,
-/// Return to take the one picked, and Escape to put it away.
+/// A launcher field over the items it offers: typing narrows them, the arrows move the pick, Return takes it and
+/// Escape lets the palette go. Return with nothing offered makes the field shiver.
 package struct CommandPalette: View {
-    @Binding var text: String
-    let prompt: String
-    let items: [PaletteItem]
-    let take: (PaletteItem) -> Void
-    let dismiss: () -> Void
-
     @Environment(\.motion) private var motion
-    @State private var picked = 0
+    @Binding private var text: String
+    @State private var pick = 0
+    @State private var refusals = 0
+    private let prompt: String
+    private let items: [PaletteItem]
+    private let take: (PaletteItem) -> Void
+    private let dismiss: () -> Void
 
     package init(
         text: Binding<String>, prompt: String, items: [PaletteItem], take: @escaping (PaletteItem) -> Void,
@@ -133,34 +121,31 @@ package struct CommandPalette: View {
         self.dismiss = dismiss
     }
 
-    private var offers: [PaletteItem] { Palette.rank(items, for: text) }
-
     package var body: some View {
-        VStack(spacing: 8) {
-            LaunchField(text: $text, prompt: prompt, refusals: 0)
+        let offers = Palette.rank(items, for: text)
+        VStack(spacing: Space.near.rawValue) {
+            LaunchField(text: $text, prompt: prompt, refusals: refusals)
             if !offers.isEmpty {
                 LaunchList {
-                    ForEach(Array(offers.enumerated()), id: \.element.id) { index, offer in
-                        PaletteRow(item: offer, picked: index == picked)
-                            .contentShape(Rectangle())
-                            .onTapGesture { take(offer) }
+                    ForEach(Array(offers.enumerated()), id: \.element.id) { index, item in
+                        PaletteRow(item: item, picked: index == min(pick, offers.count - 1))
+                            .onTapGesture { take(item) }
                     }
                 }
             }
         }
         .animation(motion.quick, value: offers.isEmpty)
-        .onChange(of: text) { _, _ in picked = 0 }
-        .onKeyPress(.downArrow) {
-            picked = min(picked + 1, max(offers.count - 1, 0))
+        .onChange(of: text) { pick = 0 }
+        .onKeyPress(.upArrow) {
+            pick = max(pick - 1, 0)
             return .handled
         }
-        .onKeyPress(.upArrow) {
-            picked = max(picked - 1, 0)
+        .onKeyPress(.downArrow) {
+            pick = min(pick + 1, max(offers.count - 1, 0))
             return .handled
         }
         .onKeyPress(.return) {
-            guard offers.indices.contains(picked) else { return .ignored }
-            take(offers[picked])
+            if offers.indices.contains(pick) { take(offers[pick]) } else { refusals += 1 }
             return .handled
         }
         .onKeyPress(.escape) {
