@@ -157,12 +157,13 @@ Search's motion. Modern is Search's look exactly, proved part by part against Se
 Every app's words are written the way a friendly person would say them: short, warm and plain. One
 idea to a sentence, everyday words, "you" for the reader, and contractions where they sound natural.
 A label says plainly what it is, and the line under it says what you will notice, never how it works.
-This holds for every app and every part they share: windows, settings, first open, menus, alerts,
-updates, About, the download page and the release notes.
+This holds for every app and every part they share. That means windows, settings, first open, menus,
+alerts, updates, About, the download page and the release notes.
 
-`Scripts/check` holds what can be counted: no sentence an app shows runs past 12 words, and a short
-list of stock words, such as "seamlessly" and "effortlessly", is never used. Whether words are warm
-and easy to read is judged by the reviewer on every change, and by him on each picture.
+What can be counted becomes a check in `Scripts/check`, with its numbers in `CONSTRAINTS.md`: no
+sentence an app shows runs past 12 words, and none uses a listed stock word, such as "seamlessly".
+Until that check is built, the reviewer holds both. Whether words are warm and easy to read is judged
+by the reviewer on every change, and by him on each picture.
 
 ## 9. Boundaries
 
