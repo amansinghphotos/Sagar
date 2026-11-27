@@ -70,7 +70,8 @@ package struct ClipList: View {
             pick(clip, press.modifiers.contains(.shift))
             return .handled
         }
-        .onAppear { finding = true }
+        // Typing goes to the field as the window opens, so a person only types.
+        .defaultFocus($finding, true)
     }
 }
 
