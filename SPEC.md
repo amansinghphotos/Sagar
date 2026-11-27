@@ -139,8 +139,8 @@ macOS records why on that Mac, and tells no one else. Send Report, in Shell, let
 - Send hands the text to the Mac's own Share menu, where the person chooses Messages or Mail and
   whom to send it to. The app itself sends nothing, so it needs no account, key or network. With no
   network, Messages or Mail sends it later.
-- Each release's symbol file turns a report's numbers into the line that stopped. It names folders
-  on his Mac, so it stays there, outside the repository, and is never published.
+- Each release's symbol file turns a report's numbers into the line that stopped. It holds paths
+  from the Mac that built it, so it stays out of the repository and is never published.
 
 ### Mending a Shipped App
 
