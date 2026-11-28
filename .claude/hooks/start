@@ -125,7 +125,7 @@ ready() { # Checklists/Build Mac.md, as what can be seen without asking the keyc
             echo "The $cache cache, kept in the Caches folder beside the project"
     done
     [ -d "$private/.git" ] || echo "The private notes, cloned beside the repository as '$(basename "$private")'"
-    # His Claude setup is the private notes' to keep: their own check names what differs at every chat's start.
+    # His Claude setup is the private notes' to keep and to put back.
     [ -f "$HOME/.claude/CLAUDE.md" ] || echo "The owner's Claude setup, put back by the private notes' Claude/restore"
 }
 
