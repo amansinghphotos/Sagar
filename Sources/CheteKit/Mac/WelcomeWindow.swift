@@ -27,8 +27,6 @@ struct WelcomeOnThisMac: View {
     @Environment(\.dismissWindow) private var dismissWindow
     /// What this Mac gives Chete, and what he has chosen, kept up to date while the welcome is open.
     @State private var given = Self.now()
-    /// The card in front of System Settings while a permission is being turned on.
-    @State private var card: SettingsCard?
 
     private let folder = Copies.folderOnThisMac
 
@@ -46,12 +44,9 @@ struct WelcomeOnThisMac: View {
 
     /// What this Mac gives Chete already, asking nothing.
     private static func now() -> WelcomeGiven {
-        var given = WelcomeGiven()
-        given.keeping = Permission.pasteFromOtherApps.isGiven
-        given.pasting = Permission.accessibility.isGiven
-        given.hasOldClips = EarlierKey.isHere()
-        given.opensAtLogin = LoginItem.isOn
-        return given
+        WelcomeGiven(
+            keeping: Permission.pasteFromOtherApps.isGiven, pasting: Permission.accessibility.isGiven,
+            hasOldClips: AnotherAppsKey.isHere(named: "History Key"), opensAtLogin: LoginItem.isOn)
     }
 
     private func acts() -> WelcomeActs {
@@ -72,55 +67,47 @@ struct WelcomeOnThisMac: View {
         }
         guard !permission.isGiven else { return }
         let card = SettingsCard(steppingAside: NSApplication.shared.keyWindow) { shown }
-        self.card = card
         permission.openSettings()
         card.show()
         Task {
             var waited = 0
-            while !permission.isGiven, settingsOpen() || waited < 20 {
+            let settings = "com.apple.systempreferences"
+            while !permission.isGiven,
+                !NSRunningApplication.runningApplications(withBundleIdentifier: settings).isEmpty || waited < 20
+            {
                 waited += 1
                 try? await Task.sleep(for: .milliseconds(500))
             }
             card.switchIsOn()
-            self.card = nil
         }
     }
 
-    private func settingsOpen() -> Bool {
-        !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.systempreferences").isEmpty
-    }
-
-    /// Asks for the earlier Chete's folder, then its key, for which macOS asks his password once.
+    /// Asks for the earlier Chete's folder, then its key, "History Key", for which macOS asks his password once.
     private func bringInOldClips() -> String? {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.message = "Choose your old Chete folder."
-        panel.prompt = "Bring In"
-        guard panel.runModal() == .OK, let chosen = panel.url else { return nil }
-        do {
-            let came = try EarlierChete(folder: chosen, key: EarlierKey.read()).bringIn(
+        guard let chosen = chosen("Choose your old Chete folder.", folder: true) else { return nil }
+        guard
+            let came = try? EarlierChete(folder: chosen, key: AnotherAppsKey.read(named: "History Key")).bringIn(
                 to: folder, keyName: Clips.keyName)
-            CheteScene.reread()
-            return came.broughtIn == 1 ? "Brought in 1 clip." : "Brought in \(came.broughtIn) clips."
-        } catch {
-            return "That folder has no old clips Chete can open."
-        }
+        else { return "That folder has no old clips Chete can open." }
+        CheteScene.reread()
+        return came.broughtIn == 1 ? "Brought in 1 clip." : "Brought in \(came.broughtIn) clips."
     }
 
     /// Asks for an exported file and brings it back.
     private func bringBack() -> String? {
+        guard let file = chosen("Choose a file you exported from Chete.", folder: false) else { return nil }
+        guard let said = try? FirstOpen.bringBack(from: file, into: folder, keyName: Clips.keyName)
+        else { return "That file isn't one Chete exported." }
+        CheteScene.reread()
+        return said
+    }
+
+    /// A folder or an exported file he chooses, or nothing.
+    private func chosen(_ message: String, folder: Bool) -> URL? {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.json]
-        panel.message = "Choose a file you exported from Chete."
-        guard panel.runModal() == .OK, let file = panel.url else { return nil }
-        do {
-            let said = try FirstOpen.bringBack(from: file, into: folder, keyName: Clips.keyName)
-            CheteScene.reread()
-            return said
-        } catch {
-            return "That file isn't one Chete exported."
-        }
+        (panel.canChooseFiles, panel.canChooseDirectories, panel.message) = (!folder, folder, message)
+        if !folder { panel.allowedContentTypes = [.json] }
+        return panel.runModal() == .OK ? panel.url : nil
     }
 
     /// Notes what was skipped, so it waits in Settings, and shows Chete.

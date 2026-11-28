@@ -3,9 +3,9 @@ import Foundation
 import Security
 import Testing
 
-@testable import CheteKit
+@testable import Keep
 
-/// A key kept as the earlier Chete kept its own, under a made-up account name the real one never uses, and removed after.
+/// A key kept as another app keeps its own, under a made-up account name the real one never uses, and removed after.
 private struct MadeUpKey {
     let account = "Sagar Tests · \(UUID().uuidString)"
     let bytes = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
@@ -24,11 +24,11 @@ private struct MadeUpKey {
     }
 }
 
-@Test func theEarlierKeyIsFoundWithoutBeingReadAndThenRead() throws {
+@Test func anotherAppsKeyIsFoundWithoutBeingReadAndThenRead() throws {
     let key = MadeUpKey()
     defer { key.removed() }
-    #expect(!EarlierKey.isHere(account: key.account))
+    #expect(!AnotherAppsKey.isHere(named: key.account))
     key.kept()
-    #expect(EarlierKey.isHere(account: key.account))
-    #expect(try EarlierKey.read(account: key.account).withUnsafeBytes { Data($0) } == key.bytes)
+    #expect(AnotherAppsKey.isHere(named: key.account))
+    #expect(try AnotherAppsKey.read(named: key.account).withUnsafeBytes { Data($0) } == key.bytes)
 }

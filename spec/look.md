@@ -19,8 +19,10 @@ a colour, a font or a size, so a change to the look reaches every app at once.
    `c92ea7c`: its typeface, colours, sizes, spacing, corners, shadows and parts, with nothing changed
    but the one size named in 2.
    A part Search does not have is drawn the way Search draws its nearest one. Lexicon
-   is paper and ink, set in Caslon, sharing Modern's parts and spacing. Modern comes first, and Lexicon
-   follows once Modern's pictures are approved. An app chooses its theme once. No seasons, no variants.
+   is paper and ink, set in New York, Apple's own serif, sharing Modern's parts and spacing.
+   Its paper and ink are those of Lexicon's sketch, light and dark, and every word reads at 4.5 to 1 or
+   more. Modern comes first, and Lexicon follows once Modern's pictures are approved. An app chooses its
+   theme once. No seasons, no variants.
 2. **Roles, not values.** Colour, type, spacing, corner radius, shadow and motion are each a short list
    of names. Each colour pair carries its contrast as a number. Modern keeps Search's colours even
    where words fall below 4.5 to 1. One size of type is not Search's: the hero, larger than any of
@@ -61,8 +63,10 @@ a colour, a font or a size, so a change to the look reaches every app at once.
 ## What Proves It
 
 A Modern part is done when its picture matches the same part pictured from Search's own code at
-`c92ea7c`, in light and dark, kept beside it as the reference. A part Search does not have, and all of Lexicon, has no Search picture
-to match: the owner first sees it in an app's screen, and approves that screen's pictures. Motion is done when each movement, measured
+`c92ea7c`, in light and dark, kept beside it as the reference. A part Search does not have, and all of
+Lexicon, has no Search picture to match: the owner first sees it in an app's screen, and approves that
+screen's pictures. Until then, Lexicon is built toward its sketch, kept beside Search's pictures.
+Motion is done when each movement, measured
 through time, stays within two hundredths of the same movement measured from Search's own code at
 `c92ea7c`, kept beside it as the reference, and a test shows each movement is instant under Reduce
 Motion, but for that one fade. Keyboard reach and labels are to be proven by the Gallery's tour and its audit, set aside for now (decision 9).
