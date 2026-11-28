@@ -3,15 +3,7 @@ import Testing
 
 /// Asks the real rules script whether a title is in Title Case.
 private func isTitleCase(_ title: String) throws -> Bool {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["title", title]
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.check, ["title", title]).words == "yes\n"
 }
 
 @Test(arguments: [

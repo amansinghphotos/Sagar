@@ -3,15 +3,7 @@ import Testing
 
 /// Asks the real release script whether one version may follow the last one that shipped.
 private func follows(_ last: String, _ next: String) throws -> Bool {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["follows", last, next]
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.release, ["follows", last, next]).words == "yes\n"
 }
 
 @Test(arguments: [

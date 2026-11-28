@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 import Testing
 
-private let root = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
+private let root = Script.repository
 
 /// A real movie, as a tour records one: two seconds at 30 frames a second, 1600 by 1000 pixels, going from black to
 /// white, written with AVFoundation into a temporary folder.

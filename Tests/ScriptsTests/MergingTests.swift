@@ -4,16 +4,7 @@ import Testing
 /// Gives the real rules script GitHub's recorded answer about where a pull request stands, and returns whether the
 /// ready step may merge it at once.
 private func merging(_ record: String) throws -> String {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = ["merging", "amansinghphotos"]
-    process.standardInput = try FileHandle(forReadingFrom: here.appending(path: "Fixtures/\(record).json"))
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["merging", "amansinghphotos"], input: Script.recorded("\(record).json")).words
 }
 
 /// Recorded from GitHub for Pasting for You: both checks passed and nobody had to answer, so GitHub refused to wait

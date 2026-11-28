@@ -4,19 +4,9 @@ import Testing
 /// Asks the real rules script, in this real package, what a change to these files can reach: the tests, builds and
 /// tours that run for it, before a commit here and, with `ci`, on GitHub.
 private func reached(_ files: [String], asking command: String = "reached", ci: Bool = false) throws -> String {
-    let root = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = root.appending(path: "Scripts/check")
-    process.arguments = [command] + files
-    process.currentDirectoryURL = root
     var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
     if ci { environment["CI"] = "true" }
-    process.environment = environment
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    return try Script.run(Script.check, [command] + files, in: Script.repository, environment: environment).words
 }
 
 @Test(arguments: [

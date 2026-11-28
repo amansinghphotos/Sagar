@@ -4,21 +4,9 @@ import Testing
 /// Asks the real release script about a release's notes: nothing if they are not allowed, else the reason it
 /// gives the owner, which comes from the first line that is there.
 private func reason(for notes: String) throws -> String? {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
-    let process = Process()
-    let question = Pipe()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["why"]
-    process.standardInput = question
-    process.standardOutput = answer
-    process.standardError = Pipe()
-    try process.run()
-    question.fileHandleForWriting.write(Data(notes.utf8))
-    try question.fileHandleForWriting.close()
-    process.waitUntilExit()
-    guard process.terminationStatus == 0 else { return nil }
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    let said = try Script.run(Script.release, ["why"], input: Data(notes.utf8), errors: .hidden)
+    guard said.status == 0 else { return nil }
+    return said.words
 }
 
 @Test(arguments: [

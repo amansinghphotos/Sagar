@@ -4,26 +4,15 @@ import Testing
 /// Gives the real release script a release pull request's comments, as GitHub lists them, and how the proof on
 /// GitHub's Mac ended. Returns the note it would post there for the owner, which is nothing when he needs none.
 private func notice(_ ended: String, after comments: Data) throws -> String {
-    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let list = folder.appending(path: "comments.json")
-    try comments.write(to: list)
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
-    process.arguments = ["notice", "Chete", "1.1", ended, "the-owner", "Chete 1.0 did not take the update."]
-    process.standardInput = try FileHandle(forReadingFrom: list)
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(
+        Script.release, ["notice", "Chete", "1.1", ended, "the-owner", "Chete 1.0 did not take the update."],
+        input: comments
+    ).words
 }
 
 /// The recorded comments of a real pull request. No release has shipped yet, so none of them is a note about a proof.
 private func recorded() throws -> Data {
-    let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures")
-    return try Data(contentsOf: fixtures.appending(path: "A Reply That Names Its Commit.json"))
+    try Script.recorded("A Reply That Names Its Commit.json")
 }
 
 /// The same list once GitHub also holds a note the script wrote: what the next run of the proof would be given.

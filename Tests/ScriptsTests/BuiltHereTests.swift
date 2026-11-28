@@ -5,15 +5,7 @@ import Testing
 /// GitHub's Mac builds every app for every change to the code, so here it is only worth it for what nothing
 /// else on this Mac compiles.
 private func appsAreBuiltHere(_ files: [String]) throws -> Bool {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["apps"] + files
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.check, ["apps"] + files).words == "yes\n"
 }
 
 @Test(arguments: [

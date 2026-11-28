@@ -1,21 +1,11 @@
 import Foundation
 import Testing
 
-private let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
+private let project = Script.repository
 
 /// Runs a tool in a folder and returns what it printed, its last line break left off.
 private func run(_ tool: URL, _ arguments: [String], in folder: URL, environment: [String: String]) throws -> String {
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = tool
-    process.arguments = arguments
-    process.currentDirectoryURL = folder
-    process.environment = environment
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    let printed = String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-    return printed.trimmingCharacters(in: .newlines)
+    try Script.run(tool, arguments, in: folder, environment: environment).words.trimmingCharacters(in: .newlines)
 }
 
 /// Where a folder really is, past the links macOS puts in front of its temporary folders.
