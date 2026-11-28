@@ -42,10 +42,9 @@ this Mac unless you carry it.
    it opens from the menu bar or, quicker, with a shortcut. Then it sets Chete up, one step to a
    page: your shortcut, keeping what you copy where macOS asks about it, and pasting for you. Last
    come the offers to bring back an exported file and to open at login. For each permission it opens
-   System Settings, and
-   steps aside as a small card that stays in front. The card names the place and shows the switch
-   to look for. Only you can turn it on. The welcome keeps checking, and goes on by itself once it
-   is on. Pages arrive and leave with Look's motion. Any step can be skipped, and waits in Settings.
+   System Settings, and steps aside as a small card that stays in front. The card names the place and
+   shows the switch to look for. Only you can turn it on. The welcome keeps checking, and goes on by
+   itself once it is on. Pages arrive and leave with Look's motion. Any step can be skipped, and waits in Settings.
    It never asks for a Claude key.
    On a Mac that has the earlier Chete's clips, one more page brings them in. Everything Chete will
    ever ask is asked in the welcome, each with a line on what your Mac will show. Nothing asks you,
