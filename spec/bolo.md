@@ -26,8 +26,10 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    by itself and is picked. Fluid Speech Pro, about 620 megabytes, is the default speech model; Gemma
    E4B, about 4.4 gigabytes, is the default tidier. *(waits on your tick)* Models already in a folder you
    choose are used as they are, and nothing is downloaded for them. The speech models run through
-   FluidAudio, under the Apache 2.0 licence; the tidying models through MLX, under the MIT licence. Both
-   are free to use, and the About window credits them and each model.
+   FluidAudio, under the Apache 2.0 licence, and the tidying models through MLX, under the MIT licence;
+   Fluid Speech Pro is under CC BY 4.0 and Gemma under Apache 2.0. All are free to use, and the About
+   window credits each. A model that needs outside code you have not approved is not offered until you
+   have.
    *Proved by:* before 1.0 is offered to you, it hears recordings you choose with no more mistakes than
    the Bolo before it. If it makes more, you are asked again.
 3. **It reads where you are,** the moment you press the key, in a quarter of a second at most: the app
