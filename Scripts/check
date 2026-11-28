@@ -86,10 +86,12 @@ if [ "${1:-}" = leaving ]; then # Scripts/check leaving: before a Mac is given u
     exit 1
 fi
 
-if [ "${1:-}" = clashes ]; then # Scripts/check clashes <commit>: the files where <commit> and main, as GitHub has it,
-    # changed the same lines. Git's own merge, made in memory: nothing in the folder changes.
-    git rev-parse -q --verify "${2:?Scripts/check clashes <commit>}^{commit}" >/dev/null || exit 2 # git says 1 for this too
-    out=$(git merge-tree --write-tree --name-only --no-messages origin/main "$2")
+if [ "${1:-}" = clashes ]; then # Scripts/check clashes <commit> [<other>]: the files where <commit> and main, as GitHub
+    # has it, or another commit named, changed the same lines. Git's own merge, made in memory: nothing in the folder
+    # changes.
+    git rev-parse -q --verify "${2:?Scripts/check clashes <commit> [<other>]}^{commit}" >/dev/null || exit 2 # git says 1 too
+    git rev-parse -q --verify "${3:-origin/main}^{commit}" >/dev/null || exit 2
+    out=$(git merge-tree --write-tree --name-only --no-messages "${3:-origin/main}" "$2")
     case $? in 0) exit 0 ;; 1) printf '%s\n' "$out" | sed '1d; /^$/d'; exit 1 ;; *) exit 2 ;; esac
 fi
 
@@ -126,6 +128,24 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     clashing=$(Scripts/check clashes "$head") ||
         { [ -n "$clashing" ] && echo "#$request clashes with main in $(paste -sd ' ' - <<<"$clashing"). Bring it up to date with main first." ||
             echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
+    # Nor may it clash with a request already shown: whichever merged first would leave the other to be brought up to
+    # date, and an approval of his undone, as #273 was by #262.
+    others=$(gh pr list --state open --limit 1000 --json number,isDraft --jq '.[] | select(.isDraft | not) | .number') ||
+        { echo "Could not list the requests already shown. Nobody was asked."; exit 1; }
+    [ "$(wc -l <<<"$others")" -lt 1000 ] || { echo "A thousand requests are shown; not all could be compared. Nobody was asked."; exit 1; }
+    for other in $others; do
+        [ "$other" != "$request" ] || continue
+        if ! git fetch -q origin "pull/$other/head"; then
+            echo "#$other could not be fetched, so #$request could not be compared with it. Nobody was asked."
+            exit 1
+        fi
+        if ! clashing=$(Scripts/check clashes "$head" FETCH_HEAD); then
+            [ -n "$clashing" ] || { echo "#$request could not be compared with #$other. Nobody was asked."; exit 1; }
+            echo "#$request clashes with #$other, already shown, in $(paste -sd ' ' - <<<"$clashing")."
+            echo "Wait for #$other to merge, then bring this up to date. Nobody was asked."
+            exit 1
+        fi
+    done
     # The words are judged here first, by the very rules GitHub runs, so a fault is told now in its own lines. GitHub
     # judges a request's words only once it is shown to someone: a draft is still being written.
     owner=${repository%/*}
