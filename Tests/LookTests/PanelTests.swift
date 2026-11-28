@@ -29,9 +29,5 @@ private var panels: some View {
 
 @Test(arguments: [false, true])
 func thePanelsLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Panels \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: panels, width: 400, height: 460, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: panels, width: 400, height: 460, named: "Panels", dark: dark)
 }

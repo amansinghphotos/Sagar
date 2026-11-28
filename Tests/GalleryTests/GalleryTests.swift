@@ -16,60 +16,28 @@ private func alone(_ page: some View, dark: Bool) -> some View {
         .environment(\.colorScheme, dark ? .dark : .light)
 }
 
-@Test(arguments: [false, true])
-func theTokensPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: alone(Tokens(), dark: dark), width: size.width, height: size.height,
-        named: dark ? "gallery-dark" : "gallery-light", dark: dark)
+/// Each page as the Gallery shows it.
+@ViewBuilder private func shown(_ page: Page) -> some View {
+    switch page {
+    case .tokens: Tokens()
+    case .controls: Controls()
+    case .choices: Choices()
+    case .lists: Lists()
+    case .overlays: Overlays()
+    case .states: States()
+    case .keyboard: KeyboardPage()
+    }
 }
 
-@Test(arguments: [false, true])
-func theControlsPageMatchesItsPicture(dark: Bool) throws {
+/// Each page, light and dark, matches its picture: `gallery-light.png` for the tokens, the first page, and
+/// `gallery-<page>-light.png` for the rest.
+@Test(arguments: Page.allCases, [false, true])
+func eachPageMatchesItsPicture(page: Page, dark: Bool) throws {
     let size = WindowSize.standard
+    let name = page == .tokens ? "gallery" : "gallery-\(page.rawValue.lowercased())"
     try expectPicture(
-        of: alone(Controls(), dark: dark), width: size.width, height: size.height,
-        named: "gallery-controls-\(dark ? "dark" : "light")", dark: dark)
-}
-
-@Test(arguments: [false, true])
-func theChoicesPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: alone(Choices(), dark: dark), width: size.width, height: size.height,
-        named: "gallery-choices-\(dark ? "dark" : "light")", dark: dark)
-}
-
-@Test(arguments: [false, true])
-func theListsPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: alone(Lists(), dark: dark), width: size.width, height: size.height,
-        named: "gallery-lists-\(dark ? "dark" : "light")", dark: dark)
-}
-
-@Test(arguments: [false, true])
-func theOverlaysPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: alone(Overlays(), dark: dark), width: size.width, height: size.height,
-        named: "gallery-overlays-\(dark ? "dark" : "light")", dark: dark)
-}
-
-@Test(arguments: [false, true])
-func theStatesPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: alone(States(), dark: dark), width: size.width, height: size.height,
-        named: "gallery-states-\(dark ? "dark" : "light")", dark: dark)
-}
-
-@Test(arguments: [false, true])
-func theKeyboardPageMatchesItsPicture(dark: Bool) throws {
-    let size = WindowSize.standard
-    try expectPicture(
-        of: alone(KeyboardPage(), dark: dark), width: size.width, height: size.height,
-        named: "gallery-keyboard-\(dark ? "dark" : "light")", dark: dark)
+        of: alone(shown(page), dark: dark), width: size.width, height: size.height,
+        named: "\(name)-\(dark ? "dark" : "light")", dark: dark)
 }
 
 /// Search's column keeps its width beside its page as a card, and the page takes the rest of a narrow, a default

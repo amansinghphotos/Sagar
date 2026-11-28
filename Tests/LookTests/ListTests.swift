@@ -25,9 +25,5 @@ private var lists: some View {
 
 @Test(arguments: [false, true])
 func theListPartsLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Lists \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: lists, width: 320, height: 210, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: lists, width: 320, height: 210, named: "Lists", dark: dark)
 }

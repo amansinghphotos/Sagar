@@ -10,13 +10,10 @@ import Testing
 /// picture harness into `Fixtures/Search Bubble Light.png` and `Dark.png`.
 @Test(arguments: [false, true])
 func aToastLooksAsSearchsCapsuleDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Bubble \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
     var queue = ToastQueue()
     queue.show("Copied. Press ⌘V to paste.")
     let shown = Rectangle().fill(Role.wash).toasts(.constant(queue)).frame(width: 360, height: 90)
-    #expect(differingPixels(try picture(of: shown, width: 360, height: 90, dark: dark), search) <= tolerance)
+    try expectSearchPicture(of: shown, width: 360, height: 90, named: "Bubble", dark: dark)
 }
 
 /// Toasts show one at a time, in the order they came.
@@ -50,13 +47,10 @@ func aToastLooksAsSearchsCapsuleDoes(dark: Bool) throws {
 /// `Dark.png`.
 @Test(arguments: [false, true])
 func aBannerLooksAsSearchsQuestionDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Banner \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
     let banner = Banner(
         icon: "bell", question: "Chete wants to paste for you", yes: ("Allow once", {}),
         maybe: ("Always allow", {}), no: ("Don't allow", {})
     )
     .padding(30).frame(width: 600, height: 120).background(Role.wash)
-    #expect(differingPixels(try picture(of: banner, width: 600, height: 120, dark: dark), search) <= tolerance)
+    try expectSearchPicture(of: banner, width: 600, height: 120, named: "Banner", dark: dark)
 }

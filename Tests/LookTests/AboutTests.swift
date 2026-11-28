@@ -33,9 +33,5 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theCardAndAboutLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search About \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 920, height: 460, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 920, height: 460, named: "About", dark: dark)
 }

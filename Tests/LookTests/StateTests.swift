@@ -10,9 +10,6 @@ import Testing
 /// repository's picture harness, and pictured into `Fixtures/Search States Light.png` and `Dark.png`.
 @Test(arguments: [false, true])
 func theStatesLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search States \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
     let states = VStack(alignment: .leading, spacing: 0) {
         Nothing("No clips yet.")
         Trouble(message: "This could not be read.\nTry again in a moment.") {}.frame(height: 110)
@@ -20,5 +17,5 @@ func theStatesLookAsSearchsDo(dark: Bool) throws {
             filename: "Clips from the old Chete", message: "Bringing them in", completed: 1200, total: 3400, cancel: {})
     }
     .frame(width: 420, height: 380).background(Role.ground)
-    #expect(differingPixels(try picture(of: states, width: 420, height: 380, dark: dark), search) <= tolerance)
+    try expectSearchPicture(of: states, width: 420, height: 380, named: "States", dark: dark)
 }
