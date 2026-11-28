@@ -22,18 +22,16 @@ His word is given in two places. In the chat he reports a fault, asks for someth
 On a pull request he answers with its review: he approves, or he asks for changes in his own words.
 
 "His approval" is a GitHub approval from his own account. Agents work as a GitHub App with no admin
-rights, which cannot approve for him. He approves his decisions and only those: what an app must do,
-how a screen looks, each release, and anything involving money, keys or an outside dependency
-(`.github/CODEOWNERS` is the list). A change to the working rules is checked by GitHub and the
+rights, which cannot approve for him. He approves his decisions and only those, which section 9 lists.
+A change to the working rules is checked by GitHub and the
 reviewer, and carries the label `rules`, so he can read every one of them in one list at any time.
 His pending approvals are the only list of things waiting on him.
 
 ## 2. Principles
 
 1. Simple beats complete. A part that needs explaining twice is removed.
-2. He is asked for a yes on each app's must-have list, on a change to the look, on each release, and
-   on anything that involves money, a key, a dependency or a permission. Everything else is decided
-   and reported in a line. Agents merge ordinary work themselves once checks are green.
+2. He is asked for a yes on his decisions (section 9). Everything else is decided and reported in a
+   line. Agents merge ordinary work themselves once checks are green.
 3. What Apple provides is used as Apple intends. A dependency needs his yes and a decision record.
 4. Every line is written fresh, test first. Other code is read for ideas, and none is pasted.
 5. Shared code is written when the first app needs it, not ahead of need.
@@ -49,27 +47,21 @@ Until Look's first set of parts is approved, decision 7 sets principle 5 aside f
 
 ## 3. The Repository
 
+The front page, `README.md`, maps the folders at the top. What the plan itself rests on:
+
 ```
-README.md  SPEC.md  CONSTRAINTS.md  CLAUDE.md  NOW
 Package.swift          every module and its tests
 Sagar.xcodeproj        one thin target per app and one tour per app
 Config/                Shared.xcconfig, <App>.xcconfig, Info.plist, Export.plist
-Apps/<App>/            Main.swift, Tour.swift, assets, entitlements
-Sources/Look/          tokens, themes, components (pure SwiftUI)
-Sources/Keep/          his settings and data as plain files, export, import, sealing, event log
+Apps/<App>/            Main.swift and Tour.swift, and nothing else
+Sources/Look/          tokens, themes, components (pure SwiftUI), shown by Sources/Gallery
+Sources/Keep/          his settings and data as plain files, sealed where they must be
 Sources/Shell/         what every Mac app repeats: settings, permissions, login item, updates
-Sources/Taps/          event taps and C callbacks as streams
-Sources/Minds/         speech and language models behind one interface
+Sources/Taps/          event taps and C callbacks as streams (to come)
+Sources/Minds/         speech and language models behind one interface (to come)
 Sources/<App>Kit/      one app's feature; Mac-only files under Mac/
 Tests/<Module>Tests/   Swift Testing; approved pictures under Pictures/
 spec/<app>.md          what it is for, must-haves, network needs, out of scope
-spec/look.md           every part of the look, its two themes and its motion
-docs/                  what is served to people: the download page, each app's update feed, New Mac.md
-Checklists/            every repeated procedure, read every time
-Decisions/             why things are the way they are
-.claude/               settings, two hooks, one reviewer agent
-.github/               check.yml, release.yml, CODEOWNERS, the two templates, the rulesets
-Scripts/               check, build, release
 ```
 
 A module exists once an app needs it. AppKit is allowed only in Shell, Taps and a Kit's `Mac/` folder.
@@ -198,8 +190,8 @@ that does not talk to Claude never asks. This is built with the first app that n
 
 ## 8. The Look and the Words
 
-`spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
-Search's motion. Modern is Search's look exactly, proved part by part against Search's own pictures.
+`spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with motion
+written here from how Search's moves. Modern is Search's look exactly, proved part by part against Search's own pictures.
 
 Every app's words are written the way a friendly person would say them: short, warm and plain. One
 idea to a sentence, everyday words, "you" for the reader, and contractions where they sound natural.
@@ -231,7 +223,8 @@ on every change, and he holds it on each picture.
 
 - **Always:** a test first; `Scripts/check` green before a commit; one issue per pull request.
 - **His approval first:** `spec/`, `NOW`, approved pictures and the token file, releases and all that
-  is served to people, signing and keys, a dependency, a permission. `.github/CODEOWNERS` is the list.
+  is served to people, anything involving money, signing and keys, a dependency, a permission.
+  `.github/CODEOWNERS` is the list.
 - **Checked without him:** the working rules, which are the scripts, checks, hooks, checklists and
   numbers. Such a change carries the label `rules` and is read by the reviewer.
 - **Never:** anything personal in this repository (his data, a workplace detail, a key, an e-mail
@@ -266,8 +259,10 @@ usual calls and cannot see every way to fetch a file.
 
 ## 11. Written When the First App Needs It
 
-Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds.
+Written so far, for Chete: Look with its Gallery, Keep, and Shell's permissions, menu bar, hot keys and
+updates. Still to come, each when an app needs it: Keep's export, import and event log; Shell's settings
+window, login item and Send Report; Taps and Minds; and the check that Look also compiles for iPhone,
+where only Keep is built today.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
