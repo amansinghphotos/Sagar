@@ -48,11 +48,9 @@ struct WelcomeOnThisMac: View {
         var given = WelcomeGiven(
             keeping: Permission.pasteFromOtherApps.isGiven, pasting: Permission.accessibility.isGiven,
             hasOldClips: AnotherAppsKey.isHere(named: "History Key"), opensAtLogin: LoginItem.isOn)
-        // A preset macOS already uses is taken. If the one kept is, the welcome starts on the first free one.
-        given.taken = Set(WelcomeGiven.suggestions.filter { Shortcut.chete.warning(for: $0) != nil })
-        let kept = ((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut
-        given.shortcut =
-            ([kept].compactMap(\.self) + WelcomeGiven.suggestions).first { !given.taken.contains($0) } ?? given.shortcut
+        given.start(
+            kept: ((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut,
+            taken: Set(WelcomeGiven.suggestions.filter { Shortcut.chete.warning(for: $0) != nil }))
         return given
     }
 

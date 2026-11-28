@@ -5,8 +5,8 @@ import notify
 final class CheteTour: XCTestCase {
     /// On GitHub's new Mac, the welcome comes first, and is walked as a person would: every page, a shortcut
     /// chosen, the pasting page's own button opening System Settings with the card in front, then Start, which
-    /// shows Chete. The shortcut chosen opens Chete from another app, and the welcome never shows again. Named to run first, as
-    /// XCTest runs a class's steps in the order of their names.
+    /// shows Chete. The shortcut chosen opens Chete from another app, and the welcome never shows again. Named to
+    /// run first, as XCTest runs a class's steps in the order of their names.
     @MainActor
     func testAFirstOpenWelcomesYouAndSetsCheteUp() throws {
         let app = XCUIApplication()

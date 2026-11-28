@@ -21,6 +21,12 @@ package struct WelcomeGiven: Equatable, Sendable {
     package var taken: Set<KeyCombo> = []
 
     /// Chooses a suggestion, unless it is taken.
+    /// Marks the presets macOS uses as taken, and starts on the shortcut kept, or else the first free one.
+    package mutating func start(kept: KeyCombo?, taken: Set<KeyCombo>) {
+        self.taken = taken
+        shortcut = ([kept].compactMap(\.self) + Self.suggestions).first { !taken.contains($0) } ?? shortcut
+    }
+
     package mutating func choose(_ keys: KeyCombo) {
         if !taken.contains(keys) { shortcut = keys }
     }

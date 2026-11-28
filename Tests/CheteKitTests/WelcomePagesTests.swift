@@ -69,3 +69,16 @@ func eachCardLooksAsApproved(name: String, dark: Bool) throws {
         of: pages(at: .oldClips, given), width: WelcomeSize.window.width, height: WelcomeSize.window.height,
         named: "welcome-oldClips-given")
 }
+
+/// The welcome starts on the shortcut kept, unless macOS uses it; then on the first preset free, and a preset macOS
+/// uses is marked taken.
+@Test func theWelcomeStartsOnTheShortcutKeptOrTheFirstFree() {
+    let (first, second, third) = (WelcomeGiven.suggestions[0], WelcomeGiven.suggestions[1], WelcomeGiven.suggestions[2])
+    var given = WelcomeGiven()
+    given.start(kept: third, taken: [])
+    #expect(given.shortcut == third && given.taken.isEmpty)
+    given.start(kept: third, taken: [third, first])
+    #expect(given.shortcut == second && given.taken == [third, first])
+    given.start(kept: nil, taken: [first])
+    #expect(given.shortcut == second)
+}
