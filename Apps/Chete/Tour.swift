@@ -1,4 +1,5 @@
 import XCTest
+import notify
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
@@ -52,6 +53,17 @@ final class CheteTour: XCTestCase {
         try audit(app, "Window")
     }
 
+    /// When a build to try takes its place, the release command asks Chete for it by the notification it posts, which
+    /// needs no permission, and Chete quits the normal way.
+    @MainActor
+    func testItQuitsWhenTheReleaseCommandAsksForItsPlace() throws {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
+        notify_post("com.amansingh.chete.new-build")
+        XCTAssert(app.wait(for: .notRunning, timeout: 10), "Chete did not quit when asked for its place.")
+    }
+
     /// It lives in the menu bar. Its item there drops a card with Settings, Check for Updates and Quit, since an
     /// app with no Dock icon shows no menus of its own, so none of them is kept in one. The card opens Chete's
     /// window again after it was closed.
@@ -76,6 +88,26 @@ final class CheteTour: XCTestCase {
         XCTAssert(app.buttons["Quit Chete"].exists, "The card has no way to quit.")
         open.click()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "The card did not open Chete.")
+    }
+
+    /// The first time a new build opens, it shows what is new, once. Told it last saw another build, Chete shows
+    /// the line this build was made with; opened again, it does not.
+    @MainActor
+    func testANewBuildShowsWhatIsNewOnce() throws {
+        let app = XCUIApplication()
+        let line = app.staticTexts["A line the tour looks for."]
+        app.launchArguments = ["-Shell.LastBuildSeen", "an older build"]
+        app.launch()
+        XCTAssert(line.waitForExistence(timeout: 10), "A new build did not show what is new.")
+        try audit(app, "What is new")
+        line.click()  // once clicked, the card takes the keyboard, and Escape closes it
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssert(line.waitForNonExistence(timeout: 5), "The card for what is new did not close.")
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
+        XCTAssertFalse(line.waitForExistence(timeout: 5), "What is new showed a second time.")
     }
 
     /// Each address Chete opens System Settings at lands on the place it names: Paste from Other Apps, and

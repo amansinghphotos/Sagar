@@ -28,10 +28,17 @@ private struct SearchMeasures: Decodable {
     }
 }
 
-@Test(arguments: TypeRole.allCases)
+/// Every size but the hero, which `spec/look.md` allows as the one size that is not Search's.
+@Test(arguments: TypeRole.allCases.filter { $0 != .hero })
 func eachTypeRoleIsASizeSearchUses(role: TypeRole) throws {
     let type = SearchMeasures.Words(size: role.size, weight: role.weightName, design: role.designName)
     #expect(try SearchMeasures.read().type.contains(type), "\(role)")
+}
+
+@Test func theHeroIsTheOneSizeLargerThanAnyOfSearchs() throws {
+    let largest = try #require(SearchMeasures.read().type.map(\.size).max())
+    #expect(TypeRole.hero.size > largest)
+    #expect(TypeRole.allCases.filter { $0.size > largest } == [.hero])
 }
 
 @Test(arguments: Space.allCases)

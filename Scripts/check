@@ -23,11 +23,17 @@ case ${1:-} in mending | locked | touring) # questions about a branch, asked wit
     jq -r --arg now "${2:?Scripts/check $1 <now> < state}" "$mends"
     exit ;;
 esac
-# Anything else on the command line is a mistake, and must never fall through to running every rule.
-case ${1:-} in "" | folder | leaving | clashes | merging | run | request | size | order | words | reaches | reached | apps | iphone | owed | tool | plain | shown | since | title | launch | findings | reviewed | ready) ;; *)
-    echo "Usage: Scripts/check [folder | leaving | clashes <commit> | merging <owner> < state | run <status> < answer | request | size | order | ready <number> | words <file>… | reached <file>… | apps <file>… | iphone [<module>…] | owed [<file>…] | tool <command>… | plain < description | shown <file>… < description | since <owner> < state | title <title> | launch <limit> < record | findings < tests | reviewed <commit> < comments]"
-    exit 2 ;;
-esac
+# Anything else on the command line is a mistake, and must never fall through to running every rule. The commands
+# are the words this script answers below, each where it tests "${1:-}" against it: a new one is written there alone,
+# and no shared line lists them, so two pieces of work that add one never change the same line.
+commands=$(LC_ALL=C grep -oE '"[$][{]1:-[}]" !?= [a-z]+ []]' Scripts/check | cut -d' ' -f3 | LC_ALL=C sort -u)
+known=no
+for command in $commands; do [ "$command" != "${1:-}" ] || known=yes; done # word for word, never a pattern
+if [ -n "${1:-}" ] && [ $known = no ]; then
+    echo "Usage: Scripts/check [$(paste -sd '|' - <<<"$commands" | sed 's/|/ | /g')]"
+    echo "Each is described where Scripts/check answers it."
+    exit 2
+fi
 export LC_ALL=C
 # Inside a commit hook git names its own folder and index in the environment. Only this script's git keeps them:
 # any other tool that starts git, a package fetch or a test's own small repository, would be sent here instead.
@@ -241,11 +247,14 @@ words_only() { # true when the branch changes only words: documents, specs, feed
     [ -n "$base" ] && [ -n "$(changed)" ] && ! changed | grep -qx 'CONSTRAINTS.md' &&
         ! changed | grep -qvE '^(docs|spec|Checklists|Decisions)/|^[^/]+\.md$|^\.github/(ISSUE_TEMPLATE/|rulesets/|CODEOWNERS$|pull_request_template\.md$)'
 }
-if [ "${1:-}" = words ]; then # Scripts/check words <file>…: says whether a change to these files is words only
+if [ "${1:-}" = words ]; then # Scripts/check words [<file>…]: says whether a change to these files, or with none
+    # named this branch's own change, is words only. GitHub asks it first, to choose the machine the check runs on.
     shift
-    base=given
-    files=("$@")
-    changed() { printf '%s\n' "${files[@]}"; }
+    if [ $# -gt 0 ]; then
+        base=given
+        files=("$@")
+        changed() { printf '%s\n' "${files[@]}"; }
+    fi
     words_only && echo yes || echo no
     exit
 fi
@@ -634,6 +643,7 @@ secrets() {
 }
 
 format() {
+    ! words_only || return $nothing # no Swift file differs from main, where it passed
     local folders=()
     for folder in Apps Sources Tests; do [ -d "$folder" ] && folders+=("$folder"); done
     swift format lint --strict --recursive ${folders[@]+"${folders[@]}"} Package.swift
@@ -715,7 +725,7 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
 tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are within the numbers
     local app=$1 log launch before after result=.build/Tours/$1.xcresult
     log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode \
-        -resultBundlePath "$result" test \
+        -resultBundlePath "$result" test SAGAR_NEW="A line the tour looks for." \
         CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) || {
         xcrun xcresulttool get test-results summary --path "$result" |
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
