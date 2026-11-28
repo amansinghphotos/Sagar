@@ -76,31 +76,16 @@ private struct Mac {
     let mac = try Mac()
     defer { try? FileManager.default.removeItem(at: mac.top) }
     let told = try mac.ready()
-    #expect(told.contains("The owner's ~/.claude/CLAUDE.md\n"))
-    #expect(told.contains("The agent-skills plugin\n"))
-    #expect(told.contains("The taste-skill plugin\n"))
-    #expect(told.contains("The cook skill\n"))
-    #expect(told.contains("The salah skill\n"))
-    #expect(!told.contains("private notes"))
+    #expect(told.contains("The owner's Claude setup, put back by the private notes' Claude/restore\n"))
+    #expect(!told.contains("cloned beside"))
 }
 
-/// Once the Claude instructions, plugins and skill are in, only the drive is missing, as a temporary folder is on
-/// the home folder's own disk; a later change to the instructions
-/// asks for a fresh copy in the notes, so the copy that travels is never old.
-@Test func aMacWithEverythingIsToldNothingUntilItsInstructionsChange() throws {
+/// Once the Claude setup is back, only the drive is missing, as a temporary folder is on the home folder's own disk.
+@Test func aMacWithItsClaudeSetupBackIsToldOnlyOfTheDrive() throws {
     let mac = try Mac()
     defer { try? FileManager.default.removeItem(at: mac.top) }
     try mac.write("Be brief.\n", to: mac.home.appending(path: ".claude/CLAUDE.md"))
-    try mac.write("{}\n", to: mac.home.appending(path: ".claude/settings.json"))
-    try mac.write("cook\n", to: mac.home.appending(path: ".claude/skills/cook/SKILL.md"))
-    try mac.write("salah\n", to: mac.home.appending(path: ".claude/skills/salah/SKILL.md"))
-    try mac.write(
-        #"{"plugins": {"agent-skills@addy-agent-skills": [{}], "taste-skill@taste-skill": [{}]}}"#,
-        to: mac.home.appending(path: ".claude/plugins/installed_plugins.json"))
     #expect(try mac.ready() == "The project on its own drive, off the disk that holds the home folder\n")
-
-    try mac.write("Be brief. Be kind.\n", to: mac.home.appending(path: ".claude/CLAUDE.md"))
-    #expect(try mac.ready().contains("A fresh copy of ~/.claude/CLAUDE.md in the private notes"))
 }
 
 /// Without the notes beside the repository, the Mac is told to clone them.

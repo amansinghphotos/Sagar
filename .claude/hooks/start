@@ -56,7 +56,6 @@ shared=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev
 private="$shared Private"
 # The shared folder's own hook: a chat's copy, and its hook, go when the chat is archived.
 helper="!f() { test \"\$1\" = get && printf 'username=x-access-token\npassword=%s\n' \"\$($(printf %q "$shared/.claude/hooks/start") token)\"; }; f"
-plugins='agent-skills@addy-agent-skills=addyosmani/agent-skills taste-skill@taste-skill=Leonxlnx/taste-skill'
 
 # Everything that grows lives on its own drive, never on the disk that holds the owner's home folder.
 on_drive() { [ "$(stat -f %d "$shared")" != "$(stat -f %d "$HOME")" ]; }
@@ -114,7 +113,7 @@ keep_caches() { # each cache becomes a link into the drive's Caches, taking alon
 }
 
 ready() { # Checklists/Build Mac.md, as what can be seen without asking the keychain or the network.
-    local wanted have='' plugin
+    local wanted have=''
     on_drive || echo "The project on its own drive, off the disk that holds the home folder"
     wanted=$(sed -n 's|.*Xcode_\([0-9.]*\)\.app.*|\1|p' .github/workflows/check.yml 2>/dev/null | head -1)
     # Asking xcodebuild on a Mac without Xcode would put macOS's install dialog on the owner's screen.
@@ -126,19 +125,8 @@ ready() { # Checklists/Build Mac.md, as what can be seen without asking the keyc
             echo "The $cache cache, kept in the Caches folder beside the project"
     done
     [ -d "$private/.git" ] || echo "The private notes, cloned beside the repository as '$(basename "$private")'"
-    for plugin in $plugins; do
-        jq -e --arg p "${plugin%%=*}" '.plugins[$p]' "$HOME/.claude/plugins/installed_plugins.json" >/dev/null 2>&1 ||
-            echo "The ${plugin%%@*} plugin"
-    done
-    [ -f "$HOME/.claude/skills/cook/SKILL.md" ] || echo "The cook skill"
-    [ -f "$HOME/.claude/skills/salah/SKILL.md" ] || echo "The salah skill"
-    # The owner's Claude instructions and settings live only in his home folder: a copy waits in the private notes.
-    for file in CLAUDE.md settings.json; do
-        if [ ! -f "$HOME/.claude/$file" ]; then echo "The owner's ~/.claude/$file"
-        elif [ -d "$private/.git" ] && ! cmp -s "$HOME/.claude/$file" "$private/Claude/$file"; then
-            echo "A fresh copy of ~/.claude/$file in the private notes' Claude folder, committed and pushed"
-        fi
-    done
+    # His Claude setup is the private notes' to keep: their own check names what differs at every chat's start.
+    [ -f "$HOME/.claude/CLAUDE.md" ] || echo "The owner's Claude setup, put back by the private notes' Claude/restore"
 }
 
 case ${1:-} in
@@ -179,18 +167,11 @@ case ${1:-} in
                 "$(git remote get-url origin | sed 's|\.git$||')-Private" "$private" || exit 1
             git -C "$private" config credential.https://github.com.helper "$helper"
         fi
-        mkdir -p ~/.claude/skills
-        for file in CLAUDE.md settings.json; do [ -e ~/.claude/$file ] || cp "$private/Claude/$file" ~/.claude/; done
         # Xcode's own builds go beside the project's, on the drive, not into the home folder.
         defaults write com.apple.dt.Xcode IDECustomDerivedDataLocation "$shared/.build/Xcode"
         keep_caches
-        # The owner's decision pages are built with salah, kept in the private notes; its installer proves the copy.
-        [ -f ~/.claude/skills/salah/SKILL.md ] || "$private/Claude/skills/salah/scripts/install" >/dev/null ||
-            echo "Could not install the salah skill from the private notes."
-        [ -d ~/.claude/skills/cook ] || git clone -q https://github.com/Leonxlnx/cook ~/.claude/skills/cook
-        for plugin in $plugins; do
-            claude plugin marketplace add "${plugin#*=}" >/dev/null && claude plugin install "${plugin%%=*}" >/dev/null
-        done
+        # His rules, settings, skills and plugins come back in one step from the private notes, which prove each.
+        "$private/Claude/restore" || echo "Could not put the owner's Claude setup back from the private notes."
         ready
         exit ;;
     *) echo "Usage: .claude/hooks/start [token | ready | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
