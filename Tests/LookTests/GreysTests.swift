@@ -7,8 +7,7 @@ import Testing
 /// `Greys.white` and `Greys.frame`, and the strength a `.opacity` gives it, read from the source.
 @Test(arguments: ["white", "frame"])
 func theGreysAreSearchs(ground: String) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/Search Greys.json")
-    let search = try JSONDecoder().decode([String: [String: [String: Double]]].self, from: Data(contentsOf: file))
+    let search: [String: [String: [String: Double]]] = try searchRecord("Greys")
     let greys = ground == "white" ? Greys.white : Greys.frame
     let ours: [String: Shade] = [
         "wash": greys.wash, "hover": greys.hover, "tile": greys.tile, "pinLive": greys.pinLive,

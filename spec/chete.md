@@ -18,10 +18,9 @@ this Mac unless you carry it.
    Passwords are kept too, even when the app they come from marks them private, so that you can paste
    one again later. What you copy on your own iPhone or another of your Macs, which macOS hands over
    by itself, is kept too, unless you turn that off.
-   *Asks for:* Paste from Other Apps, once, in System Settings, to keep what you copy. macOS lists
-   Chete there only once Chete has asked, so the welcome has it ask. Until you choose Allow there,
-   Chete keeps nothing, so that macOS never asks you later. Its card in the menu bar says so, with a
-   button back to that step.
+   *Asks for:* nothing on a Mac that lets an app read what you copy, as macOS 27 does. If you have set
+   Paste from Other Apps to Ask or Deny, the welcome asks you to allow it there, and until you do
+   Chete keeps nothing. Its card in the menu bar says so, with a button back to that step.
 2. **It opens from any app,** with a keyboard shortcut you choose, and from its item in the menu bar.
    You choose one of three in the welcome, and can change it in Settings. The first is
    Shift-Command-C, which the earlier Chete used, and is chosen when the page opens. One that macOS
@@ -41,11 +40,11 @@ this Mac unless you carry it.
 7. **The first open on a new Mac is a welcome** that a person new to computers can finish alone.
    It greets you in Gurmukhi and in English, and says what Chete does in two lines. Those lines say
    it opens from the menu bar or, quicker, with a shortcut. Then it sets Chete up, one step to a
-   page: your shortcut, keeping what you copy, and pasting for you. Last come the offers to bring
-   back an exported file and to open at login. For each permission it opens System Settings, and
-   steps aside as a small card that stays in front. The card names the place and shows the switch
-   to look for. Only you can turn it on. The welcome keeps checking, and goes on by itself once it
-   is on. Pages arrive and leave with Look's motion. Any step can be skipped, and waits in Settings.
+   page: your shortcut, keeping what you copy where macOS asks about it, and pasting for you. Last
+   come the offers to bring back an exported file and to open at login. For each permission it opens
+   System Settings, and steps aside as a small card that stays in front. The card names the place and
+   shows the switch to look for. Only you can turn it on. The welcome keeps checking, and goes on by
+   itself once it is on. Pages arrive and leave with Look's motion. Any step can be skipped, and waits in Settings.
    It never asks for a Claude key.
    On a Mac that has the earlier Chete's clips, one more page brings them in. Everything Chete will
    ever ask is asked in the welcome, each with a line on what your Mac will show. Nothing asks you,

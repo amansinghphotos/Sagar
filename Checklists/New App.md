@@ -9,6 +9,8 @@ done: `gh pr diff 14`. Two lines are not in it, and say so.
 - [ ] Each permission it will ask for, beside the must-have that needs it.
 - [ ] Its must-haves include the first open on a new Mac: earlier work, permissions, the Claude key.
 - [ ] Its offline line: "works offline", or exactly what it fetches and why.
+- [ ] A deep clean, `Checklists/Deep Clean.md`, has run since the previous app shipped. This pull request shows
+      the owner its before and after: he approves the new app and the clean together.
 - [ ] `NOW` names it. The previous app has no open slice and no release waiting.
       Chete was the first app, so `NOW` named it already.
 - [ ] `CONSTRAINTS.md` has a line budget for `<App>Kit`.

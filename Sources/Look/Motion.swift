@@ -51,9 +51,6 @@ nonisolated package struct Motion: Equatable, Sendable {
     /// sidebars do, so the switch still visibly does something. Reduce animations stops even that.
     package var fadesColumn: Bool { slides && reduceMotion && !instant }
 
-    /// How long that fade lasts.
-    package static let fade: TimeInterval = 0.2
-
     /// A length of time for a fade that runs by the clock, or none under Reduce animations.
     package func seconds(_ seconds: TimeInterval) -> TimeInterval { instant ? 0 : seconds }
 

@@ -47,7 +47,9 @@ struct WelcomeOnThisMac: View {
     private static func now() -> WelcomeGiven {
         var given = WelcomeGiven(
             keeping: Permission.pasteFromOtherApps.isGiven, pasting: Permission.accessibility.isGiven,
-            hasOldClips: AnotherAppsKey.isHere(named: "History Key"), opensAtLogin: LoginItem.isOn)
+            hasOldClips: AnotherAppsKey.isHere(named: "History Key"),
+            // Decided once, so the page does not leave while he is on it.
+            asksKeeping: !Permission.pasteFromOtherApps.isGiven, opensAtLogin: LoginItem.isOn)
         given.start(
             kept: ((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut,
             taken: Set(WelcomeGiven.suggestions.filter { Shortcut.chete.warning(for: $0) != nil }))

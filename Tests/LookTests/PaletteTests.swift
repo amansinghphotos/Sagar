@@ -16,14 +16,11 @@ private let made = [
 /// and pictured into `Fixtures/Search Palette Light.png` and `Dark.png`.
 @Test(arguments: [false, true])
 func thePaletteRowsLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Palette \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
     let rows = VStack(spacing: 0) {
         ForEach(Array(made.enumerated()), id: \.offset) { index, item in PaletteRow(item: item, picked: index == 0) }
     }
     .padding(6).frame(width: 420, height: 150).background(Role.ground)
-    #expect(differingPixels(try picture(of: rows, width: 420, height: 150, dark: dark), search) <= tolerance)
+    try expectSearchPicture(of: rows, width: 420, height: 150, named: "Palette", dark: dark)
 }
 
 /// Each word typed narrows the list; nothing typed shows everything, in its own order.

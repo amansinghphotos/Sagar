@@ -61,7 +61,6 @@ package struct Quiet: View {
             .animation(motion.quick, value: hovering)
     }
 
-    /// Faint at rest, soft ink under the pointer.
     private var tint: AnyShapeStyle { hovering ? AnyShapeStyle(Role.ink.opacity(0.7)) : AnyShapeStyle(greys.faint) }
 
     /// The rounded shape the row lights up in, and answers clicks in.

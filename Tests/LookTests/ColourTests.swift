@@ -8,8 +8,7 @@ import Testing
 /// Search's colours as Search's own code draws them: its `Palette` at commit c92ea7c, pictured through this
 /// repository's picture harness, light and dark, and the middle of each swatch read as red, green and blue.
 private func searchColours() throws -> [String: [String: [Int]]] {
-    let file = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/Search Colours.json")
-    return try JSONDecoder().decode([String: [String: [Int]]].self, from: Data(contentsOf: file))
+    try searchRecord("Colours")
 }
 
 @Test(arguments: Role.allCases)

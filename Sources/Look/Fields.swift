@@ -1,4 +1,5 @@
-// Boxes to type into: the search box with its glass and its clear button, a plain named field and a password.
+// Boxes to type into: the search box with its glass and its clear button, a plain named field, a password and a
+// box for several lines.
 import SwiftUI
 
 /// A search box: a magnifying glass, the words, and a button that clears them once there are any.
@@ -120,5 +121,27 @@ extension View {
     /// where they belong whatever height it was given.
     func line(_ height: CGFloat) -> some View {
         frame(height: height, alignment: .top)
+    }
+}
+
+/// A box to write several lines in, such as code, in the monospaced face.
+package struct Writing: View {
+    @Binding private var text: String
+    private let height: CGFloat
+
+    package init(text: Binding<String>, height: CGFloat) {
+        _text = text
+        self.height = height
+    }
+
+    package var body: some View {
+        TextEditor(text: $text)
+            .font(.system(size: 12, design: .monospaced))
+            .foregroundStyle(Role.ink)
+            .scrollContentBackground(.hidden)
+            .autocorrectionDisabled()
+            .padding(Space.near.rawValue)
+            .frame(height: height)
+            .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

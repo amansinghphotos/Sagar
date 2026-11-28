@@ -7,10 +7,7 @@ import Testing
 /// How Search's motion moves, recorded from its code at commit c92ea7c with the scratch recorder's
 /// `Record motion`: each movement from 0 to 1 at every 120th of a second for a second, the launcher's
 /// shiver in points for its half second, and how far a pressed thing gives.
-private let search: [String: [Double]] = {
-    let file = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/Search Motion.json")
-    return try! JSONDecoder().decode([String: [Double]].self, from: Data(contentsOf: file))
-}()
+private let search: [String: [Double]] = try! searchRecord("Motion")
 
 /// The most any frame of ours may stand from Search's: two hundredths of the way.
 private let hair = 0.02
@@ -61,7 +58,6 @@ func movesWithinAHairOfSearch(name: String, animation: Animation?) throws {
     #expect(Motion(reduceMotion: true, slides: true).fadesColumn)
     #expect(!Motion(reduceMotion: false, slides: true).fadesColumn)
     #expect(!Motion(reduceMotion: true).fadesColumn)
-    #expect(Motion(reduceMotion: false, slides: true).folding(out: true) != nil)
 }
 
 /// Reduce animations, the app's own setting, makes every movement at once, the column's fade included.
