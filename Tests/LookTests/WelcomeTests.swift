@@ -37,11 +37,7 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theWelcomeLooksAsSearchsDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Welcome \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 640, height: 480, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 640, height: 480, named: "Welcome", dark: dark)
 }
 
 // How the welcome moves. A still picture cannot show it, so each movement is recorded through time.

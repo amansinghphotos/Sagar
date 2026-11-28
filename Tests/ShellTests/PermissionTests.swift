@@ -16,3 +16,12 @@ import Testing
 @Test @MainActor func readingWhetherAPermissionIsGivenAsksNothing() {
     for permission in Permission.allCases { _ = permission.isGiven }
 }
+
+/// Keeping what is copied counts as given unless the person set Paste from Other Apps to Ask or Deny: macOS 27
+/// lets an app read what is copied without asking, and lists none in that pane.
+@Test func keepingIsGivenUnlessThePersonSaidAskOrDeny() {
+    #expect(Permission.keepingGiven(by: .default))
+    #expect(Permission.keepingGiven(by: .alwaysAllow))
+    #expect(!Permission.keepingGiven(by: .ask))
+    #expect(!Permission.keepingGiven(by: .alwaysDeny))
+}

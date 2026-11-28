@@ -36,10 +36,5 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theFieldsLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Fields \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 300, height: 200, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
-    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 300, height: 200, named: "Fields", dark: dark, shadeForShade: true)
 }

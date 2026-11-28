@@ -30,10 +30,5 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theSwitchesLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Switches \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 340, height: 220, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
-    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 340, height: 220, named: "Switches", dark: dark, shadeForShade: true)
 }

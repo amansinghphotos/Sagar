@@ -3,18 +3,9 @@ import Testing
 
 /// Gives the real hook a shell command, as Claude Code does before running one, and says whether it was refused.
 private func refused(_ command: String) throws -> Bool {
-    let hook = URL(filePath: #filePath).appending(path: "../../../.claude/hooks/draft").standardizedFileURL
-    let process = Process()
-    let input = Pipe()
-    process.executableURL = hook
-    process.standardInput = input
-    process.standardError = Pipe()
-    try process.run()
     let asked = try JSONSerialization.data(withJSONObject: ["tool_input": ["command": command]])
-    input.fileHandleForWriting.write(asked)
-    try input.fileHandleForWriting.close()
-    process.waitUntilExit()
-    return process.terminationStatus == 2
+    let hook = Script.repository.appending(path: ".claude/hooks/draft")
+    return try Script.run(hook, input: asked, errors: .hidden).status == 2
 }
 
 @Test(arguments: [

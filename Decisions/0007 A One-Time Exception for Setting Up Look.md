@@ -1,6 +1,7 @@
 # 7. A One-Time Exception for Setting Up Look
 
-Decided by the owner on 26 November 2026.
+Decided by the owner on 26 November 2026. Decision 8 overrules its copying: nothing of Search's is pasted, and
+its motion is written here. Building Look whole, ahead of need, stands.
 
 **Context.** Look is the set of parts every app is built from, and the owner wants it whole before the
 apps lean on it. How a thing moves is a handful of exact numbers, a spring's response and damping or a
@@ -16,5 +17,3 @@ parts themselves are still measured and written fresh.
 request that finishes that set deletes the lines in `SPEC.md` and `CLAUDE.md` that point here. From
 then on, a new part is written when an app needs it, and nothing is pasted. The motion already taken
 stays, with its notice. Later changes in Search are not taken.
-
-Decision 8 ends this copying: nothing of Search's is pasted, and its motion is written here.

@@ -26,12 +26,7 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theCountLooksAsSearchsDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Count \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 220, height: 80, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
-    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 220, height: 80, named: "Count", dark: dark, shadeForShade: true)
 }
 
 /// Search's reading fill, two fifths of the way, over its row's wash.
@@ -50,15 +45,11 @@ private struct Reading: View {
 
 @Test(arguments: [false, true])
 func theReadingFillLooksAsSearchsDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Reading \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Reading(), width: 240, height: 72, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    let ours = try expectSearchPicture(of: Reading(), width: 240, height: 72, named: "Reading", dark: dark)
     // The fill is faint: read its edge, two fifths along, rather than trust the count of pixels.
     let filled = colour(at: 60, 36, in: ours)
     let open = colour(at: 140, 36, in: ours)
     #expect(filled != open)
-    let theirs = colour(at: 60, 36, in: search)
+    let theirs = try colour(at: 60, 36, in: searchPicture("Reading", dark: dark))
     #expect(zip(theirs, filled).allSatisfy { abs($0 - $1) <= 2 })
 }

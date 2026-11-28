@@ -34,11 +34,7 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theSettingRowsLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Settings \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 460, height: 300, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 460, height: 300, named: "Settings", dark: dark)
 }
 
 /// The stepper moves to the nearest stop either way, even from a value between stops, and none past the ends.

@@ -23,7 +23,10 @@ final class CheteTour: XCTestCase {
         XCTAssert(chosen.waitForExistence(timeout: 5), "The welcome offered no shortcut to choose.")
         chosen.click()
         welcome.buttons["Continue"].click()
-        welcome.buttons["Continue"].click()
+        // macOS 27 lets Chete read what is copied without asking, so there is no page for keeping it.
+        XCTAssert(
+            welcome.staticTexts["Let Chete paste for you."].waitForExistence(timeout: 5),
+            "The page after the shortcut was not the one for pasting.")
         welcome.buttons["Open System Settings"].click()
         let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
         XCTAssert(settings.wait(for: .runningForeground, timeout: 15), "System Settings did not open.")
@@ -51,6 +54,12 @@ final class CheteTour: XCTestCase {
         app.launch()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertFalse(welcome.exists, "The welcome showed again.")
+        // Opened again, Chete still holds the shortcut picked in the welcome.
+        app.windows["Chete"].buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssert(app.windows["Chete"].waitForNonExistence(timeout: 5), "Chete's window did not close.")
+        finder.activate()
+        finder.typeKey("v", modifierFlags: [.control, .command])
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Opened again, Chete forgot the shortcut picked.")
     }
 
     /// Launches Chete, and finishes the welcome with Skip if it shows, as on a new Mac.

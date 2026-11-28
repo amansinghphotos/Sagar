@@ -34,11 +34,7 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theShortcutBoxesLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Keys \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: Showcase(), width: 340, height: 140, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: Showcase(), width: 340, height: 140, named: "Keys", dark: dark)
 }
 
 @Test func aShortcutIsShownAsAMenuShowsIt() {

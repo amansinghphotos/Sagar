@@ -7,19 +7,11 @@ private nonisolated let section = "**What Changed Since Your Review:**"
 /// Gives the real rules script GitHub's state of a pull request, its description and each person's newest review,
 /// and returns whether the owner's part tells him what changed since his review, if he has given one.
 private func saysWhatChanged(_ state: URL) throws -> String {
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    process.arguments = ["since", owner]
-    process.standardInput = try FileHandle(forReadingFrom: state)
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["since", owner], input: Data(contentsOf: state)).words
 }
 
 private func recorded(_ record: String) -> URL {
-    URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/\(record).json")
+    Script.repository.appending(path: "Tests/ScriptsTests/Fixtures/\(record).json")
 }
 
 /// A recorded state in a temporary file, with its description changed, or with the newest review set to what one

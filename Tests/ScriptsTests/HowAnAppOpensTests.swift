@@ -13,14 +13,7 @@ private func opens(keepingOutOfTheDock: Bool?) throws -> String {
     try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
         .write(to: contents.appending(path: "Info.plist"))
 
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
-    process.arguments = ["opens", app.path]
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    return try Script.run(Script.release, ["opens", app.path]).words
 }
 
 @Test func anAppOutOfTheDockOpensFromItsItem() throws {

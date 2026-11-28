@@ -22,10 +22,7 @@ private struct SearchMeasures: Decodable {
     let radius: Set<Double>
     let shadow: Set<Shadow>
 
-    static func read() throws -> SearchMeasures {
-        let file = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures/Search Measures.json")
-        return try JSONDecoder().decode(SearchMeasures.self, from: Data(contentsOf: file))
-    }
+    static func read() throws -> SearchMeasures { try searchRecord("Measures") }
 }
 
 /// Every size but the hero, which `spec/look.md` allows as the one size that is not Search's.

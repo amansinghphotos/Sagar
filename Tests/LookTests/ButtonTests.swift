@@ -27,11 +27,7 @@ private var buttons: some View {
 
 @Test(arguments: [false, true])
 func theButtonsLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Buttons \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let ours = try picture(of: buttons, width: 320, height: 90, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: buttons, width: 320, height: 90, named: "Buttons", dark: dark)
 }
 
 /// A pressed thing gives to Search's 97 per cent, and not at all under Reduce Motion.

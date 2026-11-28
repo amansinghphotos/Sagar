@@ -3,16 +3,7 @@ import Testing
 
 /// Gives the real rules script an app's lines from a tour's system log, and returns what it says.
 private func judged(_ log: String) throws -> String {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = ["feed"]
-    process.standardInput = try FileHandle(forReadingFrom: here.appending(path: "Fixtures/A Tour's Log, \(log).txt"))
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["feed"], input: Script.recorded("A Tour's Log, \(log).txt")).words
 }
 
 /// GitHub's log of a real tour (run 46097693413): Chete asked for its update feed only once its menu-bar card was

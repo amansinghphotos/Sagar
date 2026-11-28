@@ -4,18 +4,7 @@ import Testing
 /// Gives the real rules script what GitHub says of a pull request's reviews and requested reviewers, and returns
 /// whether the owner is asked, as the ready step must leave him whenever he answered before.
 private func asked(_ state: String) throws -> String {
-    let process = Process()
-    let answer = Pipe()
-    let given = Pipe()
-    process.executableURL = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    process.arguments = ["asked", "amansinghphotos"]
-    process.standardInput = given
-    process.standardOutput = answer
-    try process.run()
-    given.fileHandleForWriting.write(Data(state.utf8))
-    try given.fileHandleForWriting.close()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["asked", "amansinghphotos"], input: Data(state.utf8)).words
 }
 
 private nonisolated let answered = #"[{"author": {"login": "amansinghphotos"}, "state": "CHANGES_REQUESTED"}]"#
