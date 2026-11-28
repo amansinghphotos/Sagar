@@ -56,7 +56,8 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    made-up word; and a taught word and a fixed word, each heard a little wrong, written as they should be.
 6. **It tidies quickly, sending little.** It takes out "um", repeats and words you took back, keeps
    your words and meaning, and never answers what you said. A short, plain dictation, up to 25 words
-   with nothing to correct, is tidied on the spot by Bolo's own rules. Anything else goes to Claude,
+   with nothing to correct and no doubtful name, is tidied on the spot by Bolo's own rules. Anything
+   else goes to Claude,
    with only what helps: where you are, a few lines around your cursor, the words on screen that sound
    like yours, and what you said. Its standing instructions are kept ready, so each dictation sends
    little. If Claude has not answered in five seconds, or there is no network, or you are in a private
