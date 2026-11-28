@@ -20,7 +20,7 @@ final class CheteTour: XCTestCase {
         let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
         XCTAssert(settings.wait(for: .runningForeground, timeout: 15), "System Settings did not open.")
         let card = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label CONTAINS %@", "Chete only uses it to paste")).firstMatch
+            .matching(NSPredicate(format: "value CONTAINS %@", "Chete only uses it to paste")).firstMatch
         XCTAssert(card.waitForExistence(timeout: 10), "The card was not in front of System Settings.")
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         shot.name = "The card in front of System Settings"
