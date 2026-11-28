@@ -4,6 +4,8 @@
 #   .claude/hooks/start token               prints a fresh GitHub token for the agents' app
 #   .claude/hooks/start setup [key file]    a new Mac: stores the app's key, then sets up all ready checks
 #   .claude/hooks/start ready               prints what this Mac still needs before it can build, or nothing
+#   .claude/hooks/start caches              on the drive, keeps Swift's caches in the Caches folder beside the project
+#   .claude/hooks/start answers <owner>     reads GitHub's reply about the open pull requests, prints where each stands
 set -u
 here=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$here" || exit 0
@@ -67,39 +69,6 @@ PATH=$tools/bin:$PATH
 # A Mac set up by these steps carries a mark; there, work off the drive stops instead of piling up at home.
 drive_mac() { [ "$(git config --global --get sagar.drive)" = yes ]; }
 
-finished() { # finished <merged heads>: the folders of chats' copies whose work has merged and which hold no changes
-    git worktree list --porcelain | awk '/^worktree /{copy = substr($0, 10)} /^HEAD /{print $2, copy}' | sed 1d |
-        while read -r head copy; do # the first is the shared folder itself
-            [ -d "$copy" ] && grep -qx "$head" <<<"$1" && [ -z "$(git -C "$copy" status --porcelain)" ] && echo "$copy"
-        done
-}
-leftovers() { finished "$1" | while read -r copy; do basename "$copy"; done | tr '\n' ' '; }
-
-tidy() { # tidy <merged heads>: on the drive, a finished copy untouched for a day goes; git refuses one with changes
-    local copy
-    finished "$1" | while read -r copy; do
-        [ -z "$(find "$copy" -mtime -1 -print -quit)" ] || continue # anything in it touched within the day
-        # Ignored files are gone with the copy: only builds may be among them.
-        [ -z "$(git -C "$copy" clean -ndX | grep -v -E '^Would remove (\.build|\.swiftpm)/$|\.DS_Store$')" ] || continue
-        git worktree remove "$copy" 2>/dev/null && basename "$copy"
-    done | tr '\n' ' '
-}
-
-# The Mac's own disk holds the apps and what they must keep; the numbers are in CONSTRAINTS.md.
-most() { awk -F'|' -v row="$1" '$2 ~ row { gsub(/[^0-9.]/, "", $3); print $3; exit }' "$here/CONSTRAINTS.md"; }
-lean() { # each thing on the Mac's own disk that belongs on the drive, or has grown past its size
-    local place found size
-    for place in Library/Developer/Xcode/DerivedData Library/Developer/Xcode/Archives; do
-        [ -z "$(ls -A "$HOME/$place" 2>/dev/null)" ] || echo "Builds on the Mac's own disk: ~/$place"
-    done
-    find "$HOME" -maxdepth 4 \( -path "$HOME/Library" -o -path "$HOME/.Trash" -o -path "$HOME/.claude" \) -prune -o \
-        \( -name .build -o -name .git -o -name '*.xcodeproj' \) -print 2>/dev/null | while read -r found; do
-        echo "A project or its build on the Mac's own disk: ~${found#"$HOME"}"
-    done
-    size=$(du -sm "$HOME/.claude" 2>/dev/null | cut -f1)
-    [ "${size:-0}" -le "$(most "Claude's own folder")" ] || echo "Claude's own folder, ~/.claude, has grown to $size MB"
-}
-
 keep_caches() { # each cache becomes a link into the drive's Caches, taking along what it holds; nothing is deleted
     local cache usual
     for cache in $moved; do
@@ -133,10 +102,7 @@ case ${1:-} in
     "") ;;
     token) token; exit ;;
     ready) ready; exit ;;
-    lean) ! on_drive || lean; exit ;;
-    tidy) ! on_drive || tidy "$(cat)"; exit ;;
     caches) on_drive && keep_caches; exit ;;
-    leftovers) leftovers "$(cat)"; exit ;;
     answers) answers "${2:?}"; exit ;;
     setup)
         on_drive || { echo "Stop: clone the project onto the external drive. Is it plugged in?"; exit 1; }
@@ -174,7 +140,7 @@ case ${1:-} in
         "$private/Claude/restore" || echo "Could not put the owner's Claude setup back from the private notes."
         ready
         exit ;;
-    *) echo "Usage: .claude/hooks/start [token | ready | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
+    *) echo "Usage: .claude/hooks/start [token | ready | caches | setup [key file] | answers <owner> < pull requests]" >&2; exit 2 ;;
 esac
 
 if drive_mac && ! on_drive; then
@@ -198,18 +164,9 @@ GH_TOKEN=$(token || echo no-agent-token)
 export GH_TOKEN
 
 echo "Sagar. The app in work: $(cat NOW)"
-missing=$(ready; [ "$GH_TOKEN" != no-agent-token ] || echo "The agents' GitHub key")
-[ -z "$missing" ] || printf 'This Mac is not yet as Checklists/Build Mac.md sets it up. Still to come:\n%s\n' "$(sed 's/^/  /' <<<"$missing")"
 echo "Checkout: $(git status -sb | head -1)$(git status --porcelain | sed -n '1s/.*/, with uncommitted changes/p')"
 [ "$(git rev-parse --path-format=absolute --git-dir)" != "$(git rev-parse --path-format=absolute --git-common-dir)" ] ||
     echo "This is the shared folder, where every chat opens. Change nothing here: move into your own copy first (EnterWorktree), from origin/main. It stays on clean main, for Scripts/release alone."
-# Copies of finished work are what piles up: archiving a chat removes its copy, and this shows any left behind.
-merged=$(gh pr list --state merged --limit 1000 --json headRefOid --jq '.[].headRefOid' 2>/dev/null)
-! on_drive || gone=$(tidy "$merged")
-[ -z "${gone:-}" ] || echo "Finished chats' copies, untouched for a day, removed from the drive: $gone"
-leftover=$(leftovers "$merged")
-! on_drive || lean
-[ -z "$leftover" ] || echo "Copies whose work has merged, which archiving their chats removes: $leftover"
 echo "Branches besides main: $(git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' ')"
 repository=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)
 owner=${repository%/*}
