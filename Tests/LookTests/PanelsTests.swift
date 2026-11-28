@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's caption, card and panel, on Search's ground. The same showcase was pictured from Search's own code
-/// at commit c92ea7c, by a scratch copy of it that uses this repository's picture harness, into
-/// `Fixtures/Search Panels Light.png` and `Dark.png`.
+/// Search's caption, card and panel, on Search's ground.
 private var panels: some View {
     VStack(alignment: .leading, spacing: 14) {
         Caption("Recently closed")

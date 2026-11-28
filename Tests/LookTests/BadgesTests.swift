@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's unread count hung from icons, bare and ringed, on Search's ground. The same showcase was pictured from
-/// Search's own code at commit c92ea7c, by a scratch copy of it that uses this repository's picture harness, into
-/// `Fixtures/Search Count Light.png` and `Dark.png`.
+/// Search's unread count hung from icons, bare and ringed, on Search's ground.
 private struct Showcase: View {
     var body: some View {
         HStack(spacing: 28) {

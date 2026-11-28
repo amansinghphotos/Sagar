@@ -6,8 +6,7 @@ import Testing
 @testable import Look
 
 /// Search's search field, empty and with words in it, then its Passwords panel's two fields and its password
-/// field, on Search's ground. The same showcase was pictured from Search's own code at commit c92ea7c, through
-/// this repository's picture harness, into `Fixtures/Search Fields Light.png` and `Dark.png`.
+/// field, on Search's ground.
 private struct Showcase: View {
     @State var empty = ""
     @State var typed = "notes"

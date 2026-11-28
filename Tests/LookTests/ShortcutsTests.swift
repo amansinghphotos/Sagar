@@ -6,8 +6,6 @@ import Testing
 @testable import Look
 
 /// Search's shortcut boxes: one set, one changed, one with none, one listening, and a fixed key, on Search's ground.
-/// The same showcase was pictured from Search's own code at commit c92ea7c, by a scratch copy of it that uses this
-/// repository's picture harness, into `Fixtures/Search Keys Light.png` and `Dark.png`.
 private struct Showcase: View {
     @State var set: KeyCombo? = KeyCombo("t")
     @State var changed: KeyCombo? = KeyCombo("k", shift: true)

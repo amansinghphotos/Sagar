@@ -78,14 +78,7 @@ nonisolated package struct Shade: ShapeStyle {
     }
 }
 
-nonisolated private struct GreysKey: EnvironmentKey {
-    static let defaultValue = Greys.white
-}
-
-extension EnvironmentValues {
+nonisolated extension EnvironmentValues {
     /// The greys for the ground a screen sits on: a white page unless a frame says otherwise.
-    nonisolated package var greys: Greys {
-        get { self[GreysKey.self] }
-        set { self[GreysKey.self] = newValue }
-    }
+    @Entry package var greys = Greys.white
 }

@@ -15,9 +15,7 @@ private var split: some View {
     }
 }
 
-/// Search's column beside its page as a card. The same was built from Search's code for its row and card at
-/// commit c92ea7c, in Search's measures, by a scratch copy that uses this repository's picture harness, and
-/// pictured into `Fixtures/Search Split Light.png` and `Dark.png`.
+/// Search's column beside its page as a card, in Search's measures.
 @Test(arguments: [false, true])
 func theSplitLooksAsSearchsDoes(dark: Bool) throws {
     try expectSearchPicture(of: split, width: 640, height: 420, named: "Split", dark: dark)

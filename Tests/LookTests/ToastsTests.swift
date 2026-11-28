@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// A toast wears Search's floating capsule of words, at the foot of what it stands over. Search's capsule, from
-/// its code at commit c92ea7c with these words, was pictured by a scratch copy that uses this repository's
-/// picture harness into `Fixtures/Search Bubble Light.png` and `Dark.png`.
+/// A toast wears Search's floating capsule of words, at the foot of what it stands over.
 @Test(arguments: [false, true])
 func aToastLooksAsSearchsCapsuleDoes(dark: Bool) throws {
     var queue = ToastQueue()
@@ -42,9 +40,7 @@ func aToastLooksAsSearchsCapsuleDoes(dark: Bool) throws {
     #expect(ToastQueue.stays == 2.5)
 }
 
-/// A question over the page, as Search asks one: its icon and words, then its answers. Search's, from its code at
-/// commit c92ea7c with these words, was pictured by a scratch copy into `Fixtures/Search Banner Light.png` and
-/// `Dark.png`.
+/// A question over the page, as Search asks one: its icon and words, then its answers.
 @Test(arguments: [false, true])
 func aBannerLooksAsSearchsQuestionDoes(dark: Bool) throws {
     let banner = Banner(
