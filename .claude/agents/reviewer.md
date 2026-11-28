@@ -33,7 +33,7 @@ but for a change to the working rules or a plan: then read the mend for what it 
 Reply in plain English, twelve lines at most. First line: PASS or FAIL. Then each finding as one line:
 the file and line, what is wrong, and what would fix it. Say nothing about what is fine.
 
-FAIL only for what must be mended before this merges: a no to questions 1 to 4, or words a visitor
+FAIL only for what must be mended before this merges: a failing answer to questions 1 to 4, or words a visitor
 would find cold, careless, stock, hard to follow or revealing. A change that plainly leaves things
 better passes, even if it is not perfect. Anything else is a nit: begin its line with "Nit:", and it
 does not fail the change.
