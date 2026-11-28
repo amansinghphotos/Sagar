@@ -215,10 +215,23 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             map(select(. != null)) | max')
     passed words "$shown"
     unjudged=""
-    # If the owner answered before, he is asked again: GitHub does not do that by itself.
-    if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
-        gh pr edit "$request" --add-reviewer "$owner" >/dev/null
-    fi
+    # If the owner answered before, he is asked again: GitHub does not do that by itself. That he is asked is read
+    # back from GitHub, never assumed, as on #216 he was not.
+    asking=0
+    while :; do
+        case $(gh pr view "$request" --json reviews,reviewRequests 2>"$said" | Scripts/check asked "$owner") in
+            yes) break ;;
+            no) unasked=0 asking=$((asking + 1))
+                [ "$asking" -le 3 ] || {
+                    echo "#$request is shown, but the owner, who answered it before, is not asked again: GitHub did not"
+                    echo "keep the request three times. Ask him for a review on its page, then say so in a line."
+                    exit 1
+                }
+                if gh api -X POST "repos/$repository/pulls/$request/requested_reviewers" -f "reviewers[]=$owner" \
+                    >/dev/null 2>"$said"; then sleep 5; else unanswered; fi ;; # GitHub's own read may lag its write
+            *) unanswered ;;
+        esac
+    done
     if ! gh pr merge "$request" --auto --squash >/dev/null 2>&1; then
         # GitHub lets nobody pass the owner's review, and this merges only what has nothing left to wait for.
         state=$(gh pr view "$request" --json mergeStateStatus,reviewDecision,latestReviews)
@@ -401,6 +414,17 @@ said_since() { # said_since <owner>: reads GitHub's state of a pull request. Tru
     esac
     jq -r '.body // ""' <<<"$state" | owner_part | answers 'What Changed Since Your Review:'
 }
+asked() { # asked <owner>: reads GitHub's reviews and requested reviewers of a pull request. yes if the owner never
+    # answered it, or is asked again; no if he answered and is not asked; unanswered if GitHub's answer is not there.
+    local answer
+    answer=$(jq -r --arg owner "$1" '
+        if (.reviews | type) != "array" or (.reviewRequests | type) != "array" then "unanswered"
+        elif (any(.reviews[]; .author.login == $owner) | not) then "yes"
+        elif any(.reviewRequests[]; .login? == $owner) then "yes"
+        else "no" end' 2>/dev/null)
+    printf '%s\n' "${answer:-unanswered}"
+}
+[ "${1:-}" != asked ] || { asked "${2:?Scripts/check asked <owner> < state}"; exit; }
 [ "${1:-}" != since ] || { said_since "${2:?Scripts/check since <owner> < state}" && echo yes || echo no; exit; }
 title_case() { # Apple's title style: the first word, and every word of four letters or more, has a capital
     printf '%s\n' "$1" | tr -- '-' ' ' | awk '{
