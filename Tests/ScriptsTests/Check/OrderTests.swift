@@ -1,8 +1,6 @@
 import Foundation
 import Testing
 
-private let here = URL(filePath: #filePath).deletingLastPathComponent()
-
 /// What the real rules script's order rule says, alone, of a package file and a line budget, in a small folder.
 private func order(package: String, budget: String, decisions: [String] = []) throws -> String {
     let folder = FileManager.default.temporaryDirectory.appending(path: "order-\(UUID().uuidString)")
@@ -112,7 +110,7 @@ private let rowsInOrder = budget("| CheteKit | 1500 |\n| Keep | 300 |\n| Look | 
 }
 
 @Test func theRepositorysOwnListsAreInOrder() throws {
-    let root = here.appending(path: "../..").standardizedFileURL
+    let root = Script.repository
     let said = try order(
         package: String(decoding: try Data(contentsOf: root.appending(path: "Package.swift")), as: UTF8.self),
         budget: String(decoding: try Data(contentsOf: root.appending(path: "CONSTRAINTS.md")), as: UTF8.self))

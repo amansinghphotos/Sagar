@@ -4,7 +4,7 @@ import Testing
 /// What the real release script writes to the owner when it asks him to try a build, with an app and a
 /// version put in. The Why line is left out: it is that release's own New line, written afresh each time.
 private func answersForTheOwner() throws -> [String] {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
+    let script = Script.release
     let lines = try String(contentsOf: script, encoding: .utf8).components(separatedBy: "\n")
     let opening = try #require(lines.firstIndex { $0.hasSuffix("## For the Owner") })
     let closing = try #require(lines[opening...].firstIndex { $0.hasPrefix("<details>") })
