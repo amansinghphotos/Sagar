@@ -13,7 +13,11 @@ home=$(git config --global --get sagar.virtualmac) || {
     echo "No hidden Mac on this Mac. Name its folder on the drive: git config --global sagar.virtualmac <folder>"
     exit 1
 }
-[ -d "$(dirname "$home")" ] || { echo "The drive that holds the hidden Mac is not plugged in: $home"; exit 1; }
+# Its drive is there when the nearest folder of the path that exists is more than the list of drives itself.
+there=$home
+until [ -d "$there" ]; do there=$(dirname "$there"); done
+[ "$there" != /Volumes ] && [ "$there" != / ] ||
+    { echo "The drive that holds the hidden Mac is not plugged in: $home"; exit 1; }
 guest="$home/guest"
 
 tool() { # the guest program, built from this copy's source when it is newer
@@ -43,13 +47,17 @@ awake() { # starts the guest, from clean once it has been kept, and waits until 
 download() { # Apple's restore image; it resumes after a stall, a sleep or a change of network
     local url size
     url=$("$guest" latest) || exit 1
-    size=$(curl -sIL "$url" | awk 'tolower($1) == "content-length:" { n = $2 } END { print n + 0 }')
+    size=$(curl -sIL --max-time 60 "$url" | awk 'tolower($1) == "content-length:" { n = $2 } END { print n + 0 }')
+    [ "$size" -gt 0 ] || { echo "Apple's server did not say how large macOS is. Try again later."; exit 1; }
     echo "Downloading macOS for the hidden Mac from Apple, $((size / 1000000000)) GB."
-    until [ "$size" -gt 0 ] && [ "$(stat -f %z "$home/Restore.ipsw" 2>/dev/null || echo 0)" -ge "$size" ]; do
+    for _ in $(seq 500); do # stalls and dropped networks are tried again, for some hours at most
+        [ "$(stat -f %z "$home/Restore.ipsw" 2>/dev/null || echo 0)" -ge "$size" ] && return
         [ -d "$home" ] || { echo "The drive went away."; exit 1; }
         curl -sSL -C - --connect-timeout 20 --speed-limit 200000 --speed-time 30 -o "$home/Restore.ipsw" "$url" ||
-            sleep 10
+            sleep 30
     done
+    echo "macOS did not finish downloading. Scripts/tour setup again carries on where it stopped."
+    exit 1
 }
 
 agent_in() { # puts the agent in the stopped guest's disk, as a login item of its one user
@@ -83,7 +91,7 @@ prepare() { # gives the guest this Mac's Xcode, and keeps it quiet: no sleep, no
         < <(cat "$home/Machine/Password"; echo) >/dev/null &&
         in_guest "sudo rm -rf /Applications/Xcode.app" &&
         tar -C "$(dirname "$xcode")" -cf - "$(basename "$xcode")" |
-        in_guest "sudo tar -C /Applications -xpf - && sudo mv '/Applications/$(basename "$xcode")' /Applications/Xcode.app 2>/dev/null; true" &&
+        in_guest "sudo tar -C /Applications -xpf - && { [ '$(basename "$xcode")' = Xcode.app ] || sudo mv '/Applications/$(basename "$xcode")' /Applications/Xcode.app; }" &&
         in_guest "sudo xcode-select -s /Applications/Xcode.app && sudo xcodebuild -license accept &&
             sudo xcodebuild -runFirstLaunch >/dev/null && sudo DevToolsSecurity -enable >/dev/null &&
             sudo automationmodetool enable-automationmode-without-authentication >/dev/null &&
@@ -138,11 +146,13 @@ echo "Touring $app in the hidden Mac."
 tar -C "$products" -cf - Release "$(basename "$plan")" |
     in_guest "mkdir -p ~/Tour/Products && tar -C ~/Tour/Products -xf -" || exit 1
 in_guest "cd ~/Tour && xcodebuild test-without-building -xctestrun 'Products/$(basename "$plan")' \
-    -destination platform=macOS -resultBundlePath Result.xcresult >Log.txt 2>&1"
+    -destination platform=macOS -resultBundlePath Result.xcresult -test-timeouts-enabled YES \
+    -maximum-test-execution-time-allowance 600 >Log.txt 2>&1"
 passed=$?
 rm -rf "$result" && mkdir -p .build/Tours
 in_guest "tar -C ~/Tour -cf - Result.xcresult Log.txt" | tar -C .build/Tours -xf - &&
-    mv .build/Tours/Result.xcresult "$result" && mv .build/Tours/Log.txt ".build/Tours/$app.log"
+    mv .build/Tours/Result.xcresult "$result" && mv .build/Tours/Log.txt ".build/Tours/$app.log" ||
+    { echo "$app's tour ran, but its record did not come back from the hidden Mac."; exit 1; }
 took=$(($(date +%s) - ${TOUR_BEGAN:-$(date +%s)}))
 
 if [ $passed -eq 0 ]; then

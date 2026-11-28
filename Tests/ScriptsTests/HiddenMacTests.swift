@@ -197,12 +197,18 @@ private nonisolated struct Touring: Sendable {
 
 /// With its drive unplugged nothing is toured, and nothing is written anywhere else.
 @Test func aDriveAwayStopsTheTour() async throws {
-    let touring = try Touring()
-    let away = touring.top.appending(path: "Drive/Virtual Macs/Sagar")
+    let away = "/Volumes/hm-\(UUID().uuidString.prefix(8))/Virtual Macs/Sagar"
     #expect(
-        try await touring.tour("Demo", place: away.path)
-            == (1, "The drive that holds the hidden Mac is not plugged in: \(away.path)\n"))
-    #expect(!FileManager.default.fileExists(atPath: touring.top.appending(path: "Drive").path))
+        try await Touring().tour("Demo", place: away)
+            == (1, "The drive that holds the hidden Mac is not plugged in: \(away)\n"))
+}
+
+/// A drive that is plugged in, but holds no hidden Mac yet, is told how to make one, not that it is away.
+@Test func aDriveWithNoFolderYetIsThere() async throws {
+    let touring = try Touring()
+    let place = touring.top.appending(path: "Drive/Virtual Macs/Sagar").path
+    #expect(
+        try await touring.tour("Demo", place: place) == (1, "No hidden Mac here yet: Scripts/tour setup makes it.\n"))
 }
 
 @Test func aDriveWithNoHiddenMacYetSaysHowToMakeIt() async throws {
