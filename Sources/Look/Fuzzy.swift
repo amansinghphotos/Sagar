@@ -40,7 +40,7 @@ nonisolated package enum Fuzzy {
     }
 
     /// Whether a word of `text` begins with `typed` give or take a slip: none forgiven under four letters typed,
-    /// one under eight, two from eight on, and the first two letters must be right or swapped.
+    /// one under eight, two from eight on, and the first letter must be right, or the first two swapped.
     private static func nearly(_ typed: [UInt8], in text: UnsafeBufferPointer<UInt8>) -> Bool {
         let forgiven = typed.count < 4 ? 0 : typed.count < 8 ? 1 : 2
         guard forgiven > 0 else { return false }
