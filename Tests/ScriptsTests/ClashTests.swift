@@ -41,9 +41,22 @@ private struct TwoChats {
         try run("/usr/bin/env", ["git"] + arguments).words
     }
 
-    /// What the rules script says of this chat's newest commit against `main` as GitHub has it.
-    func clashes() throws -> (words: String, clear: Bool) {
-        try run(folder.appending(path: "Scripts/check").path, ["clashes", try git("rev-parse", "HEAD")])
+    /// What the rules script says of this chat's newest commit against `main` as GitHub has it, or against another
+    /// commit named.
+    func clashes(with other: String? = nil) throws -> (words: String, clear: Bool) {
+        try run(
+            folder.appending(path: "Scripts/check").path,
+            ["clashes", try git("rev-parse", "HEAD")] + (other.map { [$0] } ?? []))
+    }
+
+    /// Another chat's request, made from the same `main` and not merged: its newest commit.
+    func anotherRequest(_ words: String, in name: String) throws -> String {
+        try git("switch", "-q", "-c", "other", "main")
+        try write(words, to: name)
+        try commit("The other chat's request")
+        let commit = try git("rev-parse", "HEAD").trimmingCharacters(in: .whitespacesAndNewlines)
+        try git("switch", "-q", "chete")
+        return commit
     }
 
     private func run(_ tool: String, _ arguments: [String]) throws -> (words: String, clear: Bool) {
@@ -79,4 +92,25 @@ private struct TwoChats {
     try chats.commit("Chete's change")
     try chats.mainTakes("colours\n", in: "Colour.swift")
     #expect(try chats.clashes() == ("", true))
+}
+
+/// Two requests waiting to merge that change the same line clash with each other, though each merges with `main`:
+/// whichever merged first would leave the other to be brought up to date, and an approval of his undone.
+@Test func twoWaitingRequestsOnTheSameLineClash() throws {
+    let chats = try TwoChats()
+    defer { try? FileManager.default.removeItem(at: chats.folder) }
+    try chats.write("one\ntwo, for Chete\nthree\n", to: "Package.swift")
+    try chats.commit("Chete's change")
+    let other = try chats.anotherRequest("one\ntwo, for the Look\nthree\n", in: "Package.swift")
+    #expect(try chats.clashes() == ("", true))
+    #expect(try chats.clashes(with: other) == ("Package.swift", false))
+}
+
+@Test func twoWaitingRequestsOnDifferentLinesDoNotClash() throws {
+    let chats = try TwoChats()
+    defer { try? FileManager.default.removeItem(at: chats.folder) }
+    try chats.write("one\ntwo, for Chete\nthree\n", to: "Package.swift")
+    try chats.commit("Chete's change")
+    let other = try chats.anotherRequest("colours\n", in: "Colour.swift")
+    #expect(try chats.clashes(with: other) == ("", true))
 }
