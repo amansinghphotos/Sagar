@@ -70,6 +70,17 @@ func eachCardLooksAsApproved(name: String, dark: Bool) throws {
         named: "welcome-oldClips-given")
 }
 
+/// The page for keeping what you copy is there only where macOS asks about it: on macOS 27, which lets Chete read
+/// what is copied, the welcome is one page shorter.
+@Test func thePageForKeepingIsShownOnlyWhereMacOSAsks() throws {
+    var given = WelcomeGiven()
+    given.asksKeeping = false
+    #expect(WelcomePages.pages(for: given) == [.greeting, .shortcut, .pasting, .last])
+    try expectPicture(
+        of: pages(at: .greeting, given), width: WelcomeSize.window.width, height: WelcomeSize.window.height,
+        named: "welcome-greeting-one-permission")
+}
+
 /// The welcome starts on the shortcut kept, unless macOS uses it; then on the first preset free, and a preset macOS
 /// uses is marked taken.
 @Test func theWelcomeStartsOnTheShortcutKeptOrTheFirstFree() {
