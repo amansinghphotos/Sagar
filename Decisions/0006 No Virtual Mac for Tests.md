@@ -12,4 +12,4 @@ permission or his hardware, he tries when a build is installed.
 **Consequences.** A tour never runs on his Mac. An app that needs a permission is not toured past the
 point where the permission is asked.
 
-Decision 10 lets a tour be tried in a hidden Mac; GitHub's runner still judges.
+Decision 10 lets a tour be tried in a hidden Mac, and decision 11 makes his Mac and the hidden Mac the judge.

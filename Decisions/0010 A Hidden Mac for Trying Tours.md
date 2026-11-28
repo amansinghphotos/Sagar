@@ -9,8 +9,8 @@ virtual Mac on my machine to run some tests, then so be it, but this is not acce
 
 **Decision.** A chat may try a tour in a hidden virtual Mac on the build Mac, made with Apple's
 Virtualization framework by a small program of our own. It has no window and no sound, and asks
-nothing on his screen. GitHub's runner still judges every pull request, and a tour never runs on his
-Mac itself.
+nothing on his screen. A tour never runs on his Mac itself. Decision 11 makes the hidden Mac the judge
+of every finished change.
 
 **Consequences.** The hidden Mac takes about 40 gigabytes beside the project, never in the repository,
 and a long download from Apple to make once. One hidden Mac serves every chat, one tour at a time,

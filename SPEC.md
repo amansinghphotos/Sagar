@@ -24,8 +24,8 @@ On a pull request he answers with its review: he approves, or he asks for change
 "His approval" is a GitHub approval from his own account. Agents work as a GitHub App with no admin
 rights, which cannot approve for him. He approves his decisions and only those: what an app must do,
 how a screen looks, each release, and anything involving money, keys or an outside dependency
-(`.github/CODEOWNERS` is the list). A change to the working rules is checked by GitHub and the
-reviewer, and carries the label `rules`, so he can read every one of them in one list at any time.
+(`.github/CODEOWNERS` is the list). A change to the working rules is checked like any other and read by
+the reviewer, and carries the label `rules`, so he can read every one of them in one list at any time.
 His pending approvals are the only list of things waiting on him.
 
 ## 2. Principles
@@ -82,9 +82,9 @@ screen is pictured narrow, default and wide.
 2. **Plan.** The spec becomes issues in one GitHub milestone, one thin slice each.
 3. **Build.** A fresh session per slice: a failing test, the code, the test passing.
 4. **Pull request,** naming its issue: "For" one in a milestone, which its release closes, and
-   "Closes" for any other. `Scripts/check` runs on a clean macOS 27 runner, or on Linux, without
-   waiting for a Mac, when the change is words alone, for which it builds, tests and tours nothing:
-   documents, plans, checklists and GitHub's templates.
+   "Closes" for any other. When it is finished, `Scripts/check` judges it once, whole, on his Mac,
+   from a clean copy of its commit, with the app's tour in the hidden Mac (decision 11). GitHub checks
+   the request's words on Linux, and that the proof names its newest commit.
 5. **Review.** A reviewer agent that can only read files reads each finished change once, against
    the spec and `CONSTRAINTS.md`. Its mend, in one commit, is not read again, but for a change to the
    working rules or a plan, where a mend has often brought a new fault.
@@ -157,8 +157,8 @@ scope)
   app's next number. Only its branch may touch the shipped app. (`Scripts/check` scope)
 - That milestone holds faults only. Nothing new reaches a shipped app until `NOW` names it again.
   (`Scripts/check` scope and `Scripts/release`)
-- The mend is made on `main`, like any slice. GitHub's Mac tours that app too, as well as the app in
-  work. (`Scripts/check` tour)
+- The mend is made on `main`, like any slice. The hidden Mac tours that app too, as well as the app
+  in work. (`Scripts/check` tour)
 - Its release is tried and shipped like any other. It waits only while another build waits for him.
   (`Scripts/release`)
 - It locks only the app it mends, so the app in work never waits for it. (`Scripts/check` lock)
@@ -192,9 +192,12 @@ that does not talk to Claude never asks. This is built with the first app that n
 1. Logic: Swift Testing, written first, on real code with temporary folders.
 2. Screens: pictures taken from a real window that is never put on screen, compared with approved
    pictures.
-3. The real app: one XCUITest tour per app on the hosted runner, where the app needs no permission. It
-   runs Apple's accessibility audit, whose findings are reported but fail nothing, for now (decision 9).
-4. What needs a permission or his hardware he tries at step 7.
+3. The real app: one XCUITest tour per app in the hidden Mac, from a clean guest each time, turning
+   permission switches as a person would. It runs Apple's accessibility audit, whose findings are
+   reported but fail nothing, for now (decision 9).
+4. What needs his hardware he tries at step 7.
+5. A test that fails though nothing is wrong is a fault, mended first. Each test has a minute and the
+   whole check twenty; what hangs stops and is named.
 
 ## 8. The Look and the Words
 
@@ -243,14 +246,14 @@ GitHub enforces the checks and his approvals: the rules on `main` are written in
 Spec-first and test-first order inside a slice rest on the instructions and the reviewer. A pull
 request that changes a check runs its own new version, and is read by the reviewer, not by him.
 
-Launch is judged by the fastest of three launches on GitHub's Mac. That shows what the code costs,
+Launch is judged by the fastest of three launches in the hidden Mac. That shows what the code costs,
 not how an app feels on its very first open after an install, which he judges when he tries a build.
 
 Apple documents no way for an app to turn on a permission's switch, or to see another app's
 shortcuts. So a welcome shows the switch but cannot press it, and warns only of macOS's shortcuts
 and the app's own. Apple documents no address that opens System Settings at one place, and none that
 tells an app a switch was turned on. So the card names the place, and the welcome keeps checking.
-No test turns the switch either: those steps he tries with a build. Motion cannot be judged from a
+Only the tour turns the switch, in the hidden Mac, as he would. Motion cannot be judged from a
 still. He sees each movement as a row of pictures through time, and judges its feel with a build.
 A welcome he gives no reference pictures for follows Apple's guidelines for a first open, and uses
 only Look's parts and motion, which stay held to their own measure. His yes is then the standard:
