@@ -1,0 +1,6 @@
+// What a tour is built with, on GitHub's Mac and in the hidden Mac alike: Scripts/check and Scripts/tour both
+// read this one file, so the two never differ.
+SAGAR_NEW = A line the tour looks for.
+CODE_SIGN_IDENTITY = -
+ENABLE_HARDENED_RUNTIME = NO
+OTHER_CODE_SIGN_FLAGS =
