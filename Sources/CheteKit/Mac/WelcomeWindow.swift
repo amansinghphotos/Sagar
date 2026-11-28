@@ -84,21 +84,21 @@ struct WelcomeOnThisMac: View {
 
     /// Asks for the earlier Chete's folder, then its key, "History Key", for which macOS asks his password once.
     private func bringInOldClips() -> String? {
-        guard let chosen = chosen("Choose your old Chete folder.", folder: true) else { return nil }
+        guard let chosen = chosen("Choose your old Chete folder", folder: true) else { return nil }
         guard let key = try? AnotherAppsKey.read(named: "History Key") else {
-            return "Your Mac didn't let Chete read the old key, so nothing came in."
+            return "Your Mac said no, so nothing came in"
         }
         guard let came = try? EarlierChete(folder: chosen, key: key).bringIn(to: folder, keyName: Clips.keyName)
-        else { return "That folder has no old clips Chete can open." }
+        else { return "No old clips in that folder" }
         CheteScene.reread()
-        return came.broughtIn == 1 ? "Brought in 1 clip." : "Brought in \(came.broughtIn) clips."
+        return came.broughtIn == 1 ? "Brought in 1 clip" : "Brought in \(came.broughtIn) clips"
     }
 
     /// Asks for an exported file and brings it back.
     private func bringBack() -> String? {
-        guard let file = chosen("Choose a file you exported from Chete.", folder: false) else { return nil }
+        guard let file = chosen("Choose a file you exported from Chete", folder: false) else { return nil }
         guard let said = try? FirstOpen.bringBack(from: file, into: folder, keyName: Clips.keyName)
-        else { return "That file isn't one Chete exported." }
+        else { return "That’s not a Chete export" }
         CheteScene.reread()
         return said
     }

@@ -57,13 +57,9 @@ package struct MenuCard: View {
                 .padding(.bottom, Space.apart.rawValue)
             if !keeping {
                 HStack(spacing: Space.apart.rawValue) {
-                    VStack(alignment: .leading, spacing: Space.hair.rawValue) {
-                        Text("Chete isn’t keeping what you copy.").type(.body).foregroundStyle(Role.ink)
-                        Text("Your Mac is set to stop it.").type(.detail).foregroundStyle(Role.muted)
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text("Nothing saved yet").type(.body).foregroundStyle(Role.ink)
                     Spacer(minLength: 0)
-                    Pill("Show Me How", filled: true, action: act.allowKeeping)
+                    Pill("Start Saving", filled: true, action: act.allowKeeping)
                 }
                 .padding(.horizontal, Space.page.rawValue)
                 .padding(.vertical, Space.apart.rawValue)
