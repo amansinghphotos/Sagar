@@ -35,13 +35,15 @@ anywhere to be heard.
    question.
 4. **It knows your words.** Names and terms you teach it are heard and spelled as you spell them. You add
    them one at a time, or bring in a list from a plain file. When you fix a word just after it lands,
-   Bolo learns it and says so. It spells names it can see on your screen as they are shown. In apps you
-   choose, it knows medical words from a list kept on this Mac.
+   Bolo learns it and says so. It spells names it can see on your screen as they are shown, reading
+   them with the permission you give for pasting. In the one app you choose for it, it knows medical
+   words, from a list kept on this Mac.
    *Asks for:* Screen Recording, only for a remote desktop, whose words it cannot read any other way.
    *Proved by:* tests where a taught word, a fixed word and a name on screen, each heard a little wrong,
    are written as they should be.
 5. **Private apps stay private.** Words you say in an app you mark as private are never sent to Claude:
-   there, this Mac tidies alone. The list is yours, kept on this Mac.
+   there, this Mac tidies alone. They still go to your history, in iCloud. The list is yours, kept on
+   this Mac.
    *Proved by:* a test that a dictation in a private app makes no request to the network.
 6. **It puts your words where your cursor is,** and then puts your clipboard back as it was. If the app
    changed while you spoke, or will not take a paste, the words are copied and it says to press
@@ -59,7 +61,7 @@ anywhere to be heard.
    build it, then your yes.
 8. **Nothing you say is lost.** Its card in the menu bar holds your latest dictations, with Copy, Paste,
    and Try Again for one that did not land. A history window finds any dictation by a word or a date,
-   copies it, and shows what was heard. Your words and their recordings are kept in your Documents in
+   copies it, and shows what was heard and how long it took. Your words and their recordings are kept in your Documents in
    iCloud, so a copy survives if this Mac fails, for 90 days at first. In Settings you choose how long,
    and whether recordings are kept at all.
    *Proved by:* a test that a failed tidy leaves the heard words on the card, that a search finds a
