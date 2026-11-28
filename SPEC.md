@@ -55,10 +55,10 @@ Sagar.xcodeproj        one thin target per app and one tour per app
 Config/                Shared.xcconfig, <App>.xcconfig, Info.plist, Export.plist
 Apps/<App>/            Main.swift and Tour.swift, and nothing else
 Sources/Look/          tokens, themes, components (pure SwiftUI), shown by Sources/Gallery
-Sources/Keep/          his settings and data as plain files, export, import, sealing, event log
+Sources/Keep/          his settings and data as plain files, sealed where they must be
 Sources/Shell/         what every Mac app repeats: settings, permissions, login item, updates
-Sources/Taps/          event taps and C callbacks as streams
-Sources/Minds/         speech and language models behind one interface
+Sources/Taps/          event taps and C callbacks as streams (to come)
+Sources/Minds/         speech and language models behind one interface (to come)
 Sources/<App>Kit/      one app's feature; Mac-only files under Mac/
 Tests/<Module>Tests/   Swift Testing; approved pictures under Pictures/
 spec/<app>.md          what it is for, must-haves, network needs, out of scope
@@ -190,8 +190,8 @@ that does not talk to Claude never asks. This is built with the first app that n
 
 ## 8. The Look and the Words
 
-`spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with
-Search's motion. Modern is Search's look exactly, proved part by part against Search's own pictures.
+`spec/look.md` says what Look holds: two themes, Modern and Lexicon, over one set of parts, with motion
+written here from how Search's moves. Modern is Search's look exactly, proved part by part against Search's own pictures.
 
 Every app's words are written the way a friendly person would say them: short, warm and plain. One
 idea to a sentence, everyday words, "you" for the reader, and contractions where they sound natural.
@@ -259,8 +259,10 @@ usual calls and cannot see every way to fetch a file.
 
 ## 11. Written When the First App Needs It
 
-Look, with its Gallery target and a check that it also compiles for iPhone. Keep. Shell's settings
-window, permissions, login item, menu bar, hot keys and Send Report. Taps and Minds.
+Written so far, for Chete: Look with its Gallery, Keep, and Shell's permissions, menu bar, hot keys and
+updates. Still to come, each when an app needs it: Keep's export, import and event log; Shell's settings
+window, login item and Send Report; Taps and Minds; and the check that Look also compiles for iPhone,
+where only Keep is built today.
 
 Contrast will be a number on Look's colour roles, worked out from their values. The tour's audit leaves
 contrast out: GitHub's screen has one pixel a point, and there the audit fails plain black text on white.
