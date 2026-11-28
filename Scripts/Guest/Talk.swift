@@ -2,7 +2,7 @@
 // from this Mac would need the Local Network permission and ask on the owner's screen.
 import Foundation
 
-let port: UInt32 = 7
+let port: UInt32 = 50_007  // above 1023: a port below needs root, and the agent runs as the guest's user
 
 func fail(_ words: String) -> Never {
     FileHandle.standardError.write(Data((words + "\n").utf8))
