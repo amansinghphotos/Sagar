@@ -47,9 +47,12 @@ Until Look's first set of parts is approved, decision 7 sets principle 5 aside f
 
 ## 3. The Repository
 
-The front page, `README.md`, maps the folders at the top. The code is in modules:
+The front page, `README.md`, maps the folders at the top. What the plan itself rests on:
 
 ```
+Package.swift          every module and its tests
+Sagar.xcodeproj        one thin target per app and one tour per app
+Config/                Shared.xcconfig, <App>.xcconfig, Info.plist, Export.plist
 Apps/<App>/            Main.swift and Tour.swift, and nothing else
 Sources/Look/          tokens, themes, components (pure SwiftUI), shown by Sources/Gallery
 Sources/Keep/          his settings and data as plain files, export, import, sealing, event log
@@ -58,6 +61,7 @@ Sources/Taps/          event taps and C callbacks as streams
 Sources/Minds/         speech and language models behind one interface
 Sources/<App>Kit/      one app's feature; Mac-only files under Mac/
 Tests/<Module>Tests/   Swift Testing; approved pictures under Pictures/
+spec/<app>.md          what it is for, must-haves, network needs, out of scope
 ```
 
 A module exists once an app needs it. AppKit is allowed only in Shell, Taps and a Kit's `Mac/` folder.
