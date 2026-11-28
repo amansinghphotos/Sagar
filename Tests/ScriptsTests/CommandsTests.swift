@@ -7,10 +7,9 @@ private struct Commands {
     var script: URL { folder.appending(path: "Scripts/check") }
 
     init() throws {
-        let real = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
             at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: real, to: script)
+        try FileManager.default.copyItem(at: Script.check, to: script)
         try Data("Chete\n".utf8).write(to: folder.appending(path: "NOW"))
         try git("init", "-q", "-b", "main")
         try commit("The rules")
@@ -38,19 +37,10 @@ private struct Commands {
     }
 
     private func run(_ tool: String, _ arguments: [String]) throws -> (said: String, status: Int32) {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = folder
         // As on this Mac: GitHub's CI asks for origin/main, which this small repository has no need of.
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
-        process.standardOutput = answer
-        process.standardError = answer
-        try process.run()
-        let said = answer.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        return (String(decoding: said, as: UTF8.self), process.terminationStatus)
+        let environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
+        let said = try Script.run(URL(filePath: tool), arguments, in: folder, environment: environment, errors: .joined)
+        return (said.words, said.status)
     }
 }
 

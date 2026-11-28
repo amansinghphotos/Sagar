@@ -11,10 +11,9 @@ private struct Shared {
         let top = FileManager.default.temporaryDirectory.appending(path: "own-copy-\(UUID().uuidString)")
         folder = top.appending(path: "shared")
         copy = top.appending(path: "copy")
-        let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
             at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
+        try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
         try git("init", "-q", "-b", "main")
         try git("add", "-A")
         try git("-c", "user.name=Test", "-c", "user.email=test@users.noreply.github.com", "commit", "-q", "-m", "First")
@@ -31,19 +30,9 @@ private struct Shared {
     }
 
     private func run(_ tool: String, _ arguments: [String], in place: URL) throws -> (words: String, passes: Bool) {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = place
-        // Inside a commit hook git names its own folder; the small repository must not be sent to the real one.
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
-        process.standardOutput = answer
-        process.standardError = answer
-        try process.run()
-        process.waitUntilExit()
-        let words = String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        return (words.trimmingCharacters(in: .whitespacesAndNewlines), process.terminationStatus == 0)
+        let said = try Script.run(
+            URL(filePath: tool), arguments, in: place, environment: Script.withoutGit, errors: .joined)
+        return (said.trimmed, said.passed)
     }
 }
 

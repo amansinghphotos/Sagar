@@ -37,19 +37,7 @@ private func picture() throws -> URL {
 /// Asks the real rules script whether a description shows the owner, in his part, every must-have of the spec
 /// and every picture that the pull request changes.
 private func showsTheOwner(_ description: String, _ files: [URL]) throws -> Bool {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    let process = Process()
-    let question = Pipe()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["shown"] + files.map(\.path)
-    process.standardInput = question
-    process.standardOutput = answer
-    try process.run()
-    question.fileHandleForWriting.write(Data(description.utf8))
-    try question.fileHandleForWriting.close()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.check, ["shown"] + files.map(\.path), input: Data(description.utf8)).words == "yes\n"
 }
 
 private nonisolated func description(owner list: String, agents: String = "") -> String {
@@ -134,16 +122,5 @@ func aLinkAwayFromTheOwnersPartFails(link: String) throws {
 }
 
 private func isPlain(_ description: String) throws -> Bool {
-    let process = Process()
-    let question = Pipe()
-    let answer = Pipe()
-    process.executableURL = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    process.arguments = ["plain"]
-    process.standardInput = question
-    process.standardOutput = answer
-    try process.run()
-    question.fileHandleForWriting.write(Data(description.utf8))
-    try question.fileHandleForWriting.close()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.check, ["plain"], input: Data(description.utf8)).words == "yes\n"
 }

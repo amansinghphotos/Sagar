@@ -3,7 +3,6 @@ import Foundation
 /// A folder of the person's own things, each a small file they can move and bring back: plain, so they
 /// can read it, or sealed, so that only this Mac's keychain opens it.
 package struct Store: Sendable {
-    /// Where the files live.
     package let folder: URL
 
     /// A store in the given folder, which is made when something is first written.
@@ -64,7 +63,6 @@ package struct Store: Sendable {
     }
 }
 
-/// Why the store refused.
 package enum StoreError: Error, Equatable {
     case badName(String)
 }

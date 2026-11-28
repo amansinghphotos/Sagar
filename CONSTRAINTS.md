@@ -40,9 +40,9 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 
 | Rule | Number | Held by |
 |---|--:|---|
-| Launch to first frame, fastest of three, by Apple's launch metric, in seconds | 2 | the tour |
-| Processor time while its window is hidden and nothing is asked, percent over 10 s | 1 | the tour |
-| Screens that differ from their approved pictures | 0 | the picture tests |
+| Launch to first frame, fastest of three, by Apple's launch metric, in seconds | 2 | `Scripts/check` tour |
+| Processor time while its window is hidden and nothing is asked, percent over 10 s | 1 | `Scripts/check` tour |
+| Screens that differ from their approved pictures | 0 | `Scripts/check` tests |
 
 A screen counts as differing when more than 40 of its pixels differ from the approved picture by more
 than 24 of the 255 steps of a colour. Both numbers live in `Tests/Pictures/Pictures.swift`: they

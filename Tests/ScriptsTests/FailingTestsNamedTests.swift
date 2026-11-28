@@ -11,9 +11,8 @@ import Testing
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data(words.utf8).write(to: url)
     }
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
     try FileManager.default.createDirectory(at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-    try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
+    try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
     try write(
         """
         // swift-tools-version: 6.4
@@ -34,15 +33,8 @@ import Testing
 
         """, to: "Tests/BrokenTests/Broken.swift")
     try write("Chete\n", to: "NOW")
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = folder.appending(path: "Scripts/check")
-    process.currentDirectoryURL = folder
-    process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
-    process.standardOutput = answer
-    try process.run()
-    let said = String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-    process.waitUntilExit()
+    let environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
+    let said = try Script.run(folder.appending(path: "Scripts/check"), in: folder, environment: environment).words
     let tests = try #require(said.components(separatedBy: "FAIL  tests").last)
     #expect(tests.contains("theSumIsWrong()"))
     #expect(tests.contains("one and one"))

@@ -10,7 +10,6 @@ package final class SettingsCard {
     let panel: NSPanel
     private weak var welcome: NSWindow?
 
-    /// A card holding the app's view, for the window that steps aside while it is up.
     package init(steppingAside welcome: NSWindow?, @ViewBuilder _ content: () -> some View) {
         self.welcome = welcome
         let host = NSHostingView(rootView: content())

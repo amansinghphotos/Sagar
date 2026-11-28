@@ -4,16 +4,7 @@ import Testing
 /// Gives the real rules script GitHub's recorded list of a pull request's comments and that pull request's newest
 /// commit, and returns whether it finds the reviewer's reply to that commit.
 private func reviewed(_ record: String, newest commit: String) throws -> String {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = ["reviewed", commit]
-    process.standardInput = try FileHandle(forReadingFrom: here.appending(path: "Fixtures/\(record).json"))
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["reviewed", commit], input: Script.recorded("\(record).json")).words
 }
 
 private nonisolated let newestOf46 = "3619bf5e2df1ffb7d4f57be54d5c66b144365f60"
@@ -49,10 +40,9 @@ private struct Branch {
 
     init(changing changed: [String] = ["changed.txt"]) throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "reviewed-\(UUID().uuidString)")
-        let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
             at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
+        try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
         try git("init", "-q", "-b", "main")
         try write(
             "| Rule | Number |\n|---|--:|\n| Lines a mend changes without a new reading | 40 |\n", to: "CONSTRAINTS.md")
@@ -109,21 +99,10 @@ private struct Branch {
     }
 
     private func run(_ tool: String, _ arguments: [String], input: Data?) throws -> String {
-        let process = Process()
-        let answer = Pipe()
-        let given = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = folder
-        process.environment = withoutGitsOwnSettings(ProcessInfo.processInfo.environment)
-        process.standardOutput = answer
-        process.standardInput = given
-        try process.run()
-        given.fileHandleForWriting.write(input ?? Data())
-        try given.fileHandleForWriting.close()
-        process.waitUntilExit()
-        return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        try Script.run(
+            URL(filePath: tool), arguments, input: input ?? Data(), in: folder,
+            environment: withoutGitsOwnSettings(ProcessInfo.processInfo.environment)
+        ).trimmed
     }
 }
 
