@@ -33,12 +33,13 @@ over at once, to "ditch github mac altogether".
    allowed, the number is not raised in the same change: it comes to him as a choice.
 8. The checking rules change only to mend a fault, and one chat changes them at a time.
 
-**Consequences.** A change waits about 6 minutes from finished to merged, expected (its parts are measured), and a release no longer waits for
-a run on GitHub. Nothing merges while his Mac is closed or the drive is away; a request already shown to
-him still merges on his approval. GitHub no longer runs the tests itself: it trusts a reply from the agents'
-app that names the commit, as it trusts the reviewer's today. Only the check command writes that reply, and a hook stops a chat writing it by hand, as one stops a
-request being shown by hand today;
-every whole check runs merged with main, and a release runs the whole check on main again, so a change that
-slipped through fails the next one by name. Nothing in GitHub's settings changes: the rule on main still
-requires `check` and `words` from GitHub's Actions, and `check` becomes seconds of text rules on Linux. No
-runner, no new program, no new key, no new right for the agents' app. Chete 1.0 ships on the old path. This replaces "GitHub's runner still judges" in decisions 6 and 10.
+**Consequences.** A change waits about 6 minutes from finished to merged, expected (its parts are measured),
+and a release no longer waits for a run on GitHub. Nothing merges while his Mac is closed or the drive is
+away; a request already shown to him still merges on his approval. GitHub no longer runs the tests itself: it
+trusts a reply from the agents' app that names the commit, as it trusts the reviewer's today. Only the check
+command writes that reply, and a hook stops a chat writing it by hand, as one stops a request being shown by
+hand today; every whole check runs merged with main, and a release runs the whole check on main again, so a
+change that slipped through fails the next one by name. Nothing in GitHub's settings changes: the rule on main
+still requires `check` and `words` from GitHub's Actions, and `check` becomes seconds of text rules on Linux.
+No runner, no new program, no new key, no new right for the agents' app. Chete 1.0 ships on the old path. This
+replaces "GitHub's runner still judges" in decisions 6 and 10.
