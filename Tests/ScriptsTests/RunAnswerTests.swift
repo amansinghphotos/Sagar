@@ -4,16 +4,7 @@ import Testing
 /// Gives the real rules script what `gh run view --json status,conclusion` answered, and how it ended, and returns
 /// what the ready step reads from it: passed, failed, running, or unanswered.
 private func reading(_ record: String, ended status: Int32) throws -> String {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = ["run", String(status)]
-    process.standardInput = try FileHandle(forReadingFrom: here.appending(path: "Fixtures/\(record)"))
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["run", String(status)], input: Script.recorded(record)).words
 }
 
 /// Recorded from GitHub on 27 November 2026: a check that passed, one that failed, and one still running.

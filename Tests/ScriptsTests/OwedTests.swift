@@ -4,15 +4,7 @@ import Testing
 /// Runs the real rules script's `owed` rule on the files named, or the whole repository: true when it held, false when
 /// it refused, nil when the script failed some other way.
 private func holds(_ files: [URL]) throws -> Bool? {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    let process = Process()
-    process.executableURL = script
-    process.currentDirectoryURL = script.deletingLastPathComponent().deletingLastPathComponent()
-    process.arguments = ["owed"] + files.map(\.path)
-    process.standardOutput = Pipe()
-    try process.run()
-    process.waitUntilExit()
-    switch process.terminationStatus {
+    switch try Script.run(Script.check, ["owed"] + files.map(\.path), in: Script.repository).status {
     case 0: return true
     case 1: return false
     default: return nil

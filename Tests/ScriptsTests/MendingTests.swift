@@ -7,24 +7,12 @@ private func ask(
     _ question: String, _ issue: String, tags: [String] = ["bolo-1.0"], waiting: [String] = [],
     branch: String = "7-a-slice", faults: [String] = []
 ) throws -> String {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
-    let process = Process()
-    let input = Pipe()
-    let answer = Pipe()
-    process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = [question, "Chete"]
-    process.standardInput = input
-    process.standardOutput = answer
-    try process.run()
     let list = { (names: [String]) in names.map { "\"\($0)\"" }.joined(separator: ",") }
     let state = #"""
         {"issue":\#(issue),"tags":[\#(list(tags))],"waiting":[\#(list(waiting))],"branch":"\#(branch)",
         "faults":[\#(faults.joined(separator: ","))]}
         """#
-    input.fileHandleForWriting.write(Data(state.utf8))
-    try input.fileHandleForWriting.close()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    return try Script.run(Script.check, [question, "Chete"], input: Data(state.utf8)).words
 }
 
 /// The shipped app that the issue's branch may mend beside the app in work, or nothing.

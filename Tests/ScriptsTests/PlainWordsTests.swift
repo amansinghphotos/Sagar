@@ -3,19 +3,7 @@ import Testing
 
 /// Asks the real rules script whether a pull request's description opens with the four answers for the owner.
 private func opensForTheOwner(_ description: String) throws -> Bool {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    let process = Process()
-    let question = Pipe()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["plain"]
-    process.standardInput = question
-    process.standardOutput = answer
-    try process.run()
-    question.fileHandleForWriting.write(Data(description.utf8))
-    try question.fileHandleForWriting.close()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.check, ["plain"], input: Data(description.utf8)).words == "yes\n"
 }
 
 private nonisolated func description(does: String, why: String = "You asked for it.", apps: String = "No.") -> String {

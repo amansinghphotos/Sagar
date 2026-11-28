@@ -3,16 +3,7 @@ import Testing
 
 /// Gives the real rules script a tour's record, as xcresulttool lists its tests, and returns what it prints.
 private func reported(by record: String) throws -> String {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = here.appending(path: "../../Scripts/check").standardizedFileURL
-    process.arguments = ["findings"]
-    process.standardInput = try FileHandle(forReadingFrom: here.appending(path: "Fixtures/\(record).json"))
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.check, ["findings"], input: Script.recorded("\(record).json")).words
 }
 
 /// The record is a real run of three made-up steps, with its path and the Mac's identifiers made up, reported as Chete's tour reports an audit finding: one step with

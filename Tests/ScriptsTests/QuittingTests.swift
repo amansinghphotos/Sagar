@@ -5,17 +5,10 @@ import Testing
 /// the new build again only if it did. These ask the real script, about real processes: a stand-in that quits when
 /// asked, as the app does, and one that does not. Nothing here is an app, so nothing shows on the screen.
 private func quitting(_ identifier: String, _ executable: String) throws -> String {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["quitting", identifier, executable]
-    process.environment = ProcessInfo.processInfo.environment.merging(["WAIT": "1"]) { $1 }
-    process.standardOutput = answer
-    process.standardError = Pipe()
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    let environment = ProcessInfo.processInfo.environment.merging(["WAIT": "1"]) { $1 }
+    return try Script.run(
+        Script.release, ["quitting", identifier, executable], environment: environment, errors: .hidden
+    ).words
 }
 
 /// Starts a process and gives it a moment to be listening.

@@ -4,25 +4,11 @@ import Testing
 /// Gives the real release script what Apple's notary said about one submission, and returns what the release reads
 /// from it: accepted, refused, or waiting, which means ask again about the same submission.
 private func reading(_ said: Data) throws -> String {
-    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-    defer { try? FileManager.default.removeItem(at: folder) }
-    let record = folder.appending(path: "answer")
-    try said.write(to: record)
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = URL(filePath: #filePath).appending(path: "../../../Scripts/release").standardizedFileURL
-    process.arguments = ["answered"]
-    process.standardInput = try FileHandle(forReadingFrom: record)
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(Script.release, ["answered"], input: said).words
 }
 
 private func recorded(_ name: String) throws -> Data {
-    let fixtures = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Fixtures")
-    return try Data(contentsOf: fixtures.appending(path: name))
+    try Script.recorded(name)
 }
 
 /// Recorded on 27 November 2026, from the rehearsal of Chete 1.0, with the submission's number made up: Apple still
