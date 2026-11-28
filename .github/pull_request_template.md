@@ -22,7 +22,7 @@ a changed spec's must-haves as a numbered list, each changed picture as an image
 For #
 <!-- "For #n" if the issue is in a milestone: the release that ships it closes it. Otherwise "Closes #n". -->
 
-- [ ] This names exactly one issue, above.
+- [ ] This closes exactly one issue, named above.
 - [ ] The test was written first and failed before the code, or this changes no code.
 - [ ] `Scripts/check` is green on my machine.
 - [ ] The reviewer agent read the newest commit and this description. Its reply is a comment here that names that commit, and each finding is fixed or answered there.
