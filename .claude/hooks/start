@@ -152,6 +152,7 @@ case ${1:-} in
     setup)
         on_drive || { echo "Stop: clone the project onto the external drive. Is it plugged in?"; exit 1; }
         git config --global sagar.drive yes
+        git config --global sagar.virtualmac "$(dirname "$shared")/Virtual Macs/Sagar" # Scripts/tour's hidden Mac
         [ -z "${2:-}" ] || security add-generic-password -U -s Sagar.Agent -a key -w "$(base64 -i "$2")"
         git config core.hooksPath .githooks
         git config user.name 'sagar-agent[bot]'

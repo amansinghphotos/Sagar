@@ -736,7 +736,7 @@ testing() { # swift test [<argument>…]: if a test fails, each failing test and
     return "$status"
 }
 
-tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
+tour() { # The real app, driven as a person would. It takes the screen: here only on GitHub's runner (Scripts/tour tries it hidden).
     [ -n "${CI:-}" ] || return $nothing
     ! words_only || return $nothing
     local faults tags apps app toured=no
@@ -759,7 +759,7 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
     # Xcode keeps a step's screen recording only if the step fails, unless the build's own run file says to keep it
     # always: the films are made from these (#227). Building first writes that file; the owner's project is unchanged.
     log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode build-for-testing \
-        SAGAR_NEW="A line the tour looks for." CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) &&
+        -xcconfig Scripts/tour.xcconfig 2>&1) &&
         run=$(ls .build/Xcode/Build/Products/"${app}Tour_${app}Tour_"*.xctestrun) &&
         plutil -replace TestConfigurations.0.TestTargets.0.SystemAttachmentLifetime -string keepAlways "$run" &&
         log=$(xcodebuild -xctestrun "$run" -destination platform=macOS -derivedDataPath .build/Xcode \
