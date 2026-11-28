@@ -11,9 +11,15 @@ package enum Permission: CaseIterable, Sendable {
     /// Whether it is given, read without asking anything.
     @MainActor package var isGiven: Bool {
         switch self {
-        case .pasteFromOtherApps: NSPasteboard.general.accessBehavior == .alwaysAllow
+        case .pasteFromOtherApps: Self.keepingGiven(by: NSPasteboard.general.accessBehavior)
         case .accessibility: AXIsProcessTrusted()
         }
+    }
+
+    /// Whether keeping what is copied counts as given for what macOS reports: unless the person set Paste from Other
+    /// Apps to Ask or Deny. macOS 27 lets an app read what is copied without asking, and lists none in that pane.
+    package static func keepingGiven(by behavior: NSPasteboard.AccessBehavior) -> Bool {
+        ![.ask, .alwaysDeny].contains(behavior)
     }
 
     /// Where System Settings shows it.

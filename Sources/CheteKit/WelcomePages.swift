@@ -29,6 +29,8 @@ package struct WelcomeGiven: Equatable, Sendable {
     package var pasting = false
     /// Whether this Mac has clips the earlier Chete kept, which the welcome offers to bring in.
     package var hasOldClips = false
+    /// Whether macOS asks about keeping what is copied on this Mac. Where it does not, the welcome leaves that page out.
+    package var asksKeeping = true
     /// What came in from the earlier Chete, in words, once it has.
     package var broughtIn: String?
     package var opensAtLogin = false
@@ -64,9 +66,12 @@ package struct WelcomePages: View {
         _given = given
     }
 
-    /// The pages a person meets. The one for old clips is there only on a Mac that has some.
+    /// The pages a person meets. The one for old clips is there only on a Mac that has some, and the one for
+    /// keeping what is copied only where macOS asks about it.
     package static func pages(for given: WelcomeGiven) -> [WelcomePage] {
-        WelcomePage.allCases.filter { $0 != .oldClips || given.hasOldClips }
+        WelcomePage.allCases.filter {
+            ($0 != .oldClips || given.hasOldClips) && ($0 != .keeping || given.asksKeeping)
+        }
     }
 
     package var body: some View {
