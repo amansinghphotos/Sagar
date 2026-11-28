@@ -7,7 +7,8 @@ was tested about four times: at each commit here, on GitHub for the request, and
 merge. At least 23 of the 68 failures on GitHub's Mac were not the change's. The hidden Mac (decision 10)
 tours an app in about 2 minutes against GitHub's 10 to 12, from a clean guest each time. The owner asked
 for the fewest machines, programs, keys and hand-offs, and for every aspect of an app to be provable. On an
-independent review's page he kept all eight of its picks.
+independent review's page he kept seven of its picks, and for the eighth chose that the hidden Mac take
+over at once: "i wanna use the virtaul mac on my machine now and ditch github mac altogether".
 
 **Decision.**
 1. Each finished change is judged once, whole, on his Mac: every rule and test it can reach, from a clean
@@ -16,9 +17,9 @@ independent review's page he kept all eight of its picks.
 2. GitHub keeps the code, his approvals and the releases, checks the request's words on Linux, and checks
    that the proof from his Mac names the request's newest commit. Once a release, GitHub's Mac installs the
    previous version and watches it take the update: the one proof where a Mac that is not his matters most.
-3. The hidden Mac takes over only once its own fault is mended and it has run 50 tours in a row with none
-   stopping by itself. Until then GitHub's Mac judges, once a change. If the hidden Mac is not steady
-   within a week of trying, GitHub's Mac stays the judge, once a change, and nothing in 4 is deleted.
+3. The hidden Mac takes over at once. Until the cause of macOS stopping it is found and mended, a run that
+   macOS stops is started again from clean and the stop is counted and said; it is never read as the
+   change's fault, and a tour that fails is never tried again without a decision of his.
 4. Once the hidden Mac has judged five real changes, four parts are deleted outright: GitHub's Mac checking
    each change, its check after each merge, the loop that waits on its answer, and the places the checks
    behave differently there, with their tests.
