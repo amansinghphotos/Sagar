@@ -15,8 +15,10 @@ private struct Copying {
     let keyName = "Sagar Tests · \(UUID().uuidString)"
     let watcher: Watcher
 
-    init() throws {
-        watcher = Watcher(pasteboard: pasteboard, copies: try Copies(folder: folder, keyName: keyName))
+    /// Keeping is allowed unless a test says otherwise.
+    init(allowed: @escaping @MainActor () -> Bool = { true }) throws {
+        watcher = Watcher(
+            pasteboard: pasteboard, copies: try Copies(folder: folder, keyName: keyName), allowed: allowed)
     }
 
     /// Copies as an app does, by clearing the pasteboard and writing to it, then lets Chete look once.
@@ -141,7 +143,8 @@ private let fromOtherDevice = NSPasteboard.PasteboardType("com.apple.is-remote-c
         try? Seal.forget(named: keyName)
         try? FileManager.default.removeItem(at: folder)
     }
-    let watcher = Watcher(pasteboard: pasteboard, copies: try Copies(folder: folder, keyName: keyName))
+    let watcher = Watcher(
+        pasteboard: pasteboard, copies: try Copies(folder: folder, keyName: keyName), allowed: { true })
     await watcher.look()
     #expect(try Clips(folder: folder.appending(path: "Clips"), keyName: keyName).all() == [])
 }
@@ -169,4 +172,25 @@ private let fromOtherDevice = NSPasteboard.PasteboardType("com.apple.is-remote-c
     }
     let spent = Duration.nanoseconds(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - before)
     #expect(spent < .milliseconds(100))
+}
+
+/// Until Paste from Other Apps is allowed, Chete reads nothing you copy, so macOS never asks copy by copy.
+/// Once it is allowed, Chete keeps what you copy next, by itself, and not what was copied before.
+@Test @MainActor func nothingIsReadUntilKeepingIsAllowed() async throws {
+    let allowed = Allowed()
+    let copying = try Copying(allowed: { allowed.on })
+    defer { copying.removed() }
+    await copying.copy("before it was allowed")
+    #expect(try copying.clips().isEmpty)
+    allowed.on = true
+    await copying.watcher.look()
+    #expect(try copying.clips().isEmpty)
+    await copying.copy("after it was allowed")
+    #expect(try copying.clips().map(\.kinds) == [[.text("after it was allowed")]])
+}
+
+/// Whether keeping is allowed, as System Settings would say, for a test to turn on.
+@MainActor
+private final class Allowed {
+    var on = false
 }

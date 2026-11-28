@@ -12,24 +12,35 @@ struct CheteMenuCard: View {
     var body: some View {
         TimelineView(.everyMinute) { time in
             MenuCard(
-                clips: shelf.clips, now: time.date,
-                act: MenuCardActs(
-                    copy: { clip in
-                        _ = Pasting.paste(clip, plainText: false, mayPaste: false)
-                        NSApplication.shared.keyWindow?.close()
-                    },
-                    open: {
-                        NSApplication.shared.keyWindow?.close()
-                        openWindow(id: "chete")
-                        NSApplication.shared.activate()
-                    },
-                    settings: {
-                        NSApplication.shared.keyWindow?.close()
-                        openSettings()
-                        NSApplication.shared.activate()
-                    },
-                    checkForUpdates: Updates.shared.map { updates in { updates.check() } },
-                    quit: { NSApplication.shared.terminate(nil) }))
+                clips: shelf.clips, now: time.date, keeping: Permission.pasteFromOtherApps.isGiven,
+                act: acts)
         }
+    }
+
+    private var acts: MenuCardActs {
+        var acts = MenuCardActs(
+            copy: { clip in
+                _ = Pasting.paste(clip, plainText: false, mayPaste: false)
+                NSApplication.shared.keyWindow?.close()
+            },
+            open: {
+                NSApplication.shared.keyWindow?.close()
+                openWindow(id: "chete")
+                NSApplication.shared.activate()
+            },
+            settings: {
+                NSApplication.shared.keyWindow?.close()
+                openSettings()
+                NSApplication.shared.activate()
+            },
+            checkForUpdates: Updates.shared.map { updates in { updates.check() } },
+            quit: { NSApplication.shared.terminate(nil) })
+        acts.allowKeeping = {
+            NSApplication.shared.keyWindow?.close()
+            WelcomeOnThisMac.opensAt = .keeping
+            openWindow(id: "welcome")
+            NSApplication.shared.activate()
+        }
+        return acts
     }
 }

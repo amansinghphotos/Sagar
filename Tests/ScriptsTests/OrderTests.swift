@@ -4,7 +4,7 @@ import Testing
 private let here = URL(filePath: #filePath).deletingLastPathComponent()
 
 /// What the real rules script's order rule says, alone, of a package file and a line budget, in a small folder.
-private func order(package: String, budget: String) throws -> String {
+private func order(package: String, budget: String, decisions: [String] = []) throws -> String {
     let folder = FileManager.default.temporaryDirectory.appending(path: "order-\(UUID().uuidString)")
     defer { try? FileManager.default.removeItem(at: folder) }
     try FileManager.default.createDirectory(at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
@@ -14,6 +14,11 @@ private func order(package: String, budget: String) throws -> String {
     try Data(package.utf8).write(to: folder.appending(path: "Package.swift"))
     try Data(budget.utf8).write(to: folder.appending(path: "CONSTRAINTS.md"))
     try Data("Chete\n".utf8).write(to: folder.appending(path: "NOW"))
+    for decision in decisions {
+        try FileManager.default.createDirectory(
+            at: folder.appending(path: "Decisions"), withIntermediateDirectories: true)
+        try Data("# A decision\n".utf8).write(to: folder.appending(path: "Decisions/\(decision).md"))
+    }
     // A real repository with main as GitHub has it: on GitHub's Mac the script judges nothing without one.
     try run("/usr/bin/env", ["git", "init", "-q", "-b", "main"], in: folder)
     try run("/usr/bin/env", ["git", "add", "-A"], in: folder)
@@ -123,4 +128,18 @@ private let rowsInOrder = budget("| CheteKit | 1500 |\n| Keep | 300 |\n| Look | 
         package: String(decoding: try Data(contentsOf: root.appending(path: "Package.swift")), as: UTF8.self),
         budget: String(decoding: try Data(contentsOf: root.appending(path: "CONSTRAINTS.md")), as: UTF8.self))
     #expect(said.hasPrefix("ok    order"))
+}
+
+/// Two pieces of work that each write the next decision take the same number, and "decision 9" would name two.
+@Test func noTwoDecisionsShareANumber() throws {
+    let said = try order(
+        package: inOrder, budget: rowsInOrder,
+        decisions: ["0008 Look Redrawn", "0009 Audit Findings Are Reported", "0009 A Hidden Mac for Trying Tours"])
+    #expect(said.hasPrefix("FAIL  order"))
+    #expect(said.contains("0009"))
+    #expect(
+        try order(
+            package: inOrder, budget: rowsInOrder,
+            decisions: ["0009 Audit Findings Are Reported", "0010 A Hidden Mac for Trying Tours"]
+        ).hasPrefix("ok    order"))
 }
