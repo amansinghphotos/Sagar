@@ -22,14 +22,12 @@ package final class Updates {
         SPUUpdaterSettings(hostBundle: app).allowsAutomaticUpdates
     }
 
-    /// Where this app looks for updates.
     package var feed: URL? { updater.feedURL }
 
     /// Looks for an update now and shows the person what it finds.
     package func check() { updater.checkForUpdates() }
 }
 
-/// Why updates could not start.
 package enum UpdatesError: Error {
     case noFeed
 }

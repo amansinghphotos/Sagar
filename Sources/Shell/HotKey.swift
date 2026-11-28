@@ -33,7 +33,6 @@ package final class HotKey {
         /// A shortcut of macOS itself that is turned on. macOS would hand the keys over all the same,
         /// so its own list is the only way to know.
         case macOSHasIt
-        /// This app already holds them.
         case heldAlready
         /// macOS would not hand them over, with the number it gave.
         case macOSRefused(Int32)

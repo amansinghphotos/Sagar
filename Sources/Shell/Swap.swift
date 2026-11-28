@@ -19,8 +19,7 @@ package final class Swap {
 
     isolated deinit { notify_cancel(token) }
 
-    /// Quits the app the normal way.
-    package static func quit() { NSApp.terminate(nil) }
+    private static func quit() { NSApp.terminate(nil) }
 
     /// Listens for the app's whole life.
     package static func listen() { kept = kept ?? Swap() }
