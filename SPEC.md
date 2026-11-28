@@ -83,8 +83,8 @@ screen is pictured narrow, default and wide.
 3. **Build.** A fresh session per slice: a failing test, the code, the test passing.
 4. **Pull request,** naming its issue: "For" one in a milestone, which its release closes, and
    "Closes" for any other. When it is finished, `Scripts/check` judges it once, whole, on his Mac,
-   from a clean copy of its commit, with the app's tour in the hidden Mac (decision 11). GitHub checks
-   the request's words on Linux, and that the proof names its newest commit.
+   from a clean copy of its commit, with the app's tour in the hidden Mac (decision 11). GitHub's
+   Linux checks the text rules, the request's words, and that the proof names its newest commit.
 5. **Review.** A reviewer agent that can only read files reads each finished change once, against
    the spec and `CONSTRAINTS.md`. Its mend, in one commit, is not read again, but for a change to the
    working rules or a plan, where a mend has often brought a new fault.
@@ -95,8 +95,9 @@ screen is pictured narrow, default and wide.
    without taking his keyboard. If it was closed, or will not quit, it shows that when he next opens
    it. That reopening is the one window a release puts on his screen, by his choice. He is told what
    to try in three lines. The app is now locked.
-8. **Ship.** He approves the release pull request, and that is all. GitHub merges it, makes that same
-   file public, and on a clean Mac installs the previous release and watches it take the update. If he
+8. **Ship.** He approves the release pull request, and that is all. Before he was asked, the hidden Mac
+   installed the previous release and watched it take the update. GitHub merges it and makes that same
+   file public. If he
    reports a fault instead, the release is withdrawn, the fault is fixed, and step 7 repeats under the
    same number.
 
@@ -128,8 +129,8 @@ first of them, and a release will not start while its own has a box unticked.
 - Sparkle checks daily. A published release is never taken back: a bad one is mended, or the last
   good code is released again, under the next number.
 - Before a release an agent confirms it opens the files the previous release wrote, and ticks that
-  in the Release issue. After his approval GitHub's Mac installs the previous release and watches it
-  take the update.
+  in the Release issue. Before he is asked to approve, the hidden Mac installs the previous release
+  and watches it take the update.
 
 ### When an App Stops Unexpectedly
 
@@ -259,7 +260,7 @@ A welcome he gives no reference pictures for follows Apple's guidelines for a fi
 only Look's parts and motion, which stay held to their own measure. His yes is then the standard:
 on its pictures, and on its feel with a build. References he sends later are used from then on.
 
-Everything in the repository can be read by anyone. That keeps GitHub's Mac and its rules free.
+Everything in the repository can be read by anyone. That keeps GitHub's checks and its rules free.
 Before a spec needs something in the code that cannot be public, privacy is decided again
 (decision 3).
 
