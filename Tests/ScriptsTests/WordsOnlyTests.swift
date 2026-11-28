@@ -59,7 +59,7 @@ private func branchIsWordsOnly(_ files: [String]) throws -> String {
 }
 
 /// Main as it stands, after a merge, has changed nothing since itself: it is always built, tested and toured.
-@Test(arguments: [["spec/chete.md", "Sources/Keep/Keep.swift"], ["Scripts/release"], []])
+@Test(arguments: [["spec/chete.md", "Sources/Keep/Store.swift"], ["Scripts/release"], []])
 func anyOtherBranchIsBuilt(files: [String]) throws {
     #expect(try branchIsWordsOnly(files) == "no\n")
 }

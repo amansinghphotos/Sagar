@@ -13,7 +13,7 @@ private func reached(_ files: [String], asking command: String = "reached", ci: 
     (["Sources/CheteKit/Clips.swift"], "CheteKitTests"),
     (["Sources/Look/Tokens.swift"], "CheteKitTests|GalleryTests|LookTests"),
     (["Sources/Shell/Updates.swift"], "CheteKitTests|ShellTests"),
-    (["Sources/Keep/Keep.swift"], "CheteKitTests|KeepTests|ScriptsTests"),
+    (["Sources/Keep/Store.swift"], "CheteKitTests|KeepTests|ScriptsTests"),
     (["Sources/Gallery/Main.swift"], "GalleryTests"),
     (["Tests/KeepTests/StoreTests.swift"], "KeepTests"),
     (["Tests/Pictures/Pictures.swift"], "CheteKitTests|GalleryTests|LookTests|PicturesTests"),
@@ -39,7 +39,7 @@ func anythingElseReachesEveryTest(files: [String]) throws {
 /// a module its Kit uses, and builds for iPhone only when it reaches a module that builds there.
 @Test(arguments: [
     (["Sources/CheteKit/Clips.swift"], "tests CheteKitTests\napp Chete"),
-    (["Sources/Keep/Keep.swift"], "tests CheteKitTests|KeepTests|ScriptsTests\napp Chete\niphone"),
+    (["Sources/Keep/Store.swift"], "tests CheteKitTests|KeepTests|ScriptsTests\napp Chete\niphone"),
     (["Sources/Look/Tokens.swift"], "tests CheteKitTests|GalleryTests|LookTests\napp Chete"),
     (["Sources/Gallery/Main.swift"], "tests GalleryTests"),
     (["Tests/KeepTests/StoreTests.swift"], "tests KeepTests"),

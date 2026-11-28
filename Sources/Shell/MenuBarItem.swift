@@ -7,7 +7,6 @@ package struct MenuBarItem<Card: View>: Scene {
     let symbol: String
     let card: () -> Card
 
-    /// The item for an app, drawn as an SF Symbol, and the card it drops.
     package init(app: String, symbol: String, @ViewBuilder card: @escaping () -> Card) {
         self.app = app
         self.symbol = symbol

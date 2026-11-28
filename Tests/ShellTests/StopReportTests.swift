@@ -42,14 +42,6 @@ private func made<T: Decodable>(_ json: String) throws -> T {
     try JSONDecoder().decode(T.self, from: Data(json.utf8))
 }
 
-/// A settings store of its own, emptied when the test is done.
-private func withSettings(_ body: (UserDefaults) throws -> Void) throws {
-    let name = "org.example.specimen.\(UUID().uuidString)"
-    let settings = try #require(UserDefaults(suiteName: name))
-    defer { settings.removePersistentDomain(forName: name) }
-    try body(settings)
-}
-
 @Test func aReportHoldsOnlyTheAppTheMacAndWhereItStopped() throws {
     let text = StopReport.text(of: try made(crash), in: try made(environment), app: "Specimen")
     #expect(
