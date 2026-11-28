@@ -23,7 +23,7 @@ plugged in whenever a chat works.
 - [ ] `.claude/hooks/start setup <that file>`, then delete the file. It keeps the key, gives git the agents'
       identity, installs `gh` into `Tools`, clones the private notes beside, sends Xcode's builds to the drive,
       keeps Swift's two caches in `Caches`, and
-      brings back his Claude instructions, plugins and skill. It stops if the project is not on its own drive,
+      brings back his Claude instructions, plugins and skills (cook, and salah from the notes). It stops if the project is not on its own drive,
       and marks the Mac: from then on, a chat or a commit in a copy off the drive stops.
 - [ ] **Owner.** macOS asks once whether Claude may use the drive: Allow.
 - [ ] `.claude/hooks/start ready` prints nothing. Every session start says what is still missing.
@@ -32,6 +32,7 @@ plugged in whenever a chat works.
       decodes it with `base64 -d` into a `.p12`; open that, give it the password from the same entry. Delete both files.
 - [ ] **Owner.** Update key: paste the note of Sagar · Update Key into the file the agent names; `generate_keys -f <file>`, then delete the file.
 - [ ] `Scripts/check` is green. `Scripts/build Chete` prints "signed": the update key matches.
+- [ ] `Scripts/tour setup` makes the hidden Mac that tours are tried in: about an hour, most of it Apple's download.
 - [ ] **Owner.** The first build asks twice to use the keychain (signing, the update key): Always Allow.
 - [ ] **Owner.** Approve the card that archives a chat once its pull request closes: archiving removes the chat's copy.
 - [ ] Tell him: "Ready. Start each new chat in the Sagar folder on the drive."

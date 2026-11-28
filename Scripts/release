@@ -10,6 +10,8 @@
 #   Scripts/release opens <app path>            item or menu: where the update tour asks that app for updates
 #   Scripts/release quitting <identifier> <executable>    closed, quit or stayed: asks an open app for its place
 #   Scripts/release notice <App> <version> <passed|failed> <owner> <why> < comments    the note that tells him, if any
+#   Scripts/release answered < answer           accepted, refused or waiting: what Apple's notary said about a submission
+#   Scripts/release awaits <submission>         asks Apple about one submission again until it answers, as a release does
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -86,6 +88,41 @@ quitting() { # quitting <identifier> <executable>: closed if it is not running. 
     echo quit
 }
 [ "${1:-}" != quitting ] || { quitting "${2:?}" "${3:?}"; exit; }
+
+answered() { # answered < what notarytool said about a submission: accepted, refused, or waiting. Only Apple's verdict
+    # ends the wait: a wait that ran out of time, a dropped line or In Progress all mean ask again.
+    case $(grep -o '"status" *: *"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/' || true) in
+    Accepted) echo accepted ;;
+    Invalid | Rejected) echo refused ;;
+    *) echo waiting ;;
+    esac
+}
+[ "${1:-}" != answered ] || { answered; exit; }
+
+profile=${NOTARY_PROFILE:-Sagar}
+awaits() { # awaits <submission>: asks Apple about one submission until it accepts or refuses it, each ask at most ASK
+    # seconds (600 unless told), all of them at most LIMIT seconds (4 hours unless told: Apple's first check of a new
+    # app can take hours). Ends well only if Apple accepted it; on a refusal, Apple's log says why.
+    local limit=${LIMIT:-14400} said end
+    end=$((SECONDS + limit))
+    while [ "$SECONDS" -lt "$end" ]; do
+        said=$(xcrun notarytool wait "$1" --keychain-profile "$profile" --output-format json \
+            --timeout "$(((end - SECONDS) < ${ASK:-600} ? end - SECONDS : ${ASK:-600}))" 2>&1 || true)
+        case $(answered <<<"$said") in
+        accepted) return 0 ;;
+        refused)
+            xcrun notarytool log "$1" --keychain-profile "$profile" || true
+            echo "Apple's notary refused submission $1."
+            return 1
+            ;;
+        esac
+        echo "Apple is still checking submission $1. Asking again."
+        sleep 5
+    done
+    echo "Apple had not answered about submission $1 within $((limit / 60)) minutes. Scripts/release awaits $1 asks again."
+    return 1
+}
+[ "${1:-}" != awaits ] || { awaits "${2:?}"; exit; }
 
 app=${1:?Usage: Scripts/release <App> <version> [withdraw|publish]}
 version=${2:?Usage: Scripts/release <App> <version> [withdraw|publish]}
@@ -178,7 +215,6 @@ publish) # On GitHub's clean Mac: make the tried file public, then be the person
     ;;
 esac
 
-profile=${NOTARY_PROFILE:-Sagar}
 tools=$(find .build -type d -path '*artifacts/sparkle/Sparkle/bin' 2>/dev/null | head -1 || true)
 notes=$(cat)
 reason=$(why <<<"$notes") ||
@@ -213,10 +249,13 @@ next=$(follows "${last:-}" "$version")
 [ "$next" = yes ] || stop "After ${last:-no release} comes the next second number, or a new first number with .0: not $version."
 ! gh release view "$tag" >/dev/null 2>&1 || stop "A build of $app $version is already waiting. Withdraw it first."
 
-notarise() { # Apple's check, then its ticket stapled on, so the file opens offline
-    local answer
-    answer=$(xcrun notarytool submit "$1" --keychain-profile "$profile" --wait 2>&1) || true
-    grep -q 'status: Accepted' <<<"$answer" || { echo "$answer"; stop "Apple's notary did not accept $1"; }
+notarise() { # Apple's check, sent once and asked about until it answers, then its ticket stapled on, so the file
+    # opens offline
+    local submission
+    submission=$(xcrun notarytool submit "$1" --keychain-profile "$profile" --no-wait --output-format json |
+        jq -r '.id // empty' || true)
+    [ -n "$submission" ] || stop "Apple's notary did not take $1"
+    awaits "$submission" || stop "Apple's notary did not accept $1"
     xcrun stapler staple -q "$2"
 }
 

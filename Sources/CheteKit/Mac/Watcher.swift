@@ -1,13 +1,11 @@
 import AppKit
+import Shell
 import os
 
-/// Watches a pasteboard and hands each new copy to Copies.
-///
-/// macOS sends no word when something is copied. So the watcher asks the pasteboard for its change count,
-/// a single number, twice a second, letting macOS move each wake by up to a quarter second to group it
-/// with others. It reads what was copied only when that number moves.
+/// Watches a pasteboard and hands each new copy to Copies. macOS sends no word when something is copied, so the
+/// watcher asks the pasteboard for its change count, a single number, twice a second, letting macOS move each wake by
+/// up to a quarter second to group it with others. It reads what was copied only when that number moves.
 package final class Watcher {
-    /// How often the watcher looks.
     package static let looksPerSecond = 2
 
     private let pasteboard: NSPasteboard
@@ -15,13 +13,19 @@ package final class Watcher {
     /// The change count last seen. What was on the pasteboard before Chete opened is not a new copy.
     private var seen: Int
     private var watching: Task<Void, Never>?
+    /// Whether Paste from Other Apps is allowed. Until it is, nothing copied is read, so macOS never asks.
+    private let allowed: @MainActor () -> Bool
     /// Told of each clip kept, so the list can show it.
     package var kept: (Clip) -> Void = { _ in }
 
     /// A watcher for a pasteboard: the one everything is copied to, unless a test brings its own.
-    package init(pasteboard: NSPasteboard = .general, copies: Copies) {
+    package init(
+        pasteboard: NSPasteboard = .general, copies: Copies,
+        allowed: @escaping @MainActor () -> Bool = { Permission.pasteFromOtherApps.isGiven }
+    ) {
         self.pasteboard = pasteboard
         self.copies = copies
+        self.allowed = allowed
         seen = pasteboard.changeCount
     }
 
@@ -44,6 +48,7 @@ package final class Watcher {
         let count = pasteboard.changeCount
         guard count != seen else { return }
         seen = count
+        guard allowed() else { return }
         guard pasteboard.types?.contains(.chetePasted) != true else { return }
         let fromOtherDevice = pasteboard.types?.contains(.fromOtherDevice) == true
         let app = fromOtherDevice ? nil : NSWorkspace.shared.frontmostApplication?.bundleIdentifier

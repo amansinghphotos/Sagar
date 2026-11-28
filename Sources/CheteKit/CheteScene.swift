@@ -12,7 +12,7 @@ public struct CheteScene: Scene {
         NewBuildCard.showIfNew()
     }
 
-    /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
+    /// Its settings, its window, the welcome on a new Mac, and its item in the menu bar.
     public var body: some Scene {
         SwiftUI.Settings { CheteSettings(changed: Self.reread) }.restorationBehavior(.disabled)
             .defaultLaunchBehavior(.suppressed)
@@ -22,10 +22,12 @@ public struct CheteScene: Scene {
             }
             .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
             .windowName("Your clips")
+            .openedByShortcut()
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
         .defaultLaunchBehavior(.presented)
+        WelcomeWindow()
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
@@ -41,6 +43,10 @@ public struct CheteScene: Scene {
     private static func startWatching() {
         guard !started else { return }
         started = true
+        // Sparkle starts as Chete opens, as Sparkle asks, so it checks daily from the first open. Started instead by
+        // the menu-bar card as it is first drawn, it held Chete for half a second on a slow Mac, and the card closed
+        // before it showed (#311).
+        _ = Updates.shared
         Task {
             do {
                 let copies = try await Task.detached { try Copies.atOpen() }.value
@@ -59,7 +65,7 @@ public struct CheteScene: Scene {
 
 extension CheteScene {
     /// Shows what is kept now, after Settings deleted or brought back clips.
-    fileprivate static func reread() {
+    static func reread() {
         Task {
             guard let copies else { return }
             do {

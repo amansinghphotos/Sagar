@@ -131,6 +131,7 @@ ready() { # Checklists/Build Mac.md, as what can be seen without asking the keyc
             echo "The ${plugin%%@*} plugin"
     done
     [ -f "$HOME/.claude/skills/cook/SKILL.md" ] || echo "The cook skill"
+    [ -f "$HOME/.claude/skills/salah/SKILL.md" ] || echo "The salah skill"
     # The owner's Claude instructions and settings live only in his home folder: a copy waits in the private notes.
     for file in CLAUDE.md settings.json; do
         if [ ! -f "$HOME/.claude/$file" ]; then echo "The owner's ~/.claude/$file"
@@ -152,6 +153,7 @@ case ${1:-} in
     setup)
         on_drive || { echo "Stop: clone the project onto the external drive. Is it plugged in?"; exit 1; }
         git config --global sagar.drive yes
+        git config --global sagar.virtualmac "$(dirname "$shared")/Virtual Macs/Sagar" # Scripts/tour's hidden Mac
         [ -z "${2:-}" ] || security add-generic-password -U -s Sagar.Agent -a key -w "$(base64 -i "$2")"
         git config core.hooksPath .githooks
         git config user.name 'sagar-agent[bot]'
@@ -182,6 +184,9 @@ case ${1:-} in
         # Xcode's own builds go beside the project's, on the drive, not into the home folder.
         defaults write com.apple.dt.Xcode IDECustomDerivedDataLocation "$shared/.build/Xcode"
         keep_caches
+        # The owner's decision pages are built with salah, kept in the private notes; its installer proves the copy.
+        [ -f ~/.claude/skills/salah/SKILL.md ] || "$private/Claude/skills/salah/scripts/install" >/dev/null ||
+            echo "Could not install the salah skill from the private notes."
         [ -d ~/.claude/skills/cook ] || git clone -q https://github.com/Leonxlnx/cook ~/.claude/skills/cook
         for plugin in $plugins; do
             claude plugin marketplace add "${plugin#*=}" >/dev/null && claude plugin install "${plugin%%=*}" >/dev/null
