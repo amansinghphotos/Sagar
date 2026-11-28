@@ -11,7 +11,7 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
             <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
             <description sparkle:format="plain-text"><![CDATA[New: Press your shortcut in any app to find what you copied.
-Better: Your old Chete's clips come across, still locked on this Mac.
+Better: Your clips from the old Chete come across and stay private on this Mac.
 ]]></description>
             <enclosure url="https://github.com/amansinghphotos/Sagar/releases/download/chete-1.0/Chete-1.0.dmg" length="1973150" type="application/octet-stream" sparkle:edSignature="VuosDHfBlSVmeU/qwV3y8hQdyBzr++PaXYzA/+9O7kqnFH7DzoE6EGAAQxyoaVgUKbh+lKCTynncZ5ZNzlmnCA=="></enclosure>
         </item>
