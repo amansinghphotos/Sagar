@@ -80,6 +80,7 @@ private struct Mac {
     #expect(told.contains("The agent-skills plugin\n"))
     #expect(told.contains("The taste-skill plugin\n"))
     #expect(told.contains("The cook skill\n"))
+    #expect(told.contains("The salah skill\n"))
     #expect(!told.contains("private notes"))
 }
 
@@ -92,6 +93,7 @@ private struct Mac {
     try mac.write("Be brief.\n", to: mac.home.appending(path: ".claude/CLAUDE.md"))
     try mac.write("{}\n", to: mac.home.appending(path: ".claude/settings.json"))
     try mac.write("cook\n", to: mac.home.appending(path: ".claude/skills/cook/SKILL.md"))
+    try mac.write("salah\n", to: mac.home.appending(path: ".claude/skills/salah/SKILL.md"))
     try mac.write(
         #"{"plugins": {"agent-skills@addy-agent-skills": [{}], "taste-skill@taste-skill": [{}]}}"#,
         to: mac.home.appending(path: ".claude/plugins/installed_plugins.json"))
