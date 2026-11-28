@@ -33,8 +33,8 @@ enum Appearance: String, CaseIterable {
 }
 
 /// The Gallery's window: a bar to choose the page, the theme, light or dark, and the window's size, over
-/// the page. The pages move to Look's own sidebar once it is built: a Mac's sidebar selection cannot be
-/// pictured from a hidden window.
+/// the page. A bar rather than Look's sidebar, since a Mac's sidebar selection cannot be pictured from a
+/// hidden window.
 struct Gallery: View {
     @State var page = Page.tokens
     @State var theme = Theme.modern

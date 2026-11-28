@@ -95,10 +95,10 @@ package struct Card<Content: View>: View {
     }
 }
 
-/// A thin line between rows, set in from the leading edge by `inset`, or by the inset where it lies.
+/// A thin line between rows, set in from the leading edge by `inset`, or by 14 points where none is given.
 package struct Rule: View {
     private let inset: CGFloat?
-    @Environment(\.ruleInset) private var standard
+    private static let standard: CGFloat = 14
 
     package init(inset: CGFloat? = nil) {
         self.inset = inset
@@ -106,7 +106,7 @@ package struct Rule: View {
 
     package var body: some View {
         Rectangle().fill(Role.hairline).frame(height: 1)
-            .padding(.leading, inset ?? standard)
+            .padding(.leading, inset ?? Self.standard)
     }
 }
 
@@ -135,13 +135,4 @@ extension View {
 nonisolated extension EnvironmentValues {
     /// Whether a panel is shown as a tab of its own, flat on the page, rather than floating over it.
     @Entry package var asTab = false
-    /// How far a rule is set in from the leading edge where no inset is given.
-    @Entry package var ruleInset: CGFloat = 14
-}
-
-extension View {
-    /// Lays a popover's contents on the page's own ground, out to its edges.
-    package func popoverGround() -> some View {
-        background(Role.ground)
-    }
 }
