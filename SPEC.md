@@ -219,7 +219,8 @@ on every change, and he holds it on each picture.
 
 - **Always:** a test first; `Scripts/check` green before a commit; one issue per pull request.
 - **His approval first:** `spec/`, `NOW`, approved pictures and the token file, releases and all that
-  is served to people, signing and keys, a dependency, a permission. `.github/CODEOWNERS` is the list.
+  is served to people, anything involving money, signing and keys, a dependency, a permission.
+  `.github/CODEOWNERS` is the list.
 - **Checked without him:** the working rules, which are the scripts, checks, hooks, checklists and
   numbers. Such a change carries the label `rules` and is read by the reviewer.
 - **Never:** anything personal in this repository (his data, a workplace detail, a key, an e-mail
