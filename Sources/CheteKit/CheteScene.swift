@@ -8,6 +8,8 @@ public struct CheteScene: Scene {
     /// The scene, ready for the app to open. Chete starts keeping what you copy as it opens.
     public init() {
         Self.startWatching()
+        Swap.listen()
+        NewBuildCard.showIfNew()
     }
 
     /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.

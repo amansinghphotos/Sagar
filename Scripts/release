@@ -8,6 +8,7 @@
 #   Scripts/release follows <last> <next>       says whether one version may follow another
 #   Scripts/release may <App> <now> < state     why a release of <App> may not start yet, or nothing
 #   Scripts/release opens <app path>            item or menu: where the update tour asks that app for updates
+#   Scripts/release quitting <identifier> <executable>    closed, quit or stayed: asks an open app for its place
 #   Scripts/release notice <App> <version> <passed|failed> <owner> <why> < comments    the note that tells him, if any
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -70,6 +71,21 @@ notice() { # notice <App> <version> <passed|failed> <owner> <why> < the release 
     printf '<!-- proof %s -->\n' "$3"
 }
 [ "${1:-}" != notice ] || { shift; notice "$@"; exit; }
+
+quitting() { # quitting <identifier> <executable>: closed if it is not running. Else it is asked to quit the normal way,
+    # by a notification any process may post and none needs a permission for; then quit, or stayed if it still runs
+    # after WAIT seconds (10 unless told).
+    local running="^$2( |\$)" tenths=0
+    pgrep -qf "$running" || { echo closed; return; }
+    notifyutil -p "$1.new-build"
+    while pgrep -qf "$running"; do
+        [ "$tenths" -lt $((${WAIT:-10} * 10)) ] || { echo stayed; return; }
+        sleep 0.1
+        tenths=$((tenths + 1))
+    done
+    echo quit
+}
+[ "${1:-}" != quitting ] || { quitting "${2:?}" "${3:?}"; exit; }
 
 app=${1:?Usage: Scripts/release <App> <version> [withdraw|publish]}
 version=${2:?Usage: Scripts/release <App> <version> [withdraw|publish]}
@@ -271,9 +287,14 @@ $(grep -E '^- \[ \] ' .github/pull_request_template.md)
 trap - ERR
 git switch -q main
 
-# Installed whole on this Mac, for him to try: the same file that will ship.
+# Installed whole on this Mac, for him to try: the same file that will ship. If he has the app open, it is asked to
+# quit first, and the new build opens in its place behind his windows, to show what is new without taking his keys.
+# If it was closed, or did not quit, nothing opens: it shows what is new when he next opens it.
+was=$(quitting "$(defaults read "$PWD/$out/$app.app/Contents/Info" CFBundleIdentifier)" "/Applications/$app.app/Contents/MacOS/$app")
 install "$image"
 echo "installed /Applications/$app.app"
+if [ "$was" = quit ]; then open -g "/Applications/$app.app" && echo "reopened  $app, behind his windows"; fi
+[ "$was" != stayed ] || echo "          $app did not quit: what is new shows when he next opens it"
 echo "drafted   $request"
 echo "          Say in its What to Do what he should try. Tick its boxes once each is true."
 echo "          Then: Scripts/check ready <its number>. That asks the owner, and his approval ships it."
