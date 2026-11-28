@@ -23,7 +23,7 @@ plugged in whenever a chat works.
 - [ ] `.claude/hooks/start setup <that file>`, then delete the file. It keeps the key, gives git the agents'
       identity, installs `gh` into `Tools`, clones the private notes beside, sends Xcode's builds to the drive,
       keeps Swift's two caches in `Caches`, and
-      brings back his Claude instructions, plugins and skills (cook, and salah from the notes). It stops if the project is not on its own drive,
+      puts back his whole Claude setup with the notes' own `Claude/restore`, which proves each piece. It stops if the project is not on its own drive,
       and marks the Mac: from then on, a chat or a commit in a copy off the drive stops.
 - [ ] **Owner.** macOS asks once whether Claude may use the drive: Allow.
 - [ ] `.claude/hooks/start ready` prints nothing. Every session start says what is still missing.
