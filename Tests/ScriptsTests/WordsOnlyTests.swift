@@ -3,15 +3,7 @@ import Testing
 
 /// Asks the real rules script whether a change to these files is words only, and so skips build, tests and tour.
 private func wordsOnly(_ files: [String]) throws -> Bool {
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = script
-    process.arguments = ["words"] + files
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self) == "yes\n"
+    try Script.run(Script.check, ["words"] + files).words == "yes\n"
 }
 
 @Test(arguments: [
@@ -36,21 +28,12 @@ func anyOtherChangeRunsEverything(files: [String]) throws {
 private func branchIsWordsOnly(_ files: [String]) throws -> String {
     let folder = FileManager.default.temporaryDirectory.appending(path: "words-\(UUID().uuidString)")
     defer { try? FileManager.default.removeItem(at: folder) }
-    let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
     try FileManager.default.createDirectory(at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-    try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
+    try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
     func run(_ tool: String, _ arguments: String...) throws -> String {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = folder
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
-        process.standardOutput = answer
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw CocoaError(.executableLoad) }
-        return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        let said = try Script.run(URL(filePath: tool), arguments, in: folder, environment: Script.withoutGit)
+        guard said.passed else { throw CocoaError(.executableLoad) }
+        return said.words
     }
     func commit() throws {
         _ = try run("/usr/bin/env", "git", "add", "-A")

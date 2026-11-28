@@ -8,10 +8,9 @@ private struct TwoChats {
 
     init() throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "clash-\(UUID().uuidString)")
-        let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
             at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
+        try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
         try git("init", "-q", "-b", "main")
         try write("one\ntwo\nthree\n", to: "Package.swift")
         try commit("The first page")
@@ -60,18 +59,8 @@ private struct TwoChats {
     }
 
     private func run(_ tool: String, _ arguments: [String]) throws -> (words: String, clear: Bool) {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = folder
-        // Inside a commit hook git names its own folder; the small repository must not be sent to the real one.
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
-        process.standardOutput = answer
-        try process.run()
-        process.waitUntilExit()
-        let words = String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        return (words.trimmingCharacters(in: .whitespacesAndNewlines), process.terminationStatus == 0)
+        let said = try Script.run(URL(filePath: tool), arguments, in: folder, environment: Script.withoutGit)
+        return (said.trimmed, said.passed)
     }
 }
 
