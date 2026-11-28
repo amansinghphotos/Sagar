@@ -60,9 +60,9 @@ private struct Phone {
     defer { try? FileManager.default.removeItem(at: phone.folder) }
     #expect(try phone.iphone("Keep").hasPrefix("ok    iphone"))
 
-    let keep = try String(contentsOf: phone.folder.appending(path: "Sources/Keep/Keep.swift"), encoding: .utf8)
+    let keep = try String(contentsOf: phone.folder.appending(path: "Sources/Keep/Store.swift"), encoding: .utf8)
     try phone.write(
-        keep + "\nlet home = FileManager.default.homeDirectoryForCurrentUser\n", to: "Sources/Keep/Keep.swift")
+        keep + "\nlet home = FileManager.default.homeDirectoryForCurrentUser\n", to: "Sources/Keep/Store.swift")
     let said = try phone.iphone("Keep")
     #expect(said.hasPrefix("FAIL  iphone"))
     #expect(said.contains("unavailable in iOS"))

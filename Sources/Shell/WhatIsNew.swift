@@ -19,13 +19,18 @@ package enum WhatIsNew {
         }
     }
 
-    /// The lines to show now, if this build opens for the first time and has any. Each build is remembered as
-    /// seen either way, so a card is never owed later.
+    /// The lines to show now, if this build opens for the first time and has any. Each build's date stamp is kept in
+    /// the app's own settings as seen either way, so a card is never owed later. An app's very first open is not news:
+    /// that is the welcome's to greet. A mended build under the same number has a new date stamp, so it is new again.
     static func due(_ info: [String: Any], _ settings: UserDefaults) -> [Line]? {
-        let new = NewBuild(settings).isNew(info["CFBundleVersion"] as? String ?? "")
+        let build = info["CFBundleVersion"] as? String ?? ""
+        let last = settings.string(forKey: lastBuildSeen)
+        settings.set(build, forKey: lastBuildSeen)
         let lines = lines(in: info)
-        return new && !lines.isEmpty ? lines : nil
+        return last != nil && last != build && !lines.isEmpty ? lines : nil
     }
+
+    private static let lastBuildSeen = "Shell.LastBuildSeen"
 
     /// Shows the app's card for what is new, if it is owed. The card is handed the build's version, its lines, and
     /// what closes it.
@@ -55,7 +60,6 @@ package enum WhatIsNew {
         panel.orderFrontRegardless()  // in front, though the app was opened behind: the keyboard stays where it was
     }
 
-    /// The card's window, while it is up.
     private static var window: NSPanel?
 
     /// A window with no frame of its own, which takes the keyboard once clicked, so that Escape closes it.
