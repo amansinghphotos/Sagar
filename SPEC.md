@@ -254,7 +254,9 @@ Apple documents no way for an app to turn on a permission's switch, or to see an
 shortcuts. So a welcome shows the switch but cannot press it, and warns only of macOS's shortcuts
 and the app's own. Apple documents no address that opens System Settings at one place, and none that
 tells an app a switch was turned on. So the card names the place, and the welcome keeps checking.
-Only the tour turns the switch, in the hidden Mac, as he would. Motion cannot be judged from a
+Only the tour turns the switch, in the hidden Mac, as he would. Until a tour does, those steps are still
+his to try with a build. Until the update is proven in the hidden Mac, GitHub's Mac proves it after his
+approval, once a release. Motion cannot be judged from a
 still. He sees each movement as a row of pictures through time, and judges its feel with a build.
 A welcome he gives no reference pictures for follows Apple's guidelines for a first open, and uses
 only Look's parts and motion, which stay held to their own measure. His yes is then the standard:

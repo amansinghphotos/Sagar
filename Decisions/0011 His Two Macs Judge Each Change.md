@@ -8,7 +8,7 @@ merge. At least 23 of the 68 failures on GitHub's Mac were not the change's. The
 tours an app in about 2 minutes against GitHub's 10 to 12, from a clean guest each time. The owner asked
 for the fewest machines, programs, keys and hand-offs, and for every aspect of an app to be provable. On an
 independent review's page he kept seven of its picks, and for the eighth chose that the hidden Mac take
-over at once: "i wanna use the virtaul mac on my machine now and ditch github mac altogether".
+over at once, to "ditch github mac altogether".
 
 **Decision.**
 1. Each finished change is judged once, whole, on his Mac: every rule and test it can reach, from a clean
@@ -33,10 +33,11 @@ over at once: "i wanna use the virtaul mac on my machine now and ditch github ma
    allowed, the number is not raised in the same change: it comes to him as a choice.
 8. The checking rules change only to mend a fault, and one chat changes them at a time.
 
-**Consequences.** A change waits about 6 minutes from finished to merged, and a release no longer waits for
+**Consequences.** A change waits about 6 minutes from finished to merged, expected (its parts are measured), and a release no longer waits for
 a run on GitHub. Nothing merges while his Mac is closed or the drive is away; a request already shown to
 him still merges on his approval. GitHub no longer runs the tests itself: it trusts a reply from the agents'
-app that names the commit, as it trusts the reviewer's today. Only the check command writes that reply,
+app that names the commit, as it trusts the reviewer's today. Only the check command writes that reply, and a hook stops a chat writing it by hand, as one stops a
+request being shown by hand today;
 every whole check runs merged with main, and a release runs the whole check on main again, so a change that
 slipped through fails the next one by name. Nothing in GitHub's settings changes: the rule on main still
 requires `check` and `words` from GitHub's Actions, and `check` becomes seconds of text rules on Linux. No
