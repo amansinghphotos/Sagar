@@ -17,6 +17,9 @@ final class CheteTour: XCTestCase {
         close(settingsOf: app)
         app.terminate()
         app.launch()
+        // Chete opens its window as it starts; the card is asked for once that window is in front, or the window
+        // coming forward would close the card as it drops.
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
         let item = app.statusItems["Chete"]
         XCTAssert(item.waitForExistence(timeout: 10), "Chete has no item in the menu bar.")
         item.click()
