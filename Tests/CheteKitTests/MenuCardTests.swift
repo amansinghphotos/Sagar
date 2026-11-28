@@ -32,3 +32,10 @@ func theMenuCardShowsTheFiveNewestAsApproved(dark: Bool) throws {
     try expectPicture(
         of: MenuCard(clips: [], now: now, act: nothing), width: MenuCard.width, height: 174, named: "menu-card-empty")
 }
+
+/// Until macOS lets Chete keep what is copied, the card says it keeps nothing yet, with a way back to that step.
+@Test func theCardSaysWhenNothingIsKeptYet() throws {
+    try expectPicture(
+        of: MenuCard(clips: [], now: now, keeping: false, act: nothing), width: MenuCard.width, height: 174,
+        named: "menu-card-not-allowed")
+}

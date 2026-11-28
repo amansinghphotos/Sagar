@@ -202,3 +202,12 @@ package struct KeyBox: View {
         heard = false
     }
 }
+
+extension KeyCombo {
+    /// The shortcut in words, as Apple writes one: Shift-Command-C.
+    package var inWords: String {
+        let held = [(control, "Control"), (option, "Option"), (shift, "Shift"), (command, "Command")]
+        return (held.filter(\.0).map(\.1) + [key.count == 1 ? key.uppercased() : key.capitalized])
+            .joined(separator: "-")
+    }
+}

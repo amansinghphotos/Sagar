@@ -2,7 +2,7 @@ import Look
 import SwiftUI
 
 /// The pages of Chete's welcome, in the order a person meets them.
-package enum WelcomePage: String, CaseIterable, Sendable {
+package enum WelcomePage: String, CaseIterable, Codable, Sendable {
     case greeting, shortcut, keeping, pasting, oldClips, last
 }
 

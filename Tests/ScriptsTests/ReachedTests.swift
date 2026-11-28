@@ -1,16 +1,18 @@
 import Foundation
 import Testing
 
-/// Asks the real rules script, in this real package, which test targets a change to these files can reach: those
-/// the tests before a commit run on this Mac. GitHub's Mac runs every one of them, whatever this says.
-private func reached(_ files: [String]) throws -> String {
+/// Asks the real rules script, in this real package, what a change to these files can reach: the tests, builds and
+/// tours that run for it, before a commit here and, with `ci`, on GitHub.
+private func reached(_ files: [String], asking command: String = "reached", ci: Bool = false) throws -> String {
     let root = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
     let process = Process()
     let answer = Pipe()
     process.executableURL = root.appending(path: "Scripts/check")
-    process.arguments = ["reached"] + files
+    process.arguments = [command] + files
     process.currentDirectoryURL = root
-    process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
+    var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
+    if ci { environment["CI"] = "true" }
+    process.environment = environment
     process.standardOutput = answer
     try process.run()
     process.waitUntilExit()
@@ -41,4 +43,29 @@ func aChangeReachesTheTestsThatDependOnIt(files: [String], tests: String) throws
 ])
 func anythingElseReachesEveryTest(files: [String]) throws {
     #expect(try reached(files) == "all\n")
+}
+
+/// On GitHub, as before a commit, a pull request builds and tours an app only when it reaches the app's own files or
+/// a module its Kit uses, and builds for iPhone only when it reaches a module that builds there.
+@Test(arguments: [
+    (["Sources/CheteKit/Clips.swift"], "tests CheteKitTests\napp Chete"),
+    (["Sources/Keep/Keep.swift"], "tests CheteKitTests|KeepTests|ScriptsTests\napp Chete\niphone"),
+    (["Sources/Look/Tokens.swift"], "tests CheteKitTests|GalleryTests|LookTests\napp Chete"),
+    (["Sources/Gallery/Main.swift"], "tests GalleryTests"),
+    (["Tests/KeepTests/StoreTests.swift"], "tests KeepTests"),
+    (["Tests/LookTests/Pictures/button.png"], "tests LookTests|PicturesTests"),
+    (["Apps/Chete/Tour.swift"], "tests \napp Chete"),
+])
+func aPullRequestBuildsAndToursOnlyWhatItReaches(files: [String], reaches: String) throws {
+    #expect(try reached(files, asking: "reaches", ci: true) == reaches + "\n")
+}
+
+/// The scripts and hooks are the rules themselves: on GitHub a change to them runs everything, though before a commit
+/// only ScriptsTests reads them.
+@Test func aChangeToTheRulesReachesEverythingOnGitHub() throws {
+    #expect(try reached(["Scripts/check"], ci: true) == "all\n")
+    #expect(try reached([".claude/hooks/start"], asking: "reaches", ci: true) == "all\n")
+    #expect(try reached(["Tests/ScriptsTests/SizeTests.swift"], asking: "reaches", ci: true) == "all\n")
+    #expect(try reached(["Tests/Pictures/Pictures.swift"], asking: "reaches", ci: true) == "all\n")
+    #expect(try reached(["Scripts/check"]) == "ScriptsTests\n")
 }

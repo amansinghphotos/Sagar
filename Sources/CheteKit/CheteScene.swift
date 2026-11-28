@@ -8,12 +8,11 @@ public struct CheteScene: Scene {
     /// The scene, ready for the app to open. Chete starts keeping what you copy as it opens.
     public init() {
         Self.startWatching()
-        Self.holdShortcut()
         Swap.listen()
         NewBuildCard.showIfNew()
     }
 
-    /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
+    /// Its settings, its window, the welcome on a new Mac, and its item in the menu bar.
     public var body: some Scene {
         SwiftUI.Settings { CheteSettings(changed: Self.reread) }.restorationBehavior(.disabled)
             .defaultLaunchBehavior(.suppressed)
@@ -28,6 +27,7 @@ public struct CheteScene: Scene {
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
         .defaultLaunchBehavior(.presented)
+        WelcomeWindow()
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
@@ -38,15 +38,6 @@ public struct CheteScene: Scene {
     /// Watches what you copy for as long as Chete is open.
     private static var watcher: Watcher?
     private static var started = false
-
-    /// Holds Chete's shortcut from the moment it starts, so the keys open it from any app.
-    private static func holdShortcut() {
-        let folder = URL.applicationSupportDirectory.appending(path: "Chete")
-        guard let keys = ((try? Settings.read(in: folder)) ?? Settings()).shortcut else { return }
-        if let why = Shortcut.chete.change(to: keys) {
-            Logger(subsystem: "com.amansingh.chete", category: "Shortcut").error("Chete holds no shortcut: \(why)")
-        }
-    }
 
     /// Starts watching, once. The history is opened away from the screen, so opening Chete never waits for the keychain.
     private static func startWatching() {
@@ -70,7 +61,7 @@ public struct CheteScene: Scene {
 
 extension CheteScene {
     /// Shows what is kept now, after Settings deleted or brought back clips.
-    fileprivate static func reread() {
+    static func reread() {
         Task {
             guard let copies else { return }
             do {

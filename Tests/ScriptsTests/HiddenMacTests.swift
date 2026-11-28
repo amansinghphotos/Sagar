@@ -149,4 +149,103 @@ private nonisolated struct Project: Sendable {
         #expect(waiting == "The hidden Mac is busy with chat one; waiting in line.\n")
         #expect(try String(contentsOfFile: record, encoding: .utf8) == "one\ntwo\n")
     }
+
+    /// A hidden Mac whose files are damaged says so, and leaves its clean files as they were and no copy behind.
+    @Test func aDamagedHiddenMacSaysSoAndLeavesNoCopy() async throws {
+        let project = try await Project()
+        let machine = project.guestFolder.appending(path: "Machine")
+        try FileManager.default.createDirectory(at: machine.appending(path: "Clean"), withIntermediateDirectories: true)
+        for name in ["Clean/Disk.img", "Clean/AuxiliaryStorage", "Clean/State.vzvmsave", "HardwareModel", "MAC"] {
+            try Data("not a machine\n".utf8).write(to: machine.appending(path: name))
+        }
+        let serve = try project.start(["serve", project.guestFolder.path])
+        #expect(try await serve.ended() == 1)
+        #expect(serve.said.contains("its files are damaged"))
+        #expect(
+            try FileManager.default.contentsOfDirectory(atPath: machine.path).sorted() == [
+                "Clean", "HardwareModel", "MAC",
+            ])
+        #expect(try FileManager.default.contentsOfDirectory(atPath: machine.appending(path: "Clean").path).count == 3)
+    }
+
+    /// Stopping a hidden Mac that is not running returns at once.
+    @Test func stoppingWhenNothingRunsReturnsAtOnce() async throws {
+        let project = try await Project()
+        #expect(try await project.start(["stop", project.guestFolder.path]).ended(within: 10) == 0)
+    }
+}
+
+/// The real tour script in a project of its own: one app's tour, and its own git settings in place of this Mac's.
+private nonisolated struct Touring: Sendable {
+    let top = FileManager.default.temporaryDirectory.appending(path: "hm-\(UUID().uuidString.prefix(8))")
+    var work: URL { top.appending(path: "Work") }
+
+    init() throws {
+        let real = URL(filePath: #filePath).appending(path: "../../../Scripts/tour").standardizedFileURL
+        try FileManager.default.createDirectory(
+            at: work.appending(path: "Apps/Demo"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: work.appending(path: "Scripts"), withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: real, to: work.appending(path: "Scripts/tour"))
+        try Data("// the tour of Demo\n".utf8).write(to: work.appending(path: "Apps/Demo/Tour.swift"))
+    }
+
+    func tour(_ app: String, place: String? = nil, ci: Bool = false) async throws -> (Int32?, String) {
+        let settings = top.appending(path: "gitconfig")
+        FileManager.default.createFile(atPath: settings.path, contents: nil)
+        let environment = ["GIT_CONFIG_GLOBAL": settings.path, "CI": ci ? "true" : ""]
+        let git = try Started("/usr/bin/git", ["init", "-q"], output: top.appending(path: "git"), in: work)
+        _ = try await git.ended()
+        if let place {
+            _ = try await Started(
+                "/usr/bin/git", ["config", "--global", "sagar.virtualmac", place], output: top.appending(path: "git"),
+                in: work, environment: environment
+            ).ended()
+        }
+        let script = try Started(
+            work.appending(path: "Scripts/tour").path, [app], output: top.appending(path: "said"), in: work,
+            environment: environment)
+        return (try await script.ended(), script.said)
+    }
+}
+
+@Test func onGitHubsMacTheCheckToursInstead() async throws {
+    #expect(try await Touring().tour("Demo", ci: true) == (1, "On GitHub's Mac, Scripts/check runs the tour.\n"))
+}
+
+@Test func aMacWithNoHiddenMacSaysWhereToPutIt() async throws {
+    let (status, said) = try await Touring().tour("Demo")
+    #expect(status == 1)
+    #expect(
+        said.hasPrefix("No hidden Mac on this Mac. Name its folder on the drive: git config --global sagar.virtualmac"))
+}
+
+/// With its drive unplugged nothing is toured, and nothing is written anywhere else.
+@Test func aDriveAwayStopsTheTour() async throws {
+    let away = "/Volumes/hm-\(UUID().uuidString.prefix(8))/Virtual Macs/Sagar"
+    #expect(
+        try await Touring().tour("Demo", place: away)
+            == (1, "The drive that holds the hidden Mac is not plugged in: \(away)\n"))
+}
+
+/// A drive that is plugged in, but holds no hidden Mac yet, is told how to make one, not that it is away.
+@Test func aDriveWithNoFolderYetIsThere() async throws {
+    let touring = try Touring()
+    let place = touring.top.appending(path: "Drive/Virtual Macs/Sagar").path
+    #expect(
+        try await touring.tour("Demo", place: place) == (1, "No hidden Mac here yet: Scripts/tour setup makes it.\n"))
+}
+
+@Test func aDriveWithNoHiddenMacYetSaysHowToMakeIt() async throws {
+    let touring = try Touring()
+    #expect(
+        try await touring.tour("Demo", place: touring.top.path)
+            == (1, "No hidden Mac here yet: Scripts/tour setup makes it.\n"))
+}
+
+@Test func anAppWithNoTourIsRefused() async throws {
+    let touring = try Touring()
+    #expect(
+        try await touring.tour("Elsewhere", place: touring.top.path) == (
+            1, "Apps/Elsewhere/Tour.swift: no such tour.\n"
+        ))
 }
