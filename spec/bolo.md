@@ -31,10 +31,11 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    and what kind it is, the website's address, the box you are in and whether it holds one line or
    many, the text before and after your cursor, anything selected, and the words near the box, the
    newest messages first. It never reads a password box, and never writes into one. In a remote desktop
-   it reads a picture of the window instead.
+   it reads a picture of the window instead. *(waits on round three)*
    *Asks for:* nothing more than pasting needs (must-have 8); Screen Recording only for a remote desktop.
    *Proved by:* a test that reads a real box in a window of its own, with text before and after the
-   cursor and a word selected, and gets each part back; your try in a mail app, a chat and a browser.
+   cursor and a word selected, gets each part back, and is timed; a test that a password box gives
+   nothing; your try in a mail app, a chat and a browser.
 4. **It writes to fit where you are.** In the middle of a sentence it carries on: a small letter, a
    space where words would touch, no extra full stop. A search box or a subject line gets one line and
    no full stop. In an email, a greeting, paragraphs and sign-off you say each go on their own line.
@@ -42,6 +43,7 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    and of the conversation: relaxed in chats, proper in email and notes. In a terminal or code it
    writes your words exactly. Anything selected is replaced. Numbers, times and dates are digits.
    "Comma", "new line" and "scratch that" do what they say, and a correction keeps only what you meant.
+   *(waits on round three)*
    *Proved by:* made-up scenes, each a box with text around the cursor, what you said, and what you
    approved it writes. For example, after "see you at the ", saying "Station at six" writes
    "station at 6".
@@ -49,7 +51,7 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    like it: a name in the thread, or a made-up word two people share. Words you teach it are spelled as
    you spell them; you add them one at a time or from a plain file. When you fix a word just after it
    lands, Bolo learns it and says so. In the one app you choose for it, it knows medical words, from a
-   list kept on this Mac.
+   list kept on this Mac. *(waits on round three)*
    *Proved by:* tests where a made-up word on screen, heard as two ordinary words, is written as the
    made-up word; and a taught word and a fixed word, each heard a little wrong, written as they should be.
 6. **It tidies quickly, sending little.** It takes out "um", repeats and words you took back, keeps
@@ -61,8 +63,9 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    app, a model on this Mac tidies it, and Claude's late answer waits on the card. That model is the one
    you pick after a test on your own dictations; if it needs outside code, you are asked first. Every
    answer is checked before it lands: one that answers you, runs long or invents words gives way to the
-   next.
-   *Proved by:* the scenes of must-have 4 tidied by each of the three, each scored; a test that what goes
+   next. *(waits on round three)*
+   *Proved by:* the scenes of must-have 4 tidied by Bolo's rules, by Claude and by the model on this
+   Mac, each scored against the text you approved for that scene; a test that what goes
    to Claude holds only those four parts; and the time from letting go to the words landing, measured
    on your Mac.
 7. **Private apps stay private.** Words you say in an app you mark as private are never sent to Claude:
@@ -97,8 +100,9 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
     models, or their download. On a Mac with the earlier Bolo, one more page brings in your words and
     history. Last comes the offer to open at login. Each step says first what your Mac will show.
     Nothing asks you once the welcome is done.
-    *Asks for:* your Claude key, once. It is kept in the keychain all your apps share, which iCloud
-    Keychain carries, so no other app ever asks again. Login Items, if you choose to open it at login.
+    *Asks for:* where your models are, if you have them. Your Claude key, once: it is kept in the
+    keychain all your apps share, which iCloud Keychain carries, so no other app ever asks again. Login
+    Items, if you choose to open it at login.
     *Proved by:* the tour through every page on GitHub's Mac, pictures you approve, and your try with a
     build for each switch in System Settings.
 12. **It takes over the Bolo before it.** In its welcome, it brings in the words you taught it, your
@@ -113,9 +117,9 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
 Your voice is never sent anywhere to be heard. Each dictation's words, with the little that helps, go
 to Claude to be tidied, unless the rules tidy it on the spot, there is no network, or you are in a
 private app. Your history and recordings are kept in your Documents in iCloud. On a Mac without the
-models, the speech model and the model that tidies offline are downloaded once, from Hugging Face,
-where their makers publish them. Once a day Bolo fetches its update feed from this site, and downloads
-an update only when you choose.
+models, the speech model and the model that tidies offline, unless that is Apple's own, are downloaded
+once, from Hugging Face, where their makers publish them. Once a day Bolo fetches its update feed from
+this site, and downloads an update only when you choose.
 
 ## Out of Scope
 
