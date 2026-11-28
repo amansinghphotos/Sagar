@@ -1,4 +1,4 @@
-# 9. A Hidden Mac for Trying Tours
+# 10. A Hidden Mac for Trying Tours
 
 Decided by the owner, by approving pull request 244.
 

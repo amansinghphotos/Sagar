@@ -840,6 +840,14 @@ order() { # The two lists every new part adds to are alphabetical, so two pieces
     list=$(awk '/^## Line Budget/ { on = 1; next } /^## / { on = 0 } on && /^\| [A-Za-z]+ \|/ { print $2 }' CONSTRAINTS.md |
         grep -vx Module)
     [ "$list" = "$(sort <<<"$list")" ] || { echo "CONSTRAINTS.md: the line budget is not in alphabetical order."; return 1; }
+    # Each decision has its own number, which the spec and the issues cite: two pieces of work that each write the
+    # next one must not both take it.
+    list=$(find Decisions -maxdepth 1 -name '[0-9][0-9][0-9][0-9] *.md' 2>/dev/null | sed 's|^Decisions/||' | sort)
+    [ -z "$(cut -c 1-4 <<<"$list" | uniq -d)" ] || {
+        echo "Decisions share a number; the later one takes the next free number:"
+        grep -E "^($(cut -c 1-4 <<<"$list" | uniq -d | paste -sd '|' -)) " <<<"$list"
+        return 1
+    }
 }
 
 # Nothing of Search's is pasted, so nothing is owed to it, and its notice stays gone (decision 8). Judges the files
