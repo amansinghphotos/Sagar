@@ -4,8 +4,7 @@
 /// Both sides are expected in lower case.
 nonisolated package enum Fuzzy {
     /// Whether every typed word is in `text`: 1 when each is there just as typed, 0 when one is there only with a
-    /// slip, and nil when one is not there at all. A list shows the first
-    /// kind before the second.
+    /// slip, and nil when one is not there at all. A list shows the first kind before the second.
     package static func match(_ typed: [[UInt8]], in text: String) -> Int? {
         var text = text
         return text.withUTF8 { bytes in
@@ -40,7 +39,8 @@ nonisolated package enum Fuzzy {
         }
     }
 
-    /// The same, over the text's bytes.
+    /// Whether a word of `text` begins with `typed` give or take a slip: none forgiven under four letters typed,
+    /// one under eight, two from eight on, and the first letter must be right, or the first two swapped.
     private static func nearly(_ typed: [UInt8], in text: UnsafeBufferPointer<UInt8>) -> Bool {
         let forgiven = typed.count < 4 ? 0 : typed.count < 8 ? 1 : 2
         guard forgiven > 0 else { return false }

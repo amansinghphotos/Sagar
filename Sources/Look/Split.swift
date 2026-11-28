@@ -58,7 +58,6 @@ package struct CardEdge: ViewModifier {
             .clipShape(outline)
             .background {
                 let ground = outline.fill(outline.on ? AnyShapeStyle(Role.ground) : AnyShapeStyle(Color.clear))
-                // A sharp card casts no shadow at all, so its ground meets the frame on a clean line.
                 if sharp {
                     ground
                 } else {
