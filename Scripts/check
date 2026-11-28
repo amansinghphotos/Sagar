@@ -758,13 +758,12 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
     local app=$1 log launch before after run result=.build/Tours/$1.xcresult
     # Xcode keeps a step's screen recording only if the step fails, unless the build's own run file says to keep it
     # always: the films are made from these (#227). Building first writes that file; the owner's project is unchanged.
-    # Xcode's own system diagnostics are left out: they made a failed tour's record 118 MB, too large to read (#311).
     log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode build-for-testing \
         -xcconfig Scripts/tour.xcconfig 2>&1) &&
         run=$(ls .build/Xcode/Build/Products/"${app}Tour_${app}Tour_"*.xctestrun) &&
         plutil -replace TestConfigurations.0.TestTargets.0.SystemAttachmentLifetime -string keepAlways "$run" &&
         log=$(xcodebuild -xctestrun "$run" -destination platform=macOS -derivedDataPath .build/Xcode \
-            -resultBundlePath "$result" -collect-test-diagnostics never test-without-building 2>&1) || {
+            -resultBundlePath "$result" test-without-building 2>&1) || {
         xcrun xcresulttool get test-results summary --path "$result" |
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
         return 1
