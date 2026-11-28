@@ -82,10 +82,9 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    password box is turned down; your try with a build.
 9. **A listening bar shows what Bolo is doing.** While you speak, it shows that it is listening and how
    loud you are. Then it shows that it is tidying, and then that your words have landed. It never
-   takes the keyboard from the app you are in. A quiet line is the direction; its look is reworked
-   with you in pictures and films before it is built.
-   *Proved by:* its pictures and a short film beside the one you sent, judged by critics who did not
-   build it, then your yes.
+   takes the keyboard from the app you are in. Its look is the one you pick from moving mock-ups.
+   *Proved by:* the built bar filmed beside the mock-up you picked, listening with a live level,
+   tidying and done, judged by critics who did not build it, then your yes.
 10. **Nothing you say is lost.** Its card in the menu bar holds your latest dictations, with Copy, Paste,
     and Try Again for one that did not land. A history window finds any dictation by a word or a date,
     copies it, and shows what was heard and how long it took. Your words and their recordings are kept
