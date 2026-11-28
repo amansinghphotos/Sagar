@@ -1,0 +1,114 @@
+#!/usr/bin/env -S xcrun swift
+// A film of a tour, for the owner to judge motion, which a still cannot show (#227). Xcode records each step of a
+// tour on GitHub's Mac as a movie in the tour's result. This makes each into an animated picture, which GitHub
+// shows in a pull request's description as it shows a still, with no link away.
+// Usage: Scripts/film <tour.xcresult> <folder>    a film of each recorded step, named after the step
+//        Scripts/film gif <movie> <film.gif>       one movie as a film
+import AVFoundation
+import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+import VideoToolbox
+
+/// Xcode records a picture each time the screen changes, up to many a second while something moves, and none while
+/// nothing does. A film keeps each picture for as long as the movie showed it, so a movement plays at its own pace,
+/// but a still part is cut to two seconds. It is 800 pixels wide at most.
+let widest = 800
+let longestStill = 200  // hundredths of a second, as a GIF counts time
+
+struct Refused: Error, CustomStringConvertible { let description: String }
+
+/// One movie as a film that plays for ever.
+func film(_ movie: URL, to film: URL) async throws {
+    let asset = AVURLAsset(url: movie)
+    guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+        throw Refused(description: "\(movie.lastPathComponent) holds no pictures.")
+    }
+    let end = try await asset.load(.duration).seconds
+    let reader = try AVAssetReader(asset: asset)
+    let output = AVAssetReaderTrackOutput(
+        track: track, outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
+    reader.add(output)
+    reader.startReading()
+    // In hundredths of a second from the start, a picture to each: a later one at the same moment replaces it.
+    var pictures: [Int: CGImage] = [:]
+    while let sample = output.copyNextSampleBuffer() {
+        let time = CMSampleBufferGetPresentationTimeStamp(sample).seconds
+        guard time.isFinite, let pixels = CMSampleBufferGetImageBuffer(sample) else { continue }
+        var image: CGImage?
+        VTCreateCGImageFromCVPixelBuffer(pixels, options: nil, imageOut: &image)
+        if let image { pictures[Int((time * 100).rounded())] = try smaller(image) }
+    }
+    let moments = pictures.keys.sorted()
+    guard !moments.isEmpty,
+        let destination = CGImageDestinationCreateWithURL(
+            film as CFURL, UTType.gif.identifier as CFString, moments.count, nil)
+    else { throw Refused(description: "\(movie.lastPathComponent) has nothing to film.") }
+    CGImageDestinationSetProperties(
+        destination, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0]] as CFDictionary)
+    for (moment, next) in zip(moments, moments.dropFirst() + [max(Int((end * 100).rounded()), moments.last! + 2)]) {
+        let held = min(next - moment, longestStill)
+        let delay = [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: Double(held) / 100]]
+        CGImageDestinationAddImage(destination, pictures[moment]!, delay as CFDictionary)
+    }
+    guard CGImageDestinationFinalize(destination) else { throw Refused(description: "\(film.path) was not written.") }
+}
+
+/// A picture no wider than a film is.
+func smaller(_ image: CGImage) throws -> CGImage {
+    guard image.width > widest else { return image }
+    let height = image.height * widest / image.width
+    guard
+        let context = CGContext(
+            data: nil, width: widest, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
+    else { throw Refused(description: "A picture could not be made smaller.") }
+    context.interpolationQuality = .high
+    context.draw(image, in: CGRect(x: 0, y: 0, width: widest, height: height))
+    guard let made = context.makeImage() else { throw Refused(description: "A picture could not be made smaller.") }
+    return made
+}
+
+/// A film of each step of a tour that Xcode recorded, in a folder, named after the step.
+func films(of result: URL, in folder: URL) async throws {
+    let exported = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: exported) }
+    let export = Process()
+    export.executableURL = URL(filePath: "/usr/bin/xcrun")
+    export.arguments = ["xcresulttool", "export", "attachments", "--path", result.path, "--output-path", exported.path]
+    export.standardOutput = FileHandle.nullDevice
+    try export.run()
+    export.waitUntilExit()
+    guard export.terminationStatus == 0 else { throw Refused(description: "\(result.path) could not be read.") }
+    struct Step: Decodable {
+        struct Attachment: Decodable { let exportedFileName: String, suggestedHumanReadableName: String }
+        let testIdentifier: String
+        let attachments: [Attachment]
+    }
+    let steps = try JSONDecoder().decode(
+        [Step].self, from: Data(contentsOf: exported.appending(path: "manifest.json")))
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    for step in steps {
+        for movie in step.attachments where movie.suggestedHumanReadableName.hasPrefix("Screen Recording") {
+            let name = step.testIdentifier.split(separator: "/").last.map { $0.replacing("()", with: "") } ?? "Tour"
+            try await film(exported.appending(path: movie.exportedFileName), to: folder.appending(path: "\(name).gif"))
+            print(folder.appending(path: "\(name).gif").path)
+        }
+    }
+}
+
+let arguments = CommandLine.arguments.dropFirst()
+do {
+    switch (arguments.first, arguments.count) {
+    case ("gif", 3):
+        try await film(URL(filePath: arguments[2]), to: URL(filePath: arguments[3]))
+    case (.some(let result), 2):
+        try await films(of: URL(filePath: result), in: URL(filePath: arguments[2]))
+    default:
+        print("Usage: Scripts/film <tour.xcresult> <folder> | Scripts/film gif <movie> <film.gif>")
+        exit(2)
+    }
+} catch {
+    print(error)
+    exit(1)
+}

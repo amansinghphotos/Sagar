@@ -1,4 +1,5 @@
 import XCTest
+import notify
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
@@ -16,6 +17,9 @@ final class CheteTour: XCTestCase {
         close(settingsOf: app)
         app.terminate()
         app.launch()
+        // Chete opens its window as it starts; the card is asked for once that window is in front, or the window
+        // coming forward would close the card as it drops.
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
         let item = app.statusItems["Chete"]
         XCTAssert(item.waitForExistence(timeout: 10), "Chete has no item in the menu bar.")
         item.click()
@@ -50,6 +54,17 @@ final class CheteTour: XCTestCase {
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
         try audit(app, "Window")
+    }
+
+    /// When a build to try takes its place, the release command asks Chete for it by the notification it posts, which
+    /// needs no permission, and Chete quits the normal way.
+    @MainActor
+    func testItQuitsWhenTheReleaseCommandAsksForItsPlace() throws {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
+        notify_post("com.amansingh.chete.new-build")
+        XCTAssert(app.wait(for: .notRunning, timeout: 10), "Chete did not quit when asked for its place.")
     }
 
     /// It lives in the menu bar. Its item there drops a card with Settings, Check for Updates and Quit, since an
