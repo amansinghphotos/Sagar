@@ -118,7 +118,6 @@ package struct Choice: Equatable {
         self.chosen = chosen
     }
 
-    /// The chosen clip among those found.
     package func id(in found: [Clip]) -> Clip.ID? {
         found.contains { $0.id == chosen } ? chosen : found.first?.id
     }

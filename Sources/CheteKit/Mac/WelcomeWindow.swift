@@ -32,6 +32,7 @@ struct WelcomeOnThisMac: View {
 
     var body: some View {
         WelcomePages(startPage: Self.opensAt, given: $given, act: acts(), finish: finish)
+            .onChange(of: given.shortcut) { _, chosen in keep(chosen) }
             .task {
                 // Reads what macOS allows twice a second, asking nothing, so a page says Allowed by itself.
                 while !Task.isCancelled {
@@ -44,9 +45,13 @@ struct WelcomeOnThisMac: View {
 
     /// What this Mac gives Chete already, asking nothing.
     private static func now() -> WelcomeGiven {
-        WelcomeGiven(
+        var given = WelcomeGiven(
             keeping: Permission.pasteFromOtherApps.isGiven, pasting: Permission.accessibility.isGiven,
             hasOldClips: AnotherAppsKey.isHere(named: "History Key"), opensAtLogin: LoginItem.isOn)
+        given.start(
+            kept: ((try? Settings.read(in: Copies.folderOnThisMac)) ?? Settings()).shortcut,
+            taken: Set(WelcomeGiven.suggestions.filter { Shortcut.chete.warning(for: $0) != nil }))
+        return given
     }
 
     private func acts() -> WelcomeActs {
@@ -58,8 +63,7 @@ struct WelcomeOnThisMac: View {
             bringBack: bringBack)
     }
 
-    /// Asks first, so macOS lists Chete in the pane, then opens System Settings there with the card in front.
-    /// The welcome comes back once the switch is on, or once System Settings is closed without it.
+    /// Asks, so macOS lists Chete, then opens System Settings with the card in front, until the switch is on or it closes.
     private func allow(_ permission: Permission, shown: WelcomeCard) {
         switch permission {
         case .pasteFromOtherApps: _ = NSPasteboard.general.string(forType: .string)
@@ -94,7 +98,6 @@ struct WelcomeOnThisMac: View {
         return came.broughtIn == 1 ? "Brought in 1 clip" : "Brought in \(came.broughtIn) clips"
     }
 
-    /// Asks for an exported file and brings it back.
     private func bringBack() -> String? {
         guard let file = chosen("Choose a file you exported from Chete", folder: false) else { return nil }
         guard let said = try? FirstOpen.bringBack(from: file, into: folder, keyName: Clips.keyName)
@@ -109,6 +112,14 @@ struct WelcomeOnThisMac: View {
         (panel.canChooseFiles, panel.canChooseDirectories, panel.message) = (!folder, folder, message)
         if !folder { panel.allowedContentTypes = [.json] }
         return panel.runModal() == .OK ? panel.url : nil
+    }
+
+    /// Keeps the shortcut chosen, and holds it from now on.
+    private func keep(_ chosen: KeyCombo) {
+        guard Shortcut.chete.change(to: chosen) == nil else { return }
+        var settings = (try? Settings.read(in: folder)) ?? Settings()
+        settings.shortcut = chosen
+        try? settings.write(in: folder)
     }
 
     /// Notes what was skipped, so it waits in Settings, and shows Chete.

@@ -2,13 +2,10 @@ import AppKit
 import Shell
 import os
 
-/// Watches a pasteboard and hands each new copy to Copies.
-///
-/// macOS sends no word when something is copied. So the watcher asks the pasteboard for its change count,
-/// a single number, twice a second, letting macOS move each wake by up to a quarter second to group it
-/// with others. It reads what was copied only when that number moves.
+/// Watches a pasteboard and hands each new copy to Copies. macOS sends no word when something is copied, so the
+/// watcher asks the pasteboard for its change count, a single number, twice a second, letting macOS move each wake by
+/// up to a quarter second to group it with others. It reads what was copied only when that number moves.
 package final class Watcher {
-    /// How often the watcher looks.
     package static let looksPerSecond = 2
 
     private let pasteboard: NSPasteboard

@@ -22,6 +22,7 @@ public struct CheteScene: Scene {
             }
             .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
             .windowName("Your clips")
+            .openedByShortcut()
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.

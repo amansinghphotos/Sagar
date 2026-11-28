@@ -48,7 +48,6 @@ nonisolated package struct Clips: Sendable {
         try self.init(folder: cheteFolder.appending(path: "Clips"), keyName: keyName)
     }
 
-    /// Keeps a clip.
     package func keep(_ clip: Clip) throws {
         try store.write(clip, named: clip.id.uuidString, sealedBy: seal)
     }

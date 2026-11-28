@@ -3,10 +3,10 @@ import notify
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
-    /// On GitHub's new Mac, the welcome comes first, and is walked as a person would: every page, the pasting
-    /// page's own button opening System Settings with the card in front, then Start, which shows Chete. The welcome
-    /// never shows again. Named to run first, as
-    /// XCTest runs a class's steps in the order of their names.
+    /// On GitHub's new Mac, the welcome comes first, and is walked as a person would: every page, a shortcut
+    /// chosen, the pasting page's own button opening System Settings with the card in front, then Start, which
+    /// shows Chete. The shortcut chosen opens Chete from another app, and the welcome never shows again. Named to
+    /// run first, as XCTest runs a class's steps in the order of their names.
     @MainActor
     func testAFirstOpenWelcomesYouAndSetsCheteUp() throws {
         let app = XCUIApplication()
@@ -15,6 +15,13 @@ final class CheteTour: XCTestCase {
         XCTAssert(welcome.waitForExistence(timeout: 10), "There was no welcome on a new Mac.")
         try audit(app, "Welcome")
         welcome.buttons["Continue"].click()
+        let chosen = welcome.descendants(matching: .any)
+            .matching(
+                NSPredicate(format: "label CONTAINS %@ OR value CONTAINS %@", "Control-Command-V", "Control-Command-V")
+            )
+            .firstMatch
+        XCTAssert(chosen.waitForExistence(timeout: 5), "The welcome offered no shortcut to choose.")
+        chosen.click()
         welcome.buttons["Continue"].click()
         welcome.buttons["Continue"].click()
         welcome.buttons["Open System Settings"].click()
@@ -34,6 +41,12 @@ final class CheteTour: XCTestCase {
         XCTAssert(welcome.waitForNonExistence(timeout: 5), "Start did not end the welcome.")
         let window = app.windows["Chete"]
         XCTAssert(window.waitForExistence(timeout: 10), "Start did not show Chete.")
+        window.buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssert(window.waitForNonExistence(timeout: 5), "Chete's window did not close.")
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
+        finder.activate()
+        finder.typeKey("v", modifierFlags: [.control, .command])
+        XCTAssert(window.waitForExistence(timeout: 10), "The shortcut chosen in the welcome did not open Chete.")
         app.terminate()
         app.launch()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
