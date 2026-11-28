@@ -55,7 +55,7 @@ func aPullRequestBuildsAndToursOnlyWhatItReaches(files: [String], reaches: Strin
 @Test func aChangeToTheRulesReachesEverythingOnGitHub() throws {
     #expect(try reached(["Scripts/check"], ci: true) == "all\n")
     #expect(try reached([".claude/hooks/start"], asking: "reaches", ci: true) == "all\n")
-    #expect(try reached(["Tests/ScriptsTests/SizeTests.swift"], asking: "reaches", ci: true) == "all\n")
+    #expect(try reached(["Tests/ScriptsTests/Check/SizeTests.swift"], asking: "reaches", ci: true) == "all\n")
     #expect(try reached(["Tests/Pictures/Pictures.swift"], asking: "reaches", ci: true) == "all\n")
     #expect(try reached(["Scripts/check"]) == "ScriptsTests\n")
 }

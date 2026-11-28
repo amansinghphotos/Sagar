@@ -19,9 +19,8 @@ private func reported(by record: String) throws -> String {
 
 /// Decision 9 lets audit findings pass, and nothing else: in the same record, the step that failed still failed.
 @Test func aStepThatFailsBesideTheFindingsStillFails() throws {
-    let here = URL(filePath: #filePath).deletingLastPathComponent()
     let record = try JSONSerialization.jsonObject(
-        with: Data(contentsOf: here.appending(path: "Fixtures/A Tour With Audit Findings.json")))
+        with: Script.recorded("A Tour With Audit Findings.json"))
     #expect(steps(in: record)["testAStepThatFails()"] == "Failed")
     #expect(steps(in: record)["testAFindingIsReported()"] == "Expected Failure")
     #expect(try !reported(by: "A Tour With Audit Findings").contains("Typing did not narrow the list"))
