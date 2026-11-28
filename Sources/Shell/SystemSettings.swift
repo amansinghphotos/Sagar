@@ -8,10 +8,11 @@ package enum Permission: CaseIterable, Sendable {
     /// Accessibility: the app can press keys for you, as pasting needs.
     case accessibility
 
-    /// Whether it is given, read without asking anything.
+    /// Whether it is given, read without asking anything. Paste from Other Apps is given unless the person set
+    /// it to Ask or Deny: macOS 27 lets an app read what is copied without asking, and lists none there.
     @MainActor package var isGiven: Bool {
         switch self {
-        case .pasteFromOtherApps: NSPasteboard.general.accessBehavior == .alwaysAllow
+        case .pasteFromOtherApps: ![.ask, .alwaysDeny].contains(NSPasteboard.general.accessBehavior)
         case .accessibility: AXIsProcessTrusted()
         }
     }
