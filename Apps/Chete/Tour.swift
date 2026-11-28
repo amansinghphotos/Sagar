@@ -54,6 +54,12 @@ final class CheteTour: XCTestCase {
         app.launch()
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertFalse(welcome.exists, "The welcome showed again.")
+        // Opened again, Chete still holds the shortcut picked in the welcome.
+        app.windows["Chete"].buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssert(app.windows["Chete"].waitForNonExistence(timeout: 5), "Chete's window did not close.")
+        finder.activate()
+        finder.typeKey("v", modifierFlags: [.control, .command])
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Opened again, Chete forgot the shortcut picked.")
     }
 
     /// Launches Chete, and finishes the welcome with Skip if it shows, as on a new Mac.
