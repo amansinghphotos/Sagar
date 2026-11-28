@@ -38,7 +38,7 @@ private struct Commands {
 
     private func run(_ tool: String, _ arguments: [String]) throws -> (said: String, status: Int32) {
         // As on this Mac: GitHub's CI asks for origin/main, which this small repository has no need of.
-        let environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
+        let environment = Script.withoutGit.filter { $0.key != "CI" }
         let said = try Script.run(URL(filePath: tool), arguments, in: folder, environment: environment, errors: .joined)
         return (said.words, said.status)
     }

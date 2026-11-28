@@ -4,7 +4,7 @@ import Testing
 /// Asks the real rules script, in this real package, what a change to these files can reach: the tests, builds and
 /// tours that run for it, before a commit here and, with `ci`, on GitHub.
 private func reached(_ files: [String], asking command: String = "reached", ci: Bool = false) throws -> String {
-    var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
+    var environment = Script.withoutGit.filter { $0.key != "CI" }
     if ci { environment["CI"] = "true" }
     return try Script.run(Script.check, [command] + files, in: Script.repository, environment: environment).words
 }
