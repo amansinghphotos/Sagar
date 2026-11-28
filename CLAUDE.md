@@ -78,8 +78,9 @@ pictures. The download page is built with `design-taste-frontend`.
    update. Tick the rest of the Release issue when the `release` run is green.
 
 Read `Checklists/Start.md` at the start of a session and `Checklists/Finish.md` at
-the end. A new app follows `Checklists/New App.md`. A Mac set up to build follows
-`Checklists/Build Mac.md`. `docs/New Mac.md` is for a person who only uses the apps.
+the end. A new app follows `Checklists/New App.md`, and the deep clean before it `Checklists/Deep Clean.md`.
+A Mac set up to build follows `Checklists/Build Mac.md`, and a repository set up afresh
+`Checklists/New Repository.md`. `docs/New Mac.md` is for a person who only uses the apps.
 
 ## Stop Rules
 

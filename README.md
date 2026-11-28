@@ -33,7 +33,7 @@ tested before it goes in. Nothing is released until it's been tried. Want to see
 | Where | What you'll find |
 |---|---|
 | [SPEC.md](SPEC.md) | How every app here is made, and why. |
-| [spec](spec) | One page per app, saying what it must do. |
+| [spec](spec) | One page for each app, and one for the look they share, saying what it must do. |
 | [Apps](Apps) | Where each app starts, and the test that opens it and uses it. |
 | [Sources](Sources) | The code: the parts every app shares, and a folder for each app. |
 | [Tests](Tests) | The tests, and the approved picture of every screen. |
@@ -43,7 +43,7 @@ tested before it goes in. Nothing is released until it's been tried. Want to see
 | [Scripts](Scripts) | The commands that check, build and release an app. |
 | [CONSTRAINTS.md](CONSTRAINTS.md) | The numbers every change is held to. |
 | [CLAUDE.md](CLAUDE.md) and [NOW](NOW) | How the agents work, and the app they're working on. |
-| `Config`, `Package.swift` and `Sagar.xcodeproj` | Settings for Xcode and Swift. |
-| `.github`, `.claude` and `.githooks` | What GitHub and the agents read: the checks, the templates, and who approves what. |
+| `Config`, `Package.swift`, `Package.resolved`, `.swift-format` and `Sagar.xcodeproj` | Settings for Xcode and Swift. |
+| `.github`, `.claude`, `.githooks`, `.gitignore` and `.gitattributes` | What GitHub, git and the agents read: the checks, the templates, and who approves what. |
 
 You're welcome to read the code. It isn't set up to take contributions.
