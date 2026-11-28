@@ -8,8 +8,8 @@ this folder, in `Sagar Private`.
 ## Commands
 
 ```
-Scripts/check                          every rule; git runs it before a commit, with the tests a change can reach,
-                                       and GitHub with every test
+Scripts/check                          every rule; git runs it before a commit and GitHub on each pull request,
+                                       both with the tests the change can reach
 Scripts/check ready <number>           the one way a pull request is shown to the owner and set to merge
 Scripts/build <App>                    a signed build of one app
 printf 'New: …\nBetter: …\nFixed: …\n' | Scripts/release <App> <version>
@@ -121,4 +121,5 @@ Never, whatever the reason:
 ## Speaking to the Owner
 
 Three short lines at most, result first, plain English: what was run and what it showed. A decision
-of his is one clickable choice, recommendation first. When he must act, give only the next step.
+of his is one page built with the `salah` skill, its recommendation already picked. When he must act,
+give only the next step.

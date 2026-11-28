@@ -39,7 +39,6 @@ package struct Pill: View {
         .animation(motion.quick, value: hovering)
     }
 
-    /// How tall a pill stands, in points.
     static let height: CGFloat = 24
 }
 

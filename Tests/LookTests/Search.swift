@@ -11,7 +11,8 @@ func searchRecord<Record: Decodable>(_ name: String) throws -> Record {
     try JSONDecoder().decode(Record.self, from: Data(contentsOf: fixtures.appending(path: "Search \(name).json")))
 }
 
-/// Search's picture `Fixtures/Search <name> Light.png`, or `Dark.png`.
+/// Search's picture `Fixtures/Search <name> Light.png`, or `Dark.png`: what the test draws, built from Search's own
+/// code at commit c92ea7c by a scratch copy that uses this repository's picture harness.
 func searchPicture(_ name: String, dark: Bool, sourceLocation: SourceLocation = #_sourceLocation) throws -> CGImage {
     let file = fixtures.appending(path: "Search \(name) \(dark ? "Dark" : "Light").png")
     return try #require(approvedPicture(at: file), sourceLocation: sourceLocation)

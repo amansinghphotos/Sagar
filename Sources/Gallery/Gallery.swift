@@ -22,6 +22,19 @@ enum Page: String, CaseIterable, Identifiable {
     case keyboard = "Keyboard"
 
     var id: Self { self }
+
+    /// The page itself.
+    @ViewBuilder var view: some View {
+        switch self {
+        case .tokens: Tokens()
+        case .controls: Controls()
+        case .choices: Choices()
+        case .lists: Lists()
+        case .overlays: Overlays()
+        case .states: States()
+        case .keyboard: KeyboardPage()
+        }
+    }
 }
 
 /// Light or dark, as the Gallery shows it.
@@ -33,8 +46,8 @@ enum Appearance: String, CaseIterable {
 }
 
 /// The Gallery's window: a bar to choose the page, the theme, light or dark, and the window's size, over
-/// the page. The pages move to Look's own sidebar once it is built: a Mac's sidebar selection cannot be
-/// pictured from a hidden window.
+/// the page. A bar rather than Look's sidebar, since a Mac's sidebar selection cannot be pictured from a
+/// hidden window.
 struct Gallery: View {
     @State var page = Page.tokens
     @State var theme = Theme.modern
@@ -45,18 +58,7 @@ struct Gallery: View {
         VStack(spacing: 0) {
             bar
             Divider()
-            Group {
-                switch page {
-                case .tokens: Tokens()
-                case .controls: Controls()
-                case .choices: Choices()
-                case .lists: Lists()
-                case .overlays: Overlays()
-                case .states: States()
-                case .keyboard: KeyboardPage()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            page.view.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .foregroundStyle(Role.ink)
         .background(Role.ground)

@@ -64,7 +64,7 @@ package struct SideItem: View {
     }
 
     /// A small cross in a faint circle. Its reach, 30 by 28 points, is centred on the cross and runs half a point
-    /// past the row's end, as before.
+    /// past the row's end.
     @ViewBuilder private var closer: some View {
         if hovering, let close {
             Button(action: close) {
