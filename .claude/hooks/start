@@ -185,7 +185,7 @@ case ${1:-} in
         defaults write com.apple.dt.Xcode IDECustomDerivedDataLocation "$shared/.build/Xcode"
         keep_caches
         # The owner's decision pages are built with salah, kept in the private notes; its installer proves the copy.
-        [ -d ~/.claude/skills/salah ] || "$private/Claude/skills/salah/scripts/install" >/dev/null ||
+        [ -f ~/.claude/skills/salah/SKILL.md ] || "$private/Claude/skills/salah/scripts/install" >/dev/null ||
             echo "Could not install the salah skill from the private notes."
         [ -d ~/.claude/skills/cook ] || git clone -q https://github.com/Leonxlnx/cook ~/.claude/skills/cook
         for plugin in $plugins; do
