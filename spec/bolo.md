@@ -29,21 +29,20 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    the Bolo before it. If it makes more, you are asked again.
 3. **It reads where you are,** the moment you press the key, in a quarter of a second at most: the app
    and what kind it is, the website's address, the box you are in and whether it holds one line or
-   many, the text before and after your cursor, anything selected, and the words near the box, the
-   newest messages first. It never reads a password box, and never writes into one. In a remote desktop
-   it reads a picture of the window instead. *(waits on round three)*
+   many, the text before and after your cursor, anything selected, and the words in the whole window,
+   the newest messages first. It never reads a password box, and never writes into one. In a remote
+   desktop it reads a picture of the window instead.
    *Asks for:* nothing more than pasting needs (must-have 8); Screen Recording only for a remote desktop.
    *Proved by:* a test that reads a real box in a window of its own, with text before and after the
-   cursor and a word selected, gets each part back, and is timed; a test that a password box gives
-   nothing; your try in a mail app, a chat and a browser.
+   cursor, a word selected and more words around it, gets each part back, and is timed; a test that a
+   password box gives nothing; your try in a mail app, a chat and a browser.
 4. **It writes to fit where you are.** In the middle of a sentence it carries on: a small letter, a
    space where words would touch, no extra full stop. A search box or a subject line gets one line and
    no full stop. In an email, a greeting, paragraphs and sign-off you say each go on their own line.
-   Three or more things you list go one to a line in notes and email. It follows the tone of the app
-   and of the conversation: relaxed in chats, proper in email and notes. In a terminal or code it
-   writes your words exactly. Anything selected is replaced. Numbers, times and dates are digits.
-   "Comma", "new line" and "scratch that" do what they say, and a correction keeps only what you meant.
-   *(waits on round three)*
+   Three or more things you list go one to a line in notes and email. It follows the tone of the app:
+   relaxed in chats, proper in email and notes. Anything selected is replaced. Numbers, times and dates
+   are digits. "Comma", "new line" and "scratch that" do what they say, and a correction keeps only
+   what you meant.
    *Proved by:* made-up scenes, each a box with text around the cursor, what you said, and what you
    approved it writes. For example, after "see you at the ", saying "Station at six" writes
    "station at 6".
@@ -51,24 +50,24 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    like it: a name in the thread, or a made-up word two people share. Words you teach it are spelled as
    you spell them; you add them one at a time or from a plain file. When you fix a word just after it
    lands, Bolo learns it and says so. In the one app you choose for it, it knows medical words, from a
-   list kept on this Mac. *(waits on round three)*
+   list kept on this Mac.
    *Proved by:* tests where a made-up word on screen, heard as two ordinary words, is written as the
    made-up word; and a taught word and a fixed word, each heard a little wrong, written as they should be.
-6. **It tidies quickly, sending little.** It takes out "um", repeats and words you took back, keeps
-   your words and meaning, and never answers what you said. A short, plain dictation, up to 25 words
-   with nothing to correct and no doubtful name, is tidied on the spot by Bolo's own rules. Anything
-   else goes to Claude,
-   with only what helps: where you are, a few lines around your cursor, the words on screen that sound
-   like yours, and what you said. Its standing instructions are kept ready, so each dictation sends
-   little. If Claude has not answered in five seconds, or there is no network, or you are in a private
-   app, a model on this Mac tidies it, and Claude's late answer waits on the card. That model is the one
-   you pick after a test on your own dictations; if it needs outside code, you are asked first. Every
+6. **It tidies quickly, with all it read, in order.** It takes out "um", repeats and words you took
+   back, keeps your words and meaning, and never answers what you said. A short, plain dictation, up to
+   25 words with nothing to correct and no doubtful name, is tidied on the spot by Bolo's own rules.
+   Anything else goes to Claude with everything Bolo read, sorted into parts: where you are, the text
+   around your cursor, the rest of the window, the words on screen that sound like yours, and what you
+   said. Its standing instructions are kept ready, so only those parts travel with each dictation. If
+   Claude has not answered in five seconds, or there is no network, or you are in a private app, a
+   model on this Mac tidies it, and Claude's late answer waits on the card. That model is the one you
+   pick after a test on your own dictations; if it needs outside code, you are asked first. Every
    answer is checked before it lands: one that answers you, runs long or invents words gives way to the
-   next. *(waits on round three)*
+   next.
    *Proved by:* the scenes of must-have 4 tidied by Bolo's rules, by Claude and by the model on this
-   Mac, each scored against the text you approved for that scene; a test that what goes
-   to Claude holds only those four parts; and the time from letting go to the words landing, measured
-   on your Mac.
+   Mac, each scored against the text you approved for that scene; a test that what goes to Claude is
+   sorted into those five parts and nothing else; and the time from letting go to the words landing,
+   measured on your Mac.
 7. **Private apps stay private.** Words you say in an app you mark as private are never sent to Claude:
    there, this Mac tidies alone. They still go to your history, in iCloud. The list is yours, kept on
    this Mac.
@@ -115,7 +114,7 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
 
 ## The Network
 
-Your voice is never sent anywhere to be heard. Each dictation's words, with the little that helps, go
+Your voice is never sent anywhere to be heard. Each dictation's words, with what Bolo read on screen, go
 to Claude to be tidied, unless the rules tidy it on the spot, there is no network, or you are in a
 private app. Your history and recordings are kept in your Documents in iCloud. On a Mac without the
 models, the speech model and the model that tidies offline, unless that is Apple's own, are downloaded
