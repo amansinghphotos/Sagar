@@ -3,6 +3,21 @@ import notify
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
+    /// Its shortcut, Shift-Command-C at first, opens Chete from another app after its window was closed.
+    @MainActor
+    func testItsShortcutOpensItFromAnotherApp() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let window = app.windows["Chete"]
+        XCTAssert(window.waitForExistence(timeout: 10), "Chete opened no window.")
+        window.buttons[XCUIIdentifierCloseWindow].click()
+        XCTAssert(window.waitForNonExistence(timeout: 5), "Chete's window did not close.")
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
+        finder.activate()
+        finder.typeKey("c", modifierFlags: [.command, .shift])
+        XCTAssert(window.waitForExistence(timeout: 10), "Shift-Command-C did not open Chete.")
+    }
+
     /// Its settings are audited, and keep what you choose: clips kept for a month
     /// instead of a year, still chosen the next time Chete opens, when they are opened from its menu-bar card.
     @MainActor

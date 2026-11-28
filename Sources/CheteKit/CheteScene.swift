@@ -8,6 +8,7 @@ public struct CheteScene: Scene {
     /// The scene, ready for the app to open. Chete starts keeping what you copy as it opens.
     public init() {
         Self.startWatching()
+        Self.holdShortcut()
         Swap.listen()
         NewBuildCard.showIfNew()
     }
@@ -22,6 +23,7 @@ public struct CheteScene: Scene {
             }
             .frame(minWidth: WindowSize.narrow.width, minHeight: WindowSize.narrow.height)
             .windowName("Your clips")
+            .openedByShortcut()
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
@@ -36,6 +38,15 @@ public struct CheteScene: Scene {
     /// Watches what you copy for as long as Chete is open.
     private static var watcher: Watcher?
     private static var started = false
+
+    /// Holds Chete's shortcut from the moment it starts, so the keys open it from any app.
+    private static func holdShortcut() {
+        let folder = URL.applicationSupportDirectory.appending(path: "Chete")
+        guard let keys = ((try? Settings.read(in: folder)) ?? Settings()).shortcut else { return }
+        if let why = Shortcut.chete.change(to: keys) {
+            Logger(subsystem: "com.amansingh.chete", category: "Shortcut").error("Chete holds no shortcut: \(why)")
+        }
+    }
 
     /// Starts watching, once. The history is opened away from the screen, so opening Chete never waits for the keychain.
     private static func startWatching() {
