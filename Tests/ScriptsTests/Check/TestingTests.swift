@@ -33,7 +33,7 @@ import Testing
 
         """, to: "Tests/BrokenTests/Broken.swift")
     try write("Chete\n", to: "NOW")
-    let environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") && $0.key != "CI" }
+    let environment = Script.withoutGit.filter { $0.key != "CI" }
     let said = try Script.run(folder.appending(path: "Scripts/check"), in: folder, environment: environment).words
     let tests = try #require(said.components(separatedBy: "FAIL  tests").last)
     #expect(tests.contains("theSumIsWrong()"))

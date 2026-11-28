@@ -16,7 +16,7 @@ private func real(_ path: String) -> String {
 /// Inside a commit hook git names this project's own folder in the environment. A tool the rules start, such as a
 /// package fetch working in a repository of its own, must reach that repository and not this project.
 @Test func aToolTheRulesStartWorksInItsOwnRepository() throws {
-    let plain = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
+    let plain = Script.withoutGit
     let git = URL(filePath: "/usr/bin/env")
     let ours = try run(git, ["git", "rev-parse", "--absolute-git-dir"], in: project, environment: plain)
     let fetched = FileManager.default.temporaryDirectory.appending(path: "fetched-\(UUID().uuidString)")
