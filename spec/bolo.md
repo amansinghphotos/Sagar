@@ -23,15 +23,17 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    words while AirPods wake, and if a microphone goes away mid-sentence, the next takes over. In Settings
    you pick the speech model from one list and the model that tidies on this Mac from another, and can
    switch at any time. Someone new never has to: the first time Bolo opens, a default of each downloads
-   by itself and is picked. Fluid Speech Pro, about 620 megabytes, is the default speech model; Gemma
-   E4B, about 4.4 gigabytes, is the default tidier. *(waits on your tick)* Models already in a folder you
-   choose are used as they are, and nothing is downloaded for them. The speech models run through
-   FluidAudio, under the Apache 2.0 licence, and the tidying models through MLX, under the MIT licence;
-   Fluid Speech Pro is under CC BY 4.0 and Gemma under Apache 2.0. All are free to use, and the About
-   window credits each. A model that needs outside code you have not approved is not offered until you
-   have.
+   by itself and is picked. Fluid Speech Pro, about 620 megabytes, is the default speech model. The
+   default tidier is the one this Mac runs best: Bolo looks at its memory and chip, picks, and says in a
+   line why. In the list, a model that would be slow on this Mac says so, and why. Models already in a
+   folder you choose are used as they are, and nothing is downloaded for them. The speech models run
+   through FluidAudio, under the Apache 2.0 licence, and the tidying models through MLX, under the MIT
+   licence; Fluid Speech Pro is under CC BY 4.0 and Gemma under Apache 2.0. All are free to use, and the
+   About window credits each. A model that needs outside code you have not approved is not offered until
+   you have.
    *Proved by:* before 1.0 is offered to you, it hears recordings you choose with no more mistakes than
-   the Bolo before it. If it makes more, you are asked again.
+   the Bolo before it. If it makes more, you are asked again; and a test that, for made-up Macs of
+   different memory and chips, the default picked and the models marked slow match what was measured.
 3. **It reads where you are,** the moment you press the key, in a quarter of a second at most: the app
    and what kind it is, the website's address, the box you are in and whether it holds one line or many,
    the text before and after your cursor, anything selected, and the words in the whole window, the
