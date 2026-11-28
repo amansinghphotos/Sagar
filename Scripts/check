@@ -130,12 +130,21 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
     # Nor may it clash with a request already shown: whichever merged first would leave the other to be brought up to
     # date, and an approval of his undone, as #273 was by #262.
-    for other in $(gh pr list --state open --limit 100 --json number,isDraft --jq '.[] | select(.isDraft | not) | .number'); do
+    others=$(gh pr list --state open --limit 1000 --json number,isDraft --jq '.[] | select(.isDraft | not) | .number') ||
+        { echo "Could not list the requests already shown. Nobody was asked."; exit 1; }
+    [ "$(wc -l <<<"$others")" -lt 1000 ] || { echo "A thousand requests are shown; not all could be compared. Nobody was asked."; exit 1; }
+    for other in $others; do
         [ "$other" != "$request" ] || continue
-        git fetch -q origin "pull/$other/head" &&
-            clashing=$(Scripts/check clashes "$head" FETCH_HEAD) ||
-            { [ -n "${clashing:-}" ] && echo "#$request clashes with #$other, already shown, in $(paste -sd ' ' - <<<"$clashing"). Wait for #$other to merge, then bring this up to date." ||
-                echo "#$request could not be compared with #$other."; echo "Nobody was asked."; exit 1; }
+        if ! git fetch -q origin "pull/$other/head"; then
+            echo "#$other could not be fetched, so #$request could not be compared with it. Nobody was asked."
+            exit 1
+        fi
+        if ! clashing=$(Scripts/check clashes "$head" FETCH_HEAD); then
+            [ -n "$clashing" ] || { echo "#$request could not be compared with #$other. Nobody was asked."; exit 1; }
+            echo "#$request clashes with #$other, already shown, in $(paste -sd ' ' - <<<"$clashing")."
+            echo "Wait for #$other to merge, then bring this up to date. Nobody was asked."
+            exit 1
+        fi
     done
     # The words are judged here first, by the very rules GitHub runs, so a fault is told now in its own lines. GitHub
     # judges a request's words only once it is shown to someone: a draft is still being written.
