@@ -51,7 +51,7 @@ private func soon(_ seconds: Double = 60, _ condition: () -> Bool) async throws 
 
 /// The real guest program, built once for all these tests, from the repository's own source.
 private let guestProgram = Task<String, any Error> {
-    let real = URL(filePath: #filePath).appending(path: "../../../Scripts/Guest").standardizedFileURL
+    let real = URL(filePath: #filePath).appending(path: "../../../../Scripts/Guest").standardizedFileURL
     let built = FileManager.default.temporaryDirectory.appending(path: "hm-\(UUID().uuidString.prefix(8))-guest")
     let sources = try FileManager.default.contentsOfDirectory(atPath: real.path).map { real.appending(path: $0).path }
     let compiler = try Started(
@@ -181,7 +181,7 @@ private nonisolated struct Touring: Sendable {
     var work: URL { top.appending(path: "Work") }
 
     init() throws {
-        let real = URL(filePath: #filePath).appending(path: "../../../Scripts/tour").standardizedFileURL
+        let real = URL(filePath: #filePath).appending(path: "../../../../Scripts/tour").standardizedFileURL
         try FileManager.default.createDirectory(
             at: work.appending(path: "Apps/Demo"), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: work.appending(path: "Scripts"), withIntermediateDirectories: true)
