@@ -74,7 +74,7 @@ final class CheteTour: XCTestCase {
     func testItsItemInTheMenuBarDropsItsCard() throws {
         let app = XCUIApplication()
         app.launch()
-        let window = app.windows.firstMatch
+        let window = app.windows["Chete"]
         XCTAssert(window.waitForExistence(timeout: 10), "Chete opened no window.")
         window.buttons[XCUIIdentifierCloseWindow].click()
         XCTAssert(window.waitForNonExistence(timeout: 5), "Chete's window did not close.")
@@ -83,7 +83,9 @@ final class CheteTour: XCTestCase {
         if !item.waitForExistence(timeout: 10) { add(XCTAttachment(string: app.debugDescription)) }
         item.click()
         let open = app.buttons["Open Chete"]
-        XCTAssert(open.waitForExistence(timeout: 5), "The menu-bar item dropped no card.")
+        guard open.waitForExistence(timeout: 5) else {
+            return failed("The menu-bar item dropped no card", nil, in: app)
+        }
         XCTAssert(app.buttons["Settings"].exists, "The card has no way to Settings.")
         XCTAssert(app.buttons["Check for Updates"].exists, "The card offers no Check for Updates.")
         XCTAssertFalse(
