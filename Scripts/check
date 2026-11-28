@@ -268,7 +268,7 @@ reach() { # what a change can reach, one to a line: "tests <target>|…" for the
     # that builds for iPhone; or the one line "all". A module's change reaches what depends on it, by the package's
     # own dependencies. Only ScriptsTests reads the scripts and hooks, and it builds the real Keep for iPhone;
     # PicturesTests reads every approved picture; an app's own files are compiled by Xcode alone. On GitHub a change
-    # to the scripts or hooks reaches everything, as they are the rules themselves. Any other file, any doubt: "all".
+    # to the scripts, the hooks, the scripts' tests or the picture harness reaches everything: they are the rules. Any other file, any doubt: "all".
     local paths graph apps
     paths=$(changed)
     apps=$(for app in Apps/*/; do [ -d "$app" ] && basename "$app"; done)
@@ -279,6 +279,7 @@ reach() { # what a change can reach, one to a line: "tests <target>|…" for the
         | def reaches($target): [$target] + [$targets[] | select(.name == $target) | .uses[] | reaches(.)[]];
         [$paths | split("\n")[] | select(. != "") as $file
             | if ($file | test("^Apps/[^/]+/")) then "app:" + ($file | split("/")[1])
+              elif $ci != "" and ($file | test("^Tests/(ScriptsTests|Pictures)/")) then "*"
               elif ($file | test("^(Scripts|\\.claude|\\.githooks)/")) then (if $ci != "" then "*" else "ScriptsTests" end)
               else ([$targets[] | select(.folder as $folder | $file | startswith($folder + "/")) | .name][0] // "*"),
                   (if ($file | test("^Sources/Keep/")) then "ScriptsTests" else empty end),
@@ -698,7 +699,7 @@ tests() { # the test targets the change can reach: on GitHub every one when the 
     reach=$(reached)
     case $reach in
         all) swift test --quiet 2>&1 ;;
-        "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
+        "") return $nothing ;; # no test can reach it
         *) echo "note: these tests run: ${reach//|/, }"
             swift test --quiet --filter "^($reach)\." 2>&1 ;;
     esac

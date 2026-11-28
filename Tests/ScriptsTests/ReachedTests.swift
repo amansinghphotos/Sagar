@@ -1,8 +1,8 @@
 import Foundation
 import Testing
 
-/// Asks the real rules script, in this real package, which test targets a change to these files can reach: those
-/// the tests before a commit run on this Mac. GitHub's Mac runs every one of them, whatever this says.
+/// Asks the real rules script, in this real package, what a change to these files can reach: the tests, builds and
+/// tours that run for it, before a commit here and, with `ci`, on GitHub.
 private func reached(_ files: [String], asking command: String = "reached", ci: Bool = false) throws -> String {
     let root = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
     let process = Process()
@@ -65,5 +65,7 @@ func aPullRequestBuildsAndToursOnlyWhatItReaches(files: [String], reaches: Strin
 @Test func aChangeToTheRulesReachesEverythingOnGitHub() throws {
     #expect(try reached(["Scripts/check"], ci: true) == "all\n")
     #expect(try reached([".claude/hooks/start"], asking: "reaches", ci: true) == "all\n")
+    #expect(try reached(["Tests/ScriptsTests/SizeTests.swift"], asking: "reaches", ci: true) == "all\n")
+    #expect(try reached(["Tests/Pictures/Pictures.swift"], asking: "reaches", ci: true) == "all\n")
     #expect(try reached(["Scripts/check"]) == "ScriptsTests\n")
 }
