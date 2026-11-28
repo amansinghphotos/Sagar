@@ -12,7 +12,7 @@ public struct CheteScene: Scene {
         NewBuildCard.showIfNew()
     }
 
-    /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
+    /// Its settings, its window, the welcome on a new Mac, and its item in the menu bar.
     public var body: some Scene {
         SwiftUI.Settings { CheteSettings(changed: Self.reread) }.restorationBehavior(.disabled)
             .defaultLaunchBehavior(.suppressed)
@@ -26,6 +26,7 @@ public struct CheteScene: Scene {
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
         // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
         .defaultLaunchBehavior(.presented)
+        WelcomeWindow()
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
@@ -59,7 +60,7 @@ public struct CheteScene: Scene {
 
 extension CheteScene {
     /// Shows what is kept now, after Settings deleted or brought back clips.
-    fileprivate static func reread() {
+    static func reread() {
         Task {
             guard let copies else { return }
             do {

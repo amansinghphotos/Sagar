@@ -98,7 +98,8 @@ private let photo = URL(filePath: "/Volumes/Work/Photo.jpg")
         try? Seal.forget(named: keyName)
         try? FileManager.default.removeItem(at: folder)
     }
-    let watcher = Watcher(pasteboard: board.pasteboard, copies: try Copies(folder: folder, keyName: keyName))
+    let watcher = Watcher(
+        pasteboard: board.pasteboard, copies: try Copies(folder: folder, keyName: keyName), allowed: { true })
     board.pasteboard.clearContents()
     board.pasteboard.setString("Lunch at noon", forType: .string)
     board.pasteboard.setData(rtf, forType: .rtf)

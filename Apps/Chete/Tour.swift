@@ -3,12 +3,59 @@ import notify
 
 /// Chete, opened and used as a person would, on GitHub's Mac. It takes the screen, so it never runs on the owner's.
 final class CheteTour: XCTestCase {
+    /// On GitHub's new Mac, the welcome comes first, and is walked as a person would: every page, the pasting
+    /// page's own button opening System Settings with the card in front, then Start, which shows Chete. The welcome
+    /// never shows again. Named to run first, as
+    /// XCTest runs a class's steps in the order of their names.
+    @MainActor
+    func testAFirstOpenWelcomesYouAndSetsCheteUp() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let welcome = app.windows["Welcome to Chete"]
+        XCTAssert(welcome.waitForExistence(timeout: 10), "There was no welcome on a new Mac.")
+        try audit(app, "Welcome")
+        welcome.buttons["Continue"].click()
+        welcome.buttons["Continue"].click()
+        welcome.buttons["Continue"].click()
+        welcome.buttons["Open System Settings"].click()
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.systempreferences")
+        XCTAssert(settings.wait(for: .runningForeground, timeout: 15), "System Settings did not open.")
+        let card = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "value CONTAINS %@", "Chete only uses it to paste")).firstMatch
+        XCTAssert(card.waitForExistence(timeout: 10), "The card was not in front of System Settings.")
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "The card in front of System Settings"
+        shot.lifetime = .keepAlways
+        add(shot)
+        settings.terminate()
+        XCTAssert(welcome.waitForExistence(timeout: 20), "The welcome did not come back once System Settings closed.")
+        welcome.buttons["Continue"].click()
+        welcome.buttons["Start"].click()
+        XCTAssert(welcome.waitForNonExistence(timeout: 5), "Start did not end the welcome.")
+        let window = app.windows["Chete"]
+        XCTAssert(window.waitForExistence(timeout: 10), "Start did not show Chete.")
+        app.terminate()
+        app.launch()
+        XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
+        XCTAssertFalse(welcome.exists, "The welcome showed again.")
+    }
+
+    /// Launches Chete, and finishes the welcome with Skip if it shows, as on a new Mac.
+    @MainActor
+    private func launchPastTheWelcome(_ app: XCUIApplication) {
+        app.launch()
+        let welcome = app.windows["Welcome to Chete"]
+        guard welcome.waitForExistence(timeout: 3) else { return }
+        welcome.buttons["Skip"].click()
+        _ = welcome.waitForNonExistence(timeout: 5)
+    }
+
     /// Its settings are audited, and keep what you choose: clips kept for a month
     /// instead of a year, still chosen the next time Chete opens, when they are opened from its menu-bar card.
     @MainActor
     func testItsSettingsPassTheAuditAndKeepWhatYouChoose() throws {
         let app = XCUIApplication()
-        app.launch()
+        launchPastTheWelcome(app)
         app.typeKey(",", modifierFlags: .command)
         let month = app.buttons["A month"]
         XCTAssert(month.waitForExistence(timeout: 10), "Chete's settings did not open.")
@@ -16,7 +63,7 @@ final class CheteTour: XCTestCase {
         month.click()
         close(settingsOf: app)
         app.terminate()
-        app.launch()
+        launchPastTheWelcome(app)
         // Chete opens its window as it starts; the card is asked for once that window is in front, or the window
         // coming forward would close the card as it drops.
         XCTAssert(app.windows["Chete"].waitForExistence(timeout: 10), "Chete opened no window.")
@@ -50,7 +97,7 @@ final class CheteTour: XCTestCase {
             XCUIApplication().launch()
         }
         let app = XCUIApplication()
-        app.launch()
+        launchPastTheWelcome(app)
         XCTAssert(app.windows.firstMatch.waitForExistence(timeout: 10), "Chete opened no window.")
         XCTAssertEqual(app.windows.count, 1)
         try audit(app, "Window")
@@ -61,7 +108,7 @@ final class CheteTour: XCTestCase {
     @MainActor
     func testItQuitsWhenTheReleaseCommandAsksForItsPlace() throws {
         let app = XCUIApplication()
-        app.launch()
+        launchPastTheWelcome(app)
         XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
         notify_post("com.amansingh.chete.new-build")
         XCTAssert(app.wait(for: .notRunning, timeout: 10), "Chete did not quit when asked for its place.")
@@ -73,7 +120,7 @@ final class CheteTour: XCTestCase {
     @MainActor
     func testItsItemInTheMenuBarDropsItsCard() throws {
         let app = XCUIApplication()
-        app.launch()
+        launchPastTheWelcome(app)
         let window = app.windows.firstMatch
         XCTAssert(window.waitForExistence(timeout: 10), "Chete opened no window.")
         window.buttons[XCUIIdentifierCloseWindow].click()
@@ -100,7 +147,7 @@ final class CheteTour: XCTestCase {
         let app = XCUIApplication()
         let line = app.staticTexts["A line the tour looks for."]
         app.launchArguments = ["-Shell.LastBuildSeen", "an older build"]
-        app.launch()
+        launchPastTheWelcome(app)
         XCTAssert(line.waitForExistence(timeout: 10), "A new build did not show what is new.")
         try audit(app, "What is new")
         line.click()  // once clicked, the card takes the keyboard, and Escape closes it
@@ -108,7 +155,7 @@ final class CheteTour: XCTestCase {
         XCTAssert(line.waitForNonExistence(timeout: 5), "The card for what is new did not close.")
         app.terminate()
         app.launchArguments = []
-        app.launch()
+        launchPastTheWelcome(app)
         XCTAssert(app.statusItems["Chete"].waitForExistence(timeout: 10), "Chete did not open.")
         XCTAssertFalse(line.waitForExistence(timeout: 5), "What is new showed a second time.")
     }
@@ -168,7 +215,7 @@ extension CheteTour {
         addTeardownBlock { try? FileManager.default.removeItem(at: file) }
         let app = XCUIApplication()
         app.launchEnvironment["CHETE_TOUR_HISTORY"] = file.path
-        app.launch()
+        launchPastTheWelcome(app)
 
         let field = app.windows["Chete"].textFields.firstMatch
         // Without the list, the keys below would be typed into whatever is open instead, so the tour stops here.
