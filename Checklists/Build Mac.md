@@ -26,7 +26,7 @@ plugged in whenever a chat works.
       brings back his Claude instructions, plugins and skills (cook, and salah from the notes). It stops if the project is not on its own drive,
       and marks the Mac: from then on, a chat or a commit in a copy off the drive stops.
 - [ ] **Owner.** macOS asks once whether Claude may use the drive: Allow.
-- [ ] `.claude/hooks/start ready` prints nothing. Every session start says what is still missing.
+- [ ] `.claude/hooks/start ready` prints nothing.
 - [ ] Notary profile: it comes by iCloud Keychain. `xcrun notarytool history --keychain-profile Sagar` answers. If not, stop and tell him.
 - [ ] **Owner.** Developer ID: paste the note of Sagar · Developer ID into the file the agent names. The agent
       decodes it with `base64 -d` into a `.p12`; open that, give it the password from the same entry. Delete both files.

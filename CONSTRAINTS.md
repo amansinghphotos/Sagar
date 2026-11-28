@@ -36,15 +36,6 @@ Held by `Scripts/check` budget. The rows are in alphabetical order, held by `Scr
 | Network code outside Shell and Minds | 0 | `Scripts/check` network |
 | Secrets, e-mail addresses, or authors without GitHub's no-reply address | 0 | `Scripts/check` secrets |
 
-## The Mac's Own Disk, Where the Project Lives on Its Drive
-
-Each chat's start measures it; anything else Xcode, Swift or Claude leaves there is named.
-
-| Rule | Number | Held by |
-|---|--:|---|
-| Claude's own folder, `~/.claude`, in MB | 2000 | `.claude/hooks/start` lean |
-| Builds, projects or package downloads elsewhere on it | 0 | `.claude/hooks/start` lean |
-
 ## The App in Work, Measured by Its Tour on the Hosted Runner
 
 | Rule | Number | Held by |

@@ -47,14 +47,20 @@ private struct Mac {
     }
 
     /// What a tool of the repository prints when run on this Mac, as its owner, and whether it passes.
-    func run(_ tool: String, _ arguments: [String], in place: URL) throws -> (words: String, passes: Bool) {
+    func run(_ tool: String, _ arguments: [String], in place: URL, also: [String: String] = [:]) throws -> (
+        words: String, passes: Bool
+    ) {
         let process = Process()
         let answer = Pipe()
         process.executableURL = URL(filePath: tool)
         process.arguments = arguments
         process.currentDirectoryURL = place
-        var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
+        // Never the chat's own settings file: a hook run here must not write into the chat that runs the tests.
+        var environment = ProcessInfo.processInfo.environment.filter {
+            !$0.key.hasPrefix("GIT_") && $0.key != "CLAUDE_ENV_FILE"
+        }
         environment["HOME"] = home.path
+        environment.merge(also) { $1 }
         process.environment = environment
         process.standardOutput = answer
         try process.run()
@@ -111,6 +117,21 @@ private struct Mac {
     #expect(try mac.ready().contains("The private notes, cloned beside the repository as 'Work Private'"))
 }
 
+/// A chat's start on a Mac that lacks things checks, measures and tidies nothing: the Build Mac checklist asks once.
+/// A token kept from earlier stands in for the keychain, and the repository is not on GitHub, so neither is asked.
+@Test func aChatsStartChecksAndTidiesNothing() throws {
+    let mac = try Mac()
+    defer { try? FileManager.default.removeItem(at: mac.top) }
+    let kept = mac.top.appending(path: "Temporary")
+    try mac.write("none\n", to: kept.appending(path: "sagar-agent-token"))
+    let started = try mac.run(
+        mac.work.appending(path: ".claude/hooks/start").path, [], in: mac.work, also: ["TMPDIR": kept.path + "/"])
+    #expect(started.words.hasPrefix("Sagar. The app in work:"))
+    for words in ["Still to come", "own disk", "removed from the drive", "Copies whose work has merged"] {
+        #expect(!started.words.contains(words))
+    }
+}
+
 /// Everything pushed: the Mac may go. Work GitHub does not have, or a change never committed, holds it back.
 @Test func aMacMayGoOnlyWhenNothingLivesOnItAlone() throws {
     let mac = try Mac()
@@ -130,22 +151,6 @@ private struct Mac {
     #expect(!held.passes)
     #expect(held.words.contains("Work, 7-a-slice: work GitHub does not have\n"))
     #expect(held.words.contains("Work Private: changes not yet committed\n"))
-}
-
-/// Of the chats' copies, only one whose work has merged, that holds no changes and is still there, is left behind.
-@Test func onlyACleanCopyOfMergedWorkIsListedAsLeftBehind() throws {
-    let mac = try Mac()
-    defer { try? FileManager.default.removeItem(at: mac.top) }
-    let copies = mac.top.appending(path: "Copies")
-    for (name, branch) in [("done", "1-done"), ("gone", "2-gone"), ("busy", "3-busy")] {
-        try mac.git(["worktree", "add", "-q", "-b", branch, copies.appending(path: name).path], in: mac.work)
-    }
-    try FileManager.default.removeItem(at: copies.appending(path: "gone"))
-    try mac.write("half done\n", to: copies.appending(path: "busy/Slice.swift"))
-    let merged = try mac.git(["rev-parse", "HEAD"], in: mac.work).words
-    let left = try mac.run(
-        "/bin/bash", ["-c", "printf '%s' \"$0\" | .claude/hooks/start leftovers", merged], in: mac.work)
-    #expect(left.words == "done ")
 }
 
 /// On a Mac set up by the steps, a copy of the project on the home folder's own disk stops a chat and the commit gate.
@@ -179,7 +184,7 @@ private func printed(_ tool: String, _ arguments: [String], in place: URL, home:
     return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
 }
 
-/// A drive made of a real disk image, with a small repository on it holding the real start hook and numbers, and a
+/// A drive made of a real disk image, with a small repository on it holding the real start hook, and a
 /// home folder on the Mac's own disk. The image is detached and removed after `body`.
 private func withADrive(_ body: (_ work: URL, _ home: URL) async throws -> Void) async throws {
     let top = FileManager.default.temporaryDirectory.appending(path: "drive-\(UUID().uuidString)")
@@ -197,7 +202,7 @@ private func withADrive(_ body: (_ work: URL, _ home: URL) async throws -> Void)
     do {
         let work = drive.appending(path: "Developer/Work")
         let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
-        for file in [".claude/hooks/start", "CONSTRAINTS.md", ".gitignore"] {
+        for file in [".claude/hooks/start"] {
             try FileManager.default.createDirectory(
                 at: work.appending(path: file).deletingLastPathComponent(), withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: project.appending(path: file), to: work.appending(path: file))
@@ -247,67 +252,6 @@ private func withADrive(_ body: (_ work: URL, _ home: URL) async throws -> Void)
             #expect(try await printed(hook, ["ready"], in: work, home: home).contains("org.swift.swiftpm cache"))
             _ = try await printed(hook, ["caches"], in: work, home: home)
             #expect(try link("org.swift.swiftpm") == caches + "/org.swift.swiftpm")
-        }
-    }
-
-    /// With the project on its drive, a build or a project left on the Mac's own disk is named at each chat's start; a
-    /// home folder with neither is told nothing.
-    @Test func aStrayBuildOrProjectOnTheMacsOwnDiskIsNamed() async throws {
-        try await withADrive { work, home in
-            let hook = work.appending(path: ".claude/hooks/start").path
-            #expect(try await printed(hook, ["lean"], in: work, home: home) == "")
-            let stray = home.appending(path: "Library/Developer/Xcode/DerivedData/Stray")
-            try FileManager.default.createDirectory(at: stray, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(
-                at: home.appending(path: "Code/Old/.git"), withIntermediateDirectories: true)
-            let told = try await printed(hook, ["lean"], in: work, home: home)
-            #expect(told.contains("Builds on the Mac's own disk: ~/Library/Developer/Xcode/DerivedData\n"))
-            #expect(told.contains("A project or its build on the Mac's own disk: ~/Code/Old/.git\n"))
-        }
-    }
-
-    /// On the drive, a finished chat's copy untouched for a day is removed. These stay: one touched today, one holding
-    /// changes, one with a recent file deep inside, one holding ignored files that are not builds, and one whose work
-    /// has not merged.
-    @Test func aFinishedCopyUntouchedForADayIsRemoved() async throws {
-        try await withADrive { work, home in
-            let copies = work.deletingLastPathComponent().appending(path: "Copies")
-            let run = { (tool: String, arguments: [String]) in try await printed(tool, arguments, in: work, home: home)
-            }
-            let merged = try await run("/usr/bin/env", ["git", "rev-parse", "HEAD"])
-            for name in ["old", "fresh", "busy", "deep", "local", "unmerged"] {
-                _ = try await run(
-                    "/usr/bin/env", ["git", "worktree", "add", "-q", "-b", name, copies.appending(path: name).path])
-            }
-            let place = { (copy: String, file: String) in copies.appending(path: "\(copy)/\(file)") }
-            try "half done\n".write(to: place("busy", "Slice.swift"), atomically: true, encoding: .utf8)
-            try FileManager.default.createDirectory(at: place("local", ".claude"), withIntermediateDirectories: true)
-            try "{}\n".write(to: place("local", ".claude/settings.local.json"), atomically: true, encoding: .utf8)
-            try FileManager.default.createDirectory(at: place("old", ".build"), withIntermediateDirectories: true)
-            try "built\n".write(to: place("old", ".build/Old.o"), atomically: true, encoding: .utf8)
-            _ = try await run(
-                "/bin/bash",
-                [
-                    "-c",
-                    "cd \"$0\" && git -c user.name=T -c user.email=t@users.noreply.github.com commit -q --allow-empty -m B",
-                    copies.appending(path: "unmerged").path,
-                ])
-            try FileManager.default.createDirectory(at: place("deep", ".build/Deep"), withIntermediateDirectories: true)
-            try "building\n".write(to: place("deep", ".build/Deep/Now.o"), atomically: true, encoding: .utf8)
-            for name in ["old", "busy", "deep", "local", "unmerged"] {
-                _ = try await run(
-                    "/bin/bash",
-                    ["-c", "find \"$0\" -exec touch -h -t 202601010000 {} +", copies.appending(path: name).path])
-            }
-            // Only a file deep inside is recent: its folders, and everything at the top, stay old.
-            try "building again\n".write(to: place("deep", ".build/Deep/Now.o"), atomically: false, encoding: .utf8)
-            let hook = work.appending(path: ".claude/hooks/start").path
-            let removed = try await run("/bin/bash", ["-c", "printf '%s' \"$1\" | \"$0\" tidy", hook, merged])
-            #expect(removed == "old ")
-            #expect(!FileManager.default.fileExists(atPath: copies.appending(path: "old").path))
-            for name in ["fresh", "busy", "deep", "local", "unmerged"] {
-                #expect(FileManager.default.fileExists(atPath: copies.appending(path: name).path))
-            }
         }
     }
 }
