@@ -10,9 +10,6 @@ import Testing
 /// `Fixtures/Search Grip Light.png` and `Dark.png`.
 @Test(arguments: [false, true])
 func theHandleAndArrowLookAsSearchsDo(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Grip \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
     let parts = HStack(spacing: 24) {
         EdgeGrip(lit: false, resting: true)
         EdgeGrip(lit: true)
@@ -20,9 +17,7 @@ func theHandleAndArrowLookAsSearchsDo(dark: Bool) throws {
         DisclosureArrow(open: true)
     }
     .padding(20).frame(width: 200, height: 80).background(Role.ground)
-    let ours = try picture(of: parts, width: 200, height: 80, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
-    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
+    try expectSearchPicture(of: parts, width: 200, height: 80, named: "Grip", dark: dark, shadeForShade: true)
 }
 
 /// The handle's measures, which a one-point change in its length would slip past in the picture: Search's
@@ -40,42 +35,33 @@ func theHandleAndArrowLookAsSearchsDo(dark: Bool) throws {
     #expect(FadingScroll<EmptyView>.strength(over: -10) == 1)
 }
 
+/// Twelve lines, longer than the scroll they are shown in.
+private var lines: some View {
+    VStack(alignment: .leading, spacing: 0) {
+        ForEach(1...12, id: \.self) {
+            Text(verbatim: "Line \($0)").font(.system(size: 13)).frame(height: 24)
+        }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+}
+
 /// Search's fading scroll over a list longer than it, on Search's ground. Search's, from its code at commit
 /// c92ea7c, was pictured by a scratch copy that uses this repository's picture harness into
 /// `Fixtures/Search Fading Light.png` and `Dark.png`.
 @Test(arguments: [false, true])
 func aLongListFadesAsSearchsDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Fading \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    let fading = FadingScroll {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(1...12, id: \.self) {
-                Text(verbatim: "Line \($0)").font(.system(size: 13)).frame(height: 24)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    .padding(12).frame(width: 220, height: 160).background(Role.ground)
-    let ours = try picture(of: fading, width: 220, height: 160, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
-    #expect(differingPixels(ours, search, levels: fine) <= tolerance)
+    let fading = FadingScroll { lines }
+        .padding(12).frame(width: 220, height: 160).background(Role.ground)
+    try expectSearchPicture(of: fading, width: 220, height: 160, named: "Fading", dark: dark, shadeForShade: true)
 }
 
 /// Scrolled to its end, the same list no longer fades at its foot, but its head does, as Search's does once
 /// scrolled: the line cut by the top edge is drawn far fainter than a whole line below it.
 @Test(arguments: [false, true])
 func aScrolledListFadesAtItsHead(dark: Bool) throws {
-    let scrolled = FadingScroll {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(1...12, id: \.self) {
-                Text(verbatim: "Line \($0)").font(.system(size: 13)).frame(height: 24)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    .defaultScrollAnchor(.bottom)
-    .padding(12).frame(width: 220, height: 160).background(Role.ground)
+    let scrolled = FadingScroll { lines }
+        .defaultScrollAnchor(.bottom)
+        .padding(12).frame(width: 220, height: 160).background(Role.ground)
     let image = try picture(of: scrolled, width: 220, height: 160, dark: dark)
     /// How far the strongest ink in a band of rows stands from the ground, in levels.
     func ink(rows: Range<Int>) -> Int {

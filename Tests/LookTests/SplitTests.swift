@@ -20,8 +20,5 @@ private var split: some View {
 /// pictured into `Fixtures/Search Split Light.png` and `Dark.png`.
 @Test(arguments: [false, true])
 func theSplitLooksAsSearchsDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Split \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
-    #expect(differingPixels(try picture(of: split, width: 640, height: 420, dark: dark), search) <= tolerance)
+    try expectSearchPicture(of: split, width: 640, height: 420, named: "Split", dark: dark)
 }

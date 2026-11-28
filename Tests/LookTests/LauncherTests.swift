@@ -27,16 +27,12 @@ private struct Showcase: View {
 
 @Test(arguments: [false, true])
 func theLauncherLooksAsSearchsDoes(dark: Bool) throws {
-    let file = URL(filePath: #filePath).deletingLastPathComponent()
-        .appending(path: "Fixtures/Search Launcher \(dark ? "Dark" : "Light").png")
-    let search = try #require(approvedPicture(at: file))
     let shown = VStack(spacing: 24) {
         Showcase()
         Showcase(refused: true)
     }
     .padding(32).frame(width: 420, height: 520).background(Role.ground)
-    let ours = try picture(of: shown, width: 420, height: 520, dark: dark)
-    #expect(differingPixels(ours, search) <= tolerance)
+    try expectSearchPicture(of: shown, width: 420, height: 520, named: "Launcher", dark: dark)
 }
 
 /// The shiver Search gives a refused field: three there-and-backs, tapering to nothing, and none under Reduce
