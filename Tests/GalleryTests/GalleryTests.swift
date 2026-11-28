@@ -16,19 +16,6 @@ private func alone(_ page: some View, dark: Bool) -> some View {
         .environment(\.colorScheme, dark ? .dark : .light)
 }
 
-/// Each page as the Gallery shows it.
-@ViewBuilder private func shown(_ page: Page) -> some View {
-    switch page {
-    case .tokens: Tokens()
-    case .controls: Controls()
-    case .choices: Choices()
-    case .lists: Lists()
-    case .overlays: Overlays()
-    case .states: States()
-    case .keyboard: KeyboardPage()
-    }
-}
-
 /// Each page, light and dark, matches its picture: `gallery-light.png` for the tokens, the first page, and
 /// `gallery-<page>-light.png` for the rest.
 @Test(arguments: Page.allCases, [false, true])
@@ -36,7 +23,7 @@ func eachPageMatchesItsPicture(page: Page, dark: Bool) throws {
     let size = WindowSize.standard
     let name = page == .tokens ? "gallery" : "gallery-\(page.rawValue.lowercased())"
     try expectPicture(
-        of: alone(shown(page), dark: dark), width: size.width, height: size.height,
+        of: alone(page.view, dark: dark), width: size.width, height: size.height,
         named: "\(name)-\(dark ? "dark" : "light")", dark: dark)
 }
 

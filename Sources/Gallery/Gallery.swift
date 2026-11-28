@@ -22,6 +22,19 @@ enum Page: String, CaseIterable, Identifiable {
     case keyboard = "Keyboard"
 
     var id: Self { self }
+
+    /// The page itself.
+    @ViewBuilder var view: some View {
+        switch self {
+        case .tokens: Tokens()
+        case .controls: Controls()
+        case .choices: Choices()
+        case .lists: Lists()
+        case .overlays: Overlays()
+        case .states: States()
+        case .keyboard: KeyboardPage()
+        }
+    }
 }
 
 /// Light or dark, as the Gallery shows it.
@@ -45,18 +58,7 @@ struct Gallery: View {
         VStack(spacing: 0) {
             bar
             Divider()
-            Group {
-                switch page {
-                case .tokens: Tokens()
-                case .controls: Controls()
-                case .choices: Choices()
-                case .lists: Lists()
-                case .overlays: Overlays()
-                case .states: States()
-                case .keyboard: KeyboardPage()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            page.view.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .foregroundStyle(Role.ink)
         .background(Role.ground)

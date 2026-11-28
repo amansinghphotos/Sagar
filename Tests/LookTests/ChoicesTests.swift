@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's picture choices, its row of colours and its writing box, on Search's ground. The same showcase
-/// was pictured from Search's own code at commit c92ea7c, by a scratch copy of it that uses this repository's
-/// picture harness, into `Fixtures/Search Choices Light.png` and `Dark.png`.
+/// Search's picture choices, its row of colours and its writing box, on Search's ground.
 private struct Showcase: View {
     @State var pick = 1
     @State var colour = Swatches.search[2].0

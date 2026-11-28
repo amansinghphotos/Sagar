@@ -5,10 +5,8 @@ import Testing
 
 @testable import Look
 
-/// Search's launcher, the field and list that open over any app, plain and refused, on Search's ground. The
-/// same showcase was pictured from Search's own code at commit c92ea7c (its field's words drawn by SwiftUI, as
-/// here), by a scratch copy of it that uses this repository's picture harness, into
-/// `Fixtures/Search Launcher Light.png` and `Dark.png`.
+/// Search's launcher, the field and list that open over any app, plain and refused, on Search's ground. In
+/// Search's picture too, the field's words are drawn by SwiftUI.
 private struct Showcase: View {
     var refused = false
     @State private var text = ""

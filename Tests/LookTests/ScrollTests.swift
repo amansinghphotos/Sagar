@@ -24,9 +24,7 @@ private var lines: some View {
     .frame(maxWidth: .infinity, alignment: .leading)
 }
 
-/// Search's fading scroll over a list longer than it, on Search's ground. Search's, from its code at commit
-/// c92ea7c, was pictured by a scratch copy that uses this repository's picture harness into
-/// `Fixtures/Search Fading Light.png` and `Dark.png`.
+/// Search's fading scroll over a list longer than it, on Search's ground.
 @Test(arguments: [false, true])
 func aLongListFadesAsSearchsDoes(dark: Bool) throws {
     let fading = FadingScroll { lines }

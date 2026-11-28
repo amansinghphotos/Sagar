@@ -11,9 +11,7 @@ private let made = [
     PaletteItem(id: "3", key: "Paste as plain text", title: "", symbol: "command", keyLabel: "⇧↩"),
 ]
 
-/// Search's palette rows, the first picked, on Search's ground. The same rows were built from Search's own code
-/// at commit c92ea7c with the same made-up words, by a scratch copy that uses this repository's picture harness,
-/// and pictured into `Fixtures/Search Palette Light.png` and `Dark.png`.
+/// Search's palette rows, the first picked, on Search's ground, with the same made-up words.
 @Test(arguments: [false, true])
 func thePaletteRowsLookAsSearchsDo(dark: Bool) throws {
     let rows = VStack(spacing: 0) {

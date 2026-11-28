@@ -6,9 +6,7 @@ import Testing
 @testable import Look
 
 /// Search's switch off and on and its segmented choice, on Search's ground. (Its check boxes are Apple's own,
-/// which draw differently outside a test, so they are not compared.) The same showcase
-/// was pictured from Search's own code at commit c92ea7c, by a scratch copy of it that uses this repository's
-/// picture harness, into `Fixtures/Search Switches Light.png` and `Dark.png`.
+/// which draw differently outside a test, so they are not compared.)
 private struct Showcase: View {
     @State var off = false
     @State var on = true

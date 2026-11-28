@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// A group of two of Search's setting rows, the second lit, and its stepper, on Search's ground. The same
-/// showcase was pictured from Search's own code at commit c92ea7c, by a scratch copy of it that uses this
-/// repository's picture harness, into `Fixtures/Search Settings Light.png` and `Dark.png`.
+/// A group of two of Search's setting rows, the second lit, and its stepper, on Search's ground.
 private struct Showcase: View {
     @State var on = true
     @State var size = 1.0
