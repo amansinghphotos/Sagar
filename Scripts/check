@@ -86,10 +86,12 @@ if [ "${1:-}" = leaving ]; then # Scripts/check leaving: before a Mac is given u
     exit 1
 fi
 
-if [ "${1:-}" = clashes ]; then # Scripts/check clashes <commit>: the files where <commit> and main, as GitHub has it,
-    # changed the same lines. Git's own merge, made in memory: nothing in the folder changes.
-    git rev-parse -q --verify "${2:?Scripts/check clashes <commit>}^{commit}" >/dev/null || exit 2 # git says 1 for this too
-    out=$(git merge-tree --write-tree --name-only --no-messages origin/main "$2")
+if [ "${1:-}" = clashes ]; then # Scripts/check clashes <commit> [<other>]: the files where <commit> and main, as GitHub
+    # has it, or another commit named, changed the same lines. Git's own merge, made in memory: nothing in the folder
+    # changes.
+    git rev-parse -q --verify "${2:?Scripts/check clashes <commit> [<other>]}^{commit}" >/dev/null || exit 2 # git says 1 too
+    git rev-parse -q --verify "${3:-origin/main}^{commit}" >/dev/null || exit 2
+    out=$(git merge-tree --write-tree --name-only --no-messages "${3:-origin/main}" "$2")
     case $? in 0) exit 0 ;; 1) printf '%s\n' "$out" | sed '1d; /^$/d'; exit 1 ;; *) exit 2 ;; esac
 fi
 
@@ -126,6 +128,24 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     clashing=$(Scripts/check clashes "$head") ||
         { [ -n "$clashing" ] && echo "#$request clashes with main in $(paste -sd ' ' - <<<"$clashing"). Bring it up to date with main first." ||
             echo "#$request could not be compared with main."; echo "Nobody was asked."; exit 1; }
+    # Nor may it clash with a request already shown: whichever merged first would leave the other to be brought up to
+    # date, and an approval of his undone, as #273 was by #262.
+    others=$(gh pr list --state open --limit 1000 --json number,isDraft --jq '.[] | select(.isDraft | not) | .number') ||
+        { echo "Could not list the requests already shown. Nobody was asked."; exit 1; }
+    [ "$(wc -l <<<"$others")" -lt 1000 ] || { echo "A thousand requests are shown; not all could be compared. Nobody was asked."; exit 1; }
+    for other in $others; do
+        [ "$other" != "$request" ] || continue
+        if ! git fetch -q origin "pull/$other/head"; then
+            echo "#$other could not be fetched, so #$request could not be compared with it. Nobody was asked."
+            exit 1
+        fi
+        if ! clashing=$(Scripts/check clashes "$head" FETCH_HEAD); then
+            [ -n "$clashing" ] || { echo "#$request could not be compared with #$other. Nobody was asked."; exit 1; }
+            echo "#$request clashes with #$other, already shown, in $(paste -sd ' ' - <<<"$clashing")."
+            echo "Wait for #$other to merge, then bring this up to date. Nobody was asked."
+            exit 1
+        fi
+    done
     # The words are judged here first, by the very rules GitHub runs, so a fault is told now in its own lines. GitHub
     # judges a request's words only once it is shown to someone: a draft is still being written.
     owner=${repository%/*}
@@ -195,10 +215,23 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
             map(select(. != null)) | max')
     passed words "$shown"
     unjudged=""
-    # If the owner answered before, he is asked again: GitHub does not do that by itself.
-    if gh pr view "$request" --json reviews --jq '.reviews[].author.login' | grep -qx "$owner"; then
-        gh pr edit "$request" --add-reviewer "$owner" >/dev/null
-    fi
+    # If the owner answered before, he is asked again: GitHub does not do that by itself. That he is asked is read
+    # back from GitHub, never assumed, as on #216 he was not.
+    asking=0
+    while :; do
+        case $(gh pr view "$request" --json reviews,reviewRequests 2>"$said" | Scripts/check asked "$owner") in
+            yes) break ;;
+            no) unasked=0 asking=$((asking + 1))
+                [ "$asking" -le 3 ] || {
+                    echo "#$request is shown, but the owner, who answered it before, is not asked again: GitHub did not"
+                    echo "keep the request three times. Ask him for a review on its page, then say so in a line."
+                    exit 1
+                }
+                if gh api -X POST "repos/$repository/pulls/$request/requested_reviewers" -f "reviewers[]=$owner" \
+                    >/dev/null 2>"$said"; then sleep 5; else unanswered; fi ;; # GitHub's own read may lag its write
+            *) unanswered ;;
+        esac
+    done
     if ! gh pr merge "$request" --auto --squash >/dev/null 2>&1; then
         # GitHub lets nobody pass the owner's review, and this merges only what has nothing left to wait for.
         state=$(gh pr view "$request" --json mergeStateStatus,reviewDecision,latestReviews)
@@ -262,28 +295,55 @@ by_xcode_alone() { # true when the branch touches what only the app build compil
     # settings, the project, the package. Everything else is compiled by the tests on this Mac already.
     changed | grep -qE '^(Apps|Config|Sagar\.xcodeproj)/|^Package\.(swift|resolved)$'
 }
-reached() { # the test targets a change can reach, joined by |: what the tests before a commit run on this Mac.
-    # A module's change reaches the test targets that depend on it; a test target's change, itself. Only ScriptsTests
-    # reads the scripts and hooks; it also builds the real Keep for iPhone. PicturesTests reads every approved
-    # picture. An app's files are compiled by Xcode alone. Any other file, or any doubt, reaches every test: "all".
-    local paths graph
+phone="Keep" # the shared modules that build for iPhone today. Look joins them when issue 153 is mended.
+reach() { # what a change can reach, one to a line: "tests <target>|…" for the test targets that depend on what it
+    # touches, "app <App>" for each app whose own files or Kit's modules it touches, "iphone" if it touches a module
+    # that builds for iPhone; or the one line "all". A module's change reaches what depends on it, by the package's
+    # own dependencies. Only ScriptsTests reads the scripts and hooks, and it builds the real Keep for iPhone;
+    # PicturesTests reads every approved picture; an app's own files are compiled by Xcode alone. On GitHub a change
+    # to the scripts, the hooks, the scripts' tests or the picture harness reaches everything: they are the rules. Any other file, any doubt: "all".
+    local paths graph apps
     paths=$(changed)
+    apps=$(for app in Apps/*/; do [ -d "$app" ] && basename "$app"; done)
     [ -n "$paths" ] && graph=$(swift package --scratch-path .build/reached dump-package 2>/dev/null) || { echo all; return; }
-    jq -er --arg paths "$paths" '
+    jq -er --arg paths "$paths" --arg apps "$apps" --arg phone "$phone" --arg ci "${CI:-}" '
         [.targets[] | {name, type, folder: (.path // ((if .type == "test" then "Tests/" else "Sources/" end) + .name)),
             uses: [.dependencies[] | (.byName // .target // empty)[0]]}] as $targets
         | def reaches($target): [$target] + [$targets[] | select(.name == $target) | .uses[] | reaches(.)[]];
         [$paths | split("\n")[] | select(. != "") as $file
-            | if ($file | test("^Apps/")) then empty
-              elif ($file | test("^(Scripts|\\.claude|\\.githooks)/")) then "ScriptsTests"
+            | if ($file | test("^Apps/[^/]+/")) then "app:" + ($file | split("/")[1])
+              elif $ci != "" and ($file | test("^Tests/(ScriptsTests|Pictures)/")) then "*"
+              elif ($file | test("^(Scripts|\\.claude|\\.githooks)/")) then (if $ci != "" then "*" else "ScriptsTests" end)
               else ([$targets[] | select(.folder as $folder | $file | startswith($folder + "/")) | .name][0] // "*"),
                   (if ($file | test("^Sources/Keep/")) then "ScriptsTests" else empty end),
                   (if ($file | test("/Pictures/.*\\.png$")) then "PicturesTests" else empty end) end] as $touched
-        | if any($touched[]; . == "*") then "all"
-          else [$targets[] | select(.type == "test") | .name as $test
-              | select(any(reaches($test)[]; . as $module | any($touched[]; . == $module))) | $test] | join("|") end
+        | def touches($names): any($names[]; . as $module | any($touched[]; . == $module));
+        if any($touched[]; . == "*") then "all"
+          else "tests " + ([$targets[] | select(.type == "test") | .name as $test | select(touches(reaches($test))) | $test]
+                  | join("|")),
+              ($apps | split("\n")[] | select(. != "") as $app
+                  | select(any($touched[]; . == "app:" + $app) or touches(reaches($app + "Kit"))) | "app " + $app),
+              (if touches([$phone | split(" ")[] | select(. != "") | reaches(.)[]]) then "iphone" else empty end) end
     ' <<<"$graph" || echo all
 }
+reached() { # the test targets a change can reach, joined by |, or "all"
+    local answer
+    answer=$(reach)
+    [ "$answer" != all ] || { echo all; return; }
+    sed -n 's/^tests //p' <<<"$answer"
+}
+reaches() { # reaches app <App> | iphone: true if the change can reach it
+    local answer
+    answer=$(reach)
+    [ "$answer" = all ] || grep -qx -- "$*" <<<"$answer"
+}
+if [ "${1:-}" = reaches ]; then # Scripts/check reaches <file>…: all that a change to these files can reach
+    shift
+    files=("$@")
+    changed() { printf '%s\n' "${files[@]}"; }
+    reach
+    exit
+fi
 if [ "${1:-}" = reached ]; then # Scripts/check reached <file>…: the test targets a change to these files can reach
     shift
     files=("$@")
@@ -354,6 +414,17 @@ said_since() { # said_since <owner>: reads GitHub's state of a pull request. Tru
     esac
     jq -r '.body // ""' <<<"$state" | owner_part | answers 'What Changed Since Your Review:'
 }
+asked() { # asked <owner>: reads GitHub's reviews and requested reviewers of a pull request. yes if the owner never
+    # answered it, or is asked again; no if he answered and is not asked; unanswered if GitHub's answer is not there.
+    local answer
+    answer=$(jq -r --arg owner "$1" '
+        if (.reviews | type) != "array" or (.reviewRequests | type) != "array" then "unanswered"
+        elif (any(.reviews[]; .author.login == $owner) | not) then "yes"
+        elif any(.reviewRequests[]; .login? == $owner) then "yes"
+        else "no" end' 2>/dev/null)
+    printf '%s\n' "${answer:-unanswered}"
+}
+[ "${1:-}" != asked ] || { asked "${2:?Scripts/check asked <owner> < state}"; exit; }
 [ "${1:-}" != since ] || { said_since "${2:?Scripts/check since <owner> < state}" && echo yes || echo no; exit; }
 title_case() { # Apple's title style: the first word, and every word of four letters or more, has a capital
     printf '%s\n' "$1" | tr -- '-' ' ' | awk '{
@@ -630,8 +701,10 @@ build() {
     compile swift build --build-tests || return 1
     for app in Apps/*/; do
         [ -d "$app" ] || continue
-        # GitHub's Mac builds every app. This Mac does only when the change touches what nothing else here compiles.
+        # GitHub's Mac builds each app the change can reach. This Mac does only when the change touches what nothing
+        # else here compiles.
         [ -n "${CI:-}" ] || by_xcode_alone || { echo "note: the apps are built on GitHub's Mac"; break; }
+        reaches app "$(basename "$app")" || { echo "note: $(basename "$app") is not reached, so not built"; continue; }
         compile xcodebuild -project Sagar.xcodeproj -scheme "$(basename "$app")" -derivedDataPath .build/Xcode \
             -quiet build CODE_SIGNING_ALLOWED=NO || return 1
     done
@@ -646,10 +719,10 @@ compile() { # run a build; any warning or error fails it, and only those lines a
     [ "$status" -eq 0 ] || { printf '%s\n' "$log" | tail -n 15 | cut -c 1-300; return 1; }
 }
 
-phone="Keep" # the shared modules that build for iPhone today. Look joins them when issue 153 is mended.
 iphone() { # The shared parts still build for iPhone. Compiled for its SDK alone: no Simulator, nothing on screen.
     # The first build in a folder takes some 10 s and each one after about 3, so it runs before every commit.
     ! words_only || return $nothing
+    reaches iphone || return $nothing
     local module version sdk targets=()
     for module in $phone; do
         [ -d "Sources/$module" ] || { echo "$module is listed for iPhone, and is no module in Sources."; return 1; }
@@ -663,20 +736,31 @@ iphone() { # The shared parts still build for iPhone. Compiled for its SDK alone
     compile swift build "${targets[@]}" --triple "arm64-apple-ios$version.0" --sdk "$sdk"
 }
 
-tests() { # GitHub's Mac runs every test. Before a commit this Mac runs those the change can reach.
+tests() { # the test targets the change can reach: on GitHub every one when the rules themselves change
     [ -d Tests ] || return $nothing
     ! words_only || return $nothing
-    local reach=all
-    [ -n "${CI:-}" ] || reach=$(reached)
+    local reach
+    reach=$(reached)
     case $reach in
-        all) swift test --quiet 2>&1 ;;
-        "") return $nothing ;; # no test can reach it; GitHub's Mac runs them all
-        *) echo "note: these tests run here: ${reach//|/, }; GitHub's Mac runs every test"
-            swift test --quiet --filter "^($reach)\." 2>&1 ;;
+        all) testing ;;
+        "") return $nothing ;; # no test can reach it
+        *) echo "note: these tests run: ${reach//|/, }"
+            testing --filter "^($reach)\." ;;
     esac
 }
 
-tour() { # The real app, driven as a person would. It takes the screen, so it runs only on GitHub's runner.
+testing() { # swift test [<argument>…]: if a test fails, each failing test and its message come first, then the end
+    # of the run, so that the forty lines a failed rule shows always say which tests failed and why
+    local log status=0
+    log=$(swift test --quiet "$@" 2>&1) || status=$?
+    [ "$status" -ne 0 ] || return 0
+    printf '%s\n' "$log" | awk '/✘ Test .* recorded an issue|: error: / { named = 1; print; next }
+        named && /^↳ / { print; next } { named = 0 }' | cut -c 1-300 | awk '!seen[$0]++' | head -n 30
+    printf '%s\n' "$log" | tail -n 8
+    return "$status"
+}
+
+tour() { # The real app, driven as a person would. It takes the screen: here only on GitHub's runner (Scripts/tour tries it hidden).
     [ -n "${CI:-}" ] || return $nothing
     ! words_only || return $nothing
     local faults tags apps app toured=no
@@ -687,6 +771,7 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
     mkdir -p .build/Tours
     for app in $apps; do # the app in work, then each shipped app whose fault is being mended
         [ -f "Apps/$app/Tour.swift" ] || continue
+        reaches app "$app" || { echo "note: $app is not reached, so not toured"; continue; }
         tour_of "$app" || return 1
         toured=yes
     done
@@ -694,10 +779,15 @@ tour() { # The real app, driven as a person would. It takes the screen, so it ru
 }
 
 tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are within the numbers
-    local app=$1 log launch before after result=.build/Tours/$1.xcresult
-    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode \
-        -resultBundlePath "$result" test SAGAR_NEW="A line the tour looks for." \
-        CODE_SIGN_IDENTITY=- ENABLE_HARDENED_RUNTIME=NO OTHER_CODE_SIGN_FLAGS= 2>&1) || {
+    local app=$1 log launch before after run result=.build/Tours/$1.xcresult
+    # Xcode keeps a step's screen recording only if the step fails, unless the build's own run file says to keep it
+    # always: the films are made from these (#227). Building first writes that file; the owner's project is unchanged.
+    log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode build-for-testing \
+        -xcconfig Scripts/tour.xcconfig 2>&1) &&
+        run=$(ls .build/Xcode/Build/Products/"${app}Tour_${app}Tour_"*.xctestrun) &&
+        plutil -replace TestConfigurations.0.TestTargets.0.SystemAttachmentLifetime -string keepAlways "$run" &&
+        log=$(xcodebuild -xctestrun "$run" -destination platform=macOS -derivedDataPath .build/Xcode \
+            -resultBundlePath "$result" test-without-building 2>&1) || {
         xcrun xcresulttool get test-results summary --path "$result" |
             jq -r '.testFailures[] | "\(.testName): \(.failureText)"' || printf '%s\n' "$log" | tail -n 20
         return 1
@@ -710,6 +800,13 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
         fastest_launch "$(number 'Launch to first frame')") ||
         { echo "$app's tour: its fastest launch was $launch s."; return 1; }
     echo "note: $app, fastest of its launches $launch s"
+    # A film of each step, from Xcode's recording of it, to judge motion by: kept apart from the record (#227).
+    local films
+    if films=$(Scripts/film "$result" ".build/Films/$app" 2>/dev/null); then
+        echo "note: $app, $(grep -c '\.gif$' <<<"$films") films of its steps, in the run's films"
+    else
+        echo "note: $app, no film could be made: $(tail -n 1 <<<"$films")"
+    fi
 
     # At rest: opened hidden, left alone, and measured from outside.
     used() {
