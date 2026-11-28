@@ -1,4 +1,4 @@
-// Choosing by looking: a row of small pictures with names, a row of colour dots, and a box to write in.
+// Choosing by looking: a row of small pictures with names, and a row of colour dots.
 import SwiftUI
 
 /// A few choices, each a small picture with its name below. The chosen one is ringed in ink and named in ink;
@@ -99,28 +99,6 @@ package struct Swatches: View {
         let value = UInt32(hex.dropFirst(), radix: 16) ?? 0
         func part(_ shift: UInt32) -> Double { Double((value >> shift) & 0xFF) / 255 }
         return Color(.sRGB, red: part(16), green: part(8), blue: part(0))
-    }
-}
-
-/// A box to write several lines in, such as code, in the monospaced face.
-package struct Writing: View {
-    @Binding private var text: String
-    private let height: CGFloat
-
-    package init(text: Binding<String>, height: CGFloat) {
-        _text = text
-        self.height = height
-    }
-
-    package var body: some View {
-        TextEditor(text: $text)
-            .font(.system(size: 12, design: .monospaced))
-            .foregroundStyle(Role.ink)
-            .scrollContentBackground(.hidden)
-            .autocorrectionDisabled()
-            .padding(Space.near.rawValue)
-            .frame(height: height)
-            .background(Role.wash, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
