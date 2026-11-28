@@ -443,6 +443,11 @@ fastest_launch() { # reads a tour's record of its launches; prints the fastest a
     printf '%s\n' "$fastest"
     awk -v fastest="$fastest" -v most="$1" 'BEGIN { exit !(fastest > 0 && fastest <= most) }'
 }
+if [ "${1:-}" = feed ]; then # Scripts/check feed < an app's lines in a tour's system log: "yes" if it asked for its
+    # update feed before its item in the menu bar was first clicked. It checks as it opens, not once its card is (#316).
+    awk '/appcast\.xml/ { print "yes"; exit } /NSMenuBarNavigateAction/ { print "no"; exit } END { if (NR == 0) print "no" }'
+    exit
+fi
 if [ "${1:-}" = findings ]; then # Scripts/check findings < a tour's tests, as xcresulttool lists them: each audit
     # finding the tour reported as an expected failure, which does not fail it (decision 9), as a note for the summary
     jq -r '.. | objects | select(.nodeType? == "Expected Failure") | "note: \(.name)"'
@@ -779,13 +784,14 @@ tour() { # The real app, driven as a person would. It takes the screen: here onl
 }
 
 tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are within the numbers
-    local app=$1 log launch before after run result=.build/Tours/$1.xcresult
+    local app=$1 log launch before after run result=.build/Tours/$1.xcresult started
     # Xcode keeps a step's screen recording only if the step fails, unless the build's own run file says to keep it
     # always: the films are made from these (#227). Building first writes that file; the owner's project is unchanged.
     log=$(xcodebuild -project Sagar.xcodeproj -scheme "${app}Tour" -derivedDataPath .build/Xcode build-for-testing \
         -xcconfig Scripts/tour.xcconfig 2>&1) &&
         run=$(ls .build/Xcode/Build/Products/"${app}Tour_${app}Tour_"*.xctestrun) &&
         plutil -replace TestConfigurations.0.TestTargets.0.SystemAttachmentLifetime -string keepAlways "$run" &&
+        started=$(date '+%Y-%m-%d %H:%M:%S%z') &&
         log=$(xcodebuild -xctestrun "$run" -destination platform=macOS -derivedDataPath .build/Xcode \
             -resultBundlePath "$result" test-without-building 2>&1) || {
         xcrun xcresulttool get test-results summary --path "$result" |
@@ -794,6 +800,10 @@ tour_of() { # tour_of <app>: its tour passes, and its launch and its rest are wi
     }
     xcrun xcresulttool get test-results tests --path "$result" | Scripts/check findings ||
         { echo "$app's tour: its audit findings could not be read."; return 1; }
+    # It looks for updates as it opens: in the system's log of the tour, its feed is asked for before its card (#316).
+    [ "$(/usr/bin/log show --start "$started" --style compact --predicate "process == \"$app\" AND \
+        (eventMessage CONTAINS \"appcast.xml\" OR eventMessage CONTAINS \"NSMenuBarNavigateAction\")" 2>/dev/null |
+        Scripts/check feed)" = yes ] || { echo "$app's tour: it asked for its update feed only once its card was opened."; return 1; }
 
     # Launch, by Apple's own launch metric, which the tour must take.
     launch=$(xcrun xcresulttool get test-results metrics --path "$result" |

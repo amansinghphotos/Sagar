@@ -42,6 +42,10 @@ public struct CheteScene: Scene {
     private static func startWatching() {
         guard !started else { return }
         started = true
+        // Sparkle starts as Chete opens, as Sparkle asks, so it checks daily from the first open. Started instead by
+        // the menu-bar card as it is first drawn, it held Chete for half a second on a slow Mac, and the card closed
+        // before it showed (#311).
+        _ = Updates.shared
         Task {
             do {
                 let copies = try await Task.detached { try Copies.atOpen() }.value
