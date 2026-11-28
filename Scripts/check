@@ -221,10 +221,14 @@ if [ "${1:-}" = ready ]; then # Scripts/check ready <number>: the one way a pull
     while :; do
         case $(gh pr view "$request" --json reviews,reviewRequests 2>"$said" | Scripts/check asked "$owner") in
             yes) break ;;
-            no) asking=$((asking + 1))
-                [ "$asking" -le 3 ] || { echo "#$request is shown, but GitHub did not keep the owner asked. Ask him on its page."; exit 1; }
-                gh api -X POST "repos/$repository/pulls/$request/requested_reviewers" -f "reviewers[]=$owner" \
-                    >/dev/null 2>"$said" || unanswered ;;
+            no) unasked=0 asking=$((asking + 1))
+                [ "$asking" -le 3 ] || {
+                    echo "#$request is shown, but the owner, who answered it before, is not asked again: GitHub did not"
+                    echo "keep the request three times. Ask him for a review on its page, then say so in a line."
+                    exit 1
+                }
+                if gh api -X POST "repos/$repository/pulls/$request/requested_reviewers" -f "reviewers[]=$owner" \
+                    >/dev/null 2>"$said"; then sleep 5; else unanswered; fi ;; # GitHub's own read may lag its write
             *) unanswered ;;
         esac
     done
