@@ -8,11 +8,14 @@ public struct CheteScene: Scene {
     /// The scene, ready for the app to open. Chete starts keeping what you copy as it opens.
     public init() {
         Self.startWatching()
+        Swap.listen()
+        NewBuildCard.showIfNew()
     }
 
     /// Its settings, one window, and its item in the menu bar, whose card holds Check for Updates.
     public var body: some Scene {
         SwiftUI.Settings { CheteSettings(changed: Self.reread) }.restorationBehavior(.disabled)
+            .defaultLaunchBehavior(.suppressed)
         Window("Chete", id: "chete") {
             ClipList(clips: Self.shelf.clips) { clip, plainText in
                 _ = Pasting.paste(clip, plainText: plainText, mayPaste: false)
@@ -21,6 +24,8 @@ public struct CheteScene: Scene {
             .windowName("Your clips")
         }
         .defaultSize(width: WindowSize.standard.width, height: WindowSize.standard.height)
+        // Chete opens on its list, never on its settings, which SwiftUI otherwise may show first.
+        .defaultLaunchBehavior(.presented)
         MenuBarItem(app: "Chete", symbol: "list.clipboard") { CheteMenuCard(shelf: Self.shelf) }
     }
 
@@ -38,7 +43,7 @@ public struct CheteScene: Scene {
         started = true
         Task {
             do {
-                let copies = try await Task.detached { try Copies.onThisMac() }.value
+                let copies = try await Task.detached { try Copies.atOpen() }.value
                 shelf.clips = try await copies.all()
                 Self.copies = copies
                 watcher = Watcher(copies: copies)

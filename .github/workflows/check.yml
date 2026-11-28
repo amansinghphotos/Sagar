@@ -1,6 +1,6 @@
-# The check of the code. It runs every rule but the request's own words on a clean Mac: once for each
-# change to a pull request's code, and for main as it stands after merges. Editing a request's words or
-# its label starts words.yml instead, which takes seconds.
+# The check of the code. It runs every rule but the request's own words on a clean Mac, or on Linux for a
+# change of words alone (SPEC.md, step 4): once for each change to a pull request's code, and for main as it
+# stands after merges. Editing a request's words or its label starts words.yml instead, which takes seconds.
 name: check
 
 on:
@@ -22,14 +22,37 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # A change of words alone builds, tests and tours nothing (Scripts/check words), so its rules run on Linux,
+  # which waits for no Mac. Anything else, and main always, runs on the Mac.
+  machine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      runs-on: ${{ steps.choose.outputs.runs-on }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: choose
+        run: |
+          [ "$(Scripts/check words)" = yes ] && runs_on=ubuntu-latest || runs_on=xcode-27
+          echo "runs-on=$runs_on" | tee -a "$GITHUB_OUTPUT"
+
+  # Should the choice fail, the check still runs, on the Mac: a skipped check would read as a pass.
   check:
-    runs-on: xcode-27
+    needs: machine
+    if: ${{ !cancelled() }}
+    runs-on: ${{ needs.machine.outputs.runs-on || 'xcode-27' }}
+    # A run takes about 10 minutes. A hang must never hold one of the few Macs for hours, as three did tonight.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Use the same Xcode as the owner's Mac
+        if: runner.os == 'macOS'
         run: sudo xcode-select --switch /Applications/Xcode_27.2.app
       - name: Every rule
         run: Scripts/check

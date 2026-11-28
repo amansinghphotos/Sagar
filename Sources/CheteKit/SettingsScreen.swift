@@ -35,14 +35,16 @@ package struct SettingsScreen: View {
 
     @Bindable var choices: Choices
     @Binding var opensAtLogin: Bool
+    let shortcut: Shortcut
     @State private var deleting = false
     @State private var exported: ExportedHistory?
     @State private var choosing = false
     @State private var bringing: URL?
 
-    package init(choices: Choices, opensAtLogin: Binding<Bool>) {
+    package init(choices: Choices, opensAtLogin: Binding<Bool>, shortcut: Shortcut = .chete) {
         self.choices = choices
         _opensAtLogin = opensAtLogin
+        self.shortcut = shortcut
     }
 
     package var body: some View {
@@ -80,11 +82,7 @@ package struct SettingsScreen: View {
                     detail: "Replaces your clips and settings with a file you exported."
                 ) { Pill("Bring Back…") { choosing = true } }
             }
-            GroupBlock(title: "General", icon: "gearshape") {
-                SettingRow(icon: "power", title: "Open at login", detail: "Chete’s ready as soon as you log in.") {
-                    Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
-                }
-            }
+            General(choices: choices, opensAtLogin: $opensAtLogin, shortcut: shortcut)
             if let failure = choices.failure {
                 Text(failure).type(.detail).foregroundStyle(Role.unsafe)
             }
@@ -125,6 +123,44 @@ package struct SettingsScreen: View {
             }
         } message: {
             Text("Your clips and settings here will be replaced. Export first to keep them.")
+        }
+    }
+}
+
+/// The shortcut that opens Chete, one of three, and opening at login. One that macOS or another app holds is
+/// shown as taken, and cannot be chosen.
+package struct General: View {
+    @Bindable var choices: Choices
+    @Binding var opensAtLogin: Bool
+    let shortcut: Shortcut
+    /// Whether keys are held by something else; by default, as macOS and Chete's own holder say.
+    let taken: ((KeyCombo) -> Bool)?
+
+    package init(
+        choices: Choices, opensAtLogin: Binding<Bool>, shortcut: Shortcut, taken: ((KeyCombo) -> Bool)? = nil
+    ) {
+        self.choices = choices
+        _opensAtLogin = opensAtLogin
+        self.shortcut = shortcut
+        self.taken = taken
+    }
+
+    package var body: some View {
+        let offered = Shortcut.choices(taken: taken ?? { shortcut.warning(for: $0) != nil })
+        let keys = Binding {
+            choices.settings.shortcut ?? Shortcut.suggestions[0]
+        } set: { new in
+            guard offered.contains(where: { $0.keys == new && $0.free }), shortcut.change(to: new) == nil
+            else { return }
+            choices.settings.shortcut = new
+        }
+        GroupBlock(title: "General", icon: "gearshape") {
+            SettingRow(icon: "command", title: "Shortcut", detail: "Opens Chete from any app.", wide: true) {
+                Segmented(options: offered.map { ($0.keys, $0.words) }, selection: keys, wide: true)
+            }
+            SettingRow(icon: "power", title: "Open at login", detail: "Chete’s ready as soon as you log in.") {
+                Switch(on: $opensAtLogin).accessibilityLabel("Open at login")
+            }
         }
     }
 }

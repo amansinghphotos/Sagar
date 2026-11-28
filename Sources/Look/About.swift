@@ -2,12 +2,12 @@
 import SwiftUI
 
 /// A panel that tells what a version brings, each new thing with a switch to turn it on, and a way to read
-/// everything that is new.
+/// everything that is new; or, for a build's lines, plain rows alone.
 package struct NewCard: View {
     private let title: String
-    private let rows: [(String, String, Binding<Bool>)]
+    private let rows: [(String, String, Binding<Bool>?)]
     private let close: () -> Void
-    private let notes: () -> Void
+    private let notes: (() -> Void)?
 
     /// How tall the list grows before it scrolls, so a long one never pushes the panel past the screen.
     private static let tallest: CGFloat = 470
@@ -16,8 +16,14 @@ package struct NewCard: View {
         title: String, rows: [(String, String, Binding<Bool>)],
         close: @escaping () -> Void, notes: @escaping () -> Void
     ) {
-        (self.title, self.rows) = (title, rows)
+        (self.title, self.rows) = (title, rows.map { ($0.0, $0.1, $0.2) })
         (self.close, self.notes) = (close, notes)
+    }
+
+    /// A build's lines, each a kind and what it says, with no switches and nothing more to read.
+    package init(title: String, lines: [(String, String)], close: @escaping () -> Void) {
+        (self.title, self.rows) = (title, lines.map { ($0.0, $0.1, nil) })
+        (self.close, self.notes) = (close, nil)
     }
 
     package var body: some View {
@@ -34,25 +40,27 @@ package struct NewCard: View {
             .fixedSize(horizontal: false, vertical: true)
         } foot: {
             HStack {
-                Button(action: notes) {
-                    Text(verbatim: "Everything that's new…").type(.row).foregroundStyle(Role.muted)
+                if let notes {
+                    Button(action: notes) {
+                        Text(verbatim: "Everything that's new…").type(.row).foregroundStyle(Role.muted)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 Spacer()
                 Pill("Close", filled: true, action: close)
             }
         }
     }
 
-    /// One new thing: what it is, a line on how it works, and its switch.
-    private func row(_ row: (String, String, Binding<Bool>)) -> some View {
+    /// One new thing: what it is, a line on how it works, and its switch if it has one.
+    private func row(_ row: (String, String, Binding<Bool>?)) -> some View {
         HStack(spacing: Space.page.rawValue) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(row.0).type(.body).foregroundStyle(Role.ink)
                 Text(row.1).type(.detail).foregroundStyle(Role.muted).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: Space.near.rawValue)
-            Switch(on: row.2)
+            if let on = row.2 { Switch(on: on) }
         }
         .padding(.horizontal, Space.wide.rawValue)
         .padding(.vertical, Space.gap.rawValue)
