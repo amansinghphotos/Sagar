@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's sidebar rows, the one in front, a chosen one and a plain one, on Search's ground. The same rows were
-/// built from Search's code for them at commit c92ea7c, by a scratch copy that uses this repository's picture
-/// harness, and pictured into `Fixtures/Search Sidebar Light.png` and `Dark.png`.
+/// Search's sidebar rows, the one in front, a chosen one and a plain one, on Search's ground.
 @Test(arguments: [false, true])
 func theSidebarRowsLookAsSearchsDo(dark: Bool) throws {
     let column = VStack(spacing: 2) {

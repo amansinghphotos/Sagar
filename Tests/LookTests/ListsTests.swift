@@ -6,8 +6,6 @@ import Testing
 @testable import Look
 
 /// Search's list parts: a line with a badge, a quiet row, two letter marks and a key cap, on Search's ground.
-/// The same showcase was pictured from Search's own code at commit c92ea7c, by a scratch copy of it that uses
-/// this repository's picture harness, into `Fixtures/Search Lists Light.png` and `Dark.png`.
 private var lists: some View {
     VStack(alignment: .leading, spacing: 10) {
         Line("Open links in", "A new tab beside this one") { Always() }

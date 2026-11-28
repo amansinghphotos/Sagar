@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's drag handle at rest and lit, and its folder arrow shut and open, on Search's ground. Search's, from its
-/// code at commit c92ea7c, was pictured by a scratch copy that uses this repository's picture harness into
-/// `Fixtures/Search Grip Light.png` and `Dark.png`.
+/// Search's drag handle at rest and lit, and its folder arrow shut and open, on Search's ground.
 @Test(arguments: [false, true])
 func theHandleAndArrowLookAsSearchsDo(dark: Bool) throws {
     let parts = HStack(spacing: 24) {

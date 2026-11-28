@@ -5,9 +5,7 @@ import Testing
 
 @testable import Look
 
-/// Search's card for what is new and its About view, side by side, with made-up rows, name and version. The
-/// same was built from Search's own code for them at commit c92ea7c, by a scratch copy that uses this
-/// repository's picture harness, and pictured into `Fixtures/Search About Light.png` and `Dark.png`.
+/// Search's card for what is new and its About view, side by side, with made-up rows, name and version.
 private struct Showcase: View {
     @State var a = true
     @State var b = false

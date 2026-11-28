@@ -6,8 +6,7 @@ import Testing
 @testable import Look
 
 /// Search's nothing-here-yet, its error with Try Again, and its progress card, on Search's ground, with made-up
-/// words. The same was built from Search's own code for them at commit c92ea7c, by a scratch copy that uses this
-/// repository's picture harness, and pictured into `Fixtures/Search States Light.png` and `Dark.png`.
+/// words.
 @Test(arguments: [false, true])
 func theStatesLookAsSearchsDo(dark: Bool) throws {
     let states = VStack(alignment: .leading, spacing: 0) {

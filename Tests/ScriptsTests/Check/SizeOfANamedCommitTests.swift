@@ -43,7 +43,7 @@ private struct ElsewhereOnMain {
     }
 
     private func run(_ tool: String, _ arguments: [String], naming commit: String?) throws -> String {
-        var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
+        var environment = Script.withoutGit
         environment["PR_HEAD"] = commit
         return try Script.run(URL(filePath: tool), arguments, in: folder, environment: environment).words
     }

@@ -6,9 +6,7 @@ import Testing
 @testable import Look
 
 /// Search's welcome frame, heading, foot, big button and choice rows, on a stand-in page: a heading and two
-/// choices in a card, on the second of four pages. The same stand-in page, built from Search's own code for those
-/// parts at commit c92ea7c by a scratch copy that uses this repository's picture harness, was pictured into
-/// `Fixtures/Search Welcome Light.png` and `Dark.png`.
+/// choices in a card, on the second of four pages.
 private struct Showcase: View {
     @State var a = true
     @State var b = false
