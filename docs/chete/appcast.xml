@@ -1,6 +1,22 @@
-<?xml version="1.0" standalone="yes"?>
-<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <title>Chete</title>
+        <item>
+            <title>1.0</title>
+            <pubDate>Sat, 28 Nov 2026 04:27:33 -0500</pubDate>
+            <link>https://apps.amansinghphotos.com/</link>
+            <sparkle:version>202611280850</sparkle:version>
+            <sparkle:shortVersionString>1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="plain-text"><![CDATA[New: Press your shortcut in any app to find what you copied.
+Better: Your old Chete's clips come across, still locked on this Mac.
+]]></description>
+            <enclosure url="https://github.com/amansinghphotos/Sagar/releases/download/chete-1.0/Chete-1.0.dmg" length="1973150" type="application/octet-stream" sparkle:edSignature="VuosDHfBlSVmeU/qwV3y8hQdyBzr++PaXYzA/+9O7kqnFH7DzoE6EGAAQxyoaVgUKbh+lKCTynncZ5ZNzlmnCA=="></enclosure>
+        </item>
     </channel>
-</rss>
+</rss><!-- sparkle-signatures:
+edSignature: xnQFOmZIfwVWbo4JWWQ+wlOnAjHHY89lyzNMCt1rYHvDWVXImLOcgS99o2wnD34gZPH3wczyDqCPZUhNnwSJCA==
+length: 1317
+-->
