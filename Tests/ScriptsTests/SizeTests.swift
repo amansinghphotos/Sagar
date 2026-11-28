@@ -8,10 +8,9 @@ private struct Merging {
 
     init(own: Int) throws {
         folder = FileManager.default.temporaryDirectory.appending(path: "size-\(UUID().uuidString)")
-        let script = URL(filePath: #filePath).appending(path: "../../../Scripts/check").standardizedFileURL
         try FileManager.default.createDirectory(
             at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-        try FileManager.default.copyItem(at: script, to: folder.appending(path: "Scripts/check"))
+        try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
         try write("| Rule | Number |\n|---|--:|\n| Changed lines, added plus deleted | 10 |\n", to: "CONSTRAINTS.md")
         try write("Chete\n", to: "NOW")
         try git("init", "-q", "-b", "main")
@@ -52,16 +51,7 @@ private struct Merging {
     }
 
     private func run(_ tool: String, _ arguments: [String]) throws -> String {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = folder
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
-        process.standardOutput = answer
-        try process.run()
-        process.waitUntilExit()
-        return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        try Script.run(URL(filePath: tool), arguments, in: folder, environment: Script.withoutGit).words
     }
 }
 

@@ -8,9 +8,7 @@ private func order(package: String, budget: String, decisions: [String] = []) th
     let folder = FileManager.default.temporaryDirectory.appending(path: "order-\(UUID().uuidString)")
     defer { try? FileManager.default.removeItem(at: folder) }
     try FileManager.default.createDirectory(at: folder.appending(path: "Scripts"), withIntermediateDirectories: true)
-    try FileManager.default.copyItem(
-        at: here.appending(path: "../../Scripts/check").standardizedFileURL,
-        to: folder.appending(path: "Scripts/check"))
+    try FileManager.default.copyItem(at: Script.check, to: folder.appending(path: "Scripts/check"))
     try Data(package.utf8).write(to: folder.appending(path: "Package.swift"))
     try Data(budget.utf8).write(to: folder.appending(path: "CONSTRAINTS.md"))
     try Data("Chete\n".utf8).write(to: folder.appending(path: "NOW"))
@@ -34,16 +32,7 @@ private func order(package: String, budget: String, decisions: [String] = []) th
 }
 
 @discardableResult private func run(_ tool: String, _ arguments: [String], in folder: URL) throws -> String {
-    let process = Process()
-    let answer = Pipe()
-    process.executableURL = URL(filePath: tool)
-    process.arguments = arguments
-    process.currentDirectoryURL = folder
-    process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
-    process.standardOutput = answer
-    try process.run()
-    process.waitUntilExit()
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+    try Script.run(URL(filePath: tool), arguments, in: folder, environment: Script.withoutGit).words
 }
 
 private func package(_ targets: String) -> String {

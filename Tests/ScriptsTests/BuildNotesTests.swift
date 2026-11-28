@@ -1,25 +1,14 @@
 import Foundation
 import Testing
 
-private let root = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
+private let root = Script.repository
 
 /// Asks the real build script which settings a release's notes become: one line each, always all three.
 private func settings(for notes: String) throws -> [String] {
-    let process = Process()
-    let question = Pipe()
-    let answer = Pipe()
-    process.executableURL = root.appending(path: "Scripts/build")
-    process.arguments = ["settings"]
-    process.standardInput = question
-    process.standardOutput = answer
-    process.standardError = Pipe()
-    try process.run()
-    question.fileHandleForWriting.write(Data(notes.utf8))
-    try question.fileHandleForWriting.close()
-    process.waitUntilExit()
-    #expect(process.terminationStatus == 0)
-    return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        .split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
+    let said = try Script.run(
+        root.appending(path: "Scripts/build"), ["settings"], input: Data(notes.utf8), errors: .hidden)
+    #expect(said.status == 0)
+    return said.words.split(separator: "\n", omittingEmptySubsequences: false).dropLast().map(String.init)
 }
 
 @Test func aBuildCarriesEachLineOfItsNotes() throws {

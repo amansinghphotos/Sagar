@@ -6,11 +6,11 @@ private struct Phone {
     let folder = FileManager.default.temporaryDirectory.appending(path: "iphone-\(UUID().uuidString)")
 
     init() throws {
-        let root = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
         for part in ["Scripts/check", "Sources/Keep"] {
             try FileManager.default.createDirectory(
                 at: folder.appending(path: part).deletingLastPathComponent(), withIntermediateDirectories: true)
-            try FileManager.default.copyItem(at: root.appending(path: part), to: folder.appending(path: part))
+            try FileManager.default.copyItem(
+                at: Script.repository.appending(path: part), to: folder.appending(path: part))
         }
         try write(
             """
@@ -40,16 +40,7 @@ private struct Phone {
     }
 
     @discardableResult private func run(_ tool: String, _ arguments: [String]) throws -> String {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = folder
-        process.environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
-        process.standardOutput = answer
-        try process.run()
-        process.waitUntilExit()
-        return String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        try Script.run(URL(filePath: tool), arguments, in: folder, environment: Script.withoutGit).words
     }
 }
 

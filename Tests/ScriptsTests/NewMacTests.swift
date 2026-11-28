@@ -10,7 +10,6 @@ private struct Mac {
     var notes: URL { top.appending(path: "Developer/Work Private") }
 
     init() throws {
-        let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
         for folder in ["Home/.claude", "GitHub", "Developer"] {
             try FileManager.default.createDirectory(at: top.appending(path: folder), withIntermediateDirectories: true)
         }
@@ -21,7 +20,8 @@ private struct Mac {
         for file in ["Scripts/check", ".claude/hooks/start"] {
             try FileManager.default.createDirectory(
                 at: work.appending(path: file).deletingLastPathComponent(), withIntermediateDirectories: true)
-            try FileManager.default.copyItem(at: project.appending(path: file), to: work.appending(path: file))
+            try FileManager.default.copyItem(
+                at: Script.repository.appending(path: file), to: work.appending(path: file))
         }
         try write("Be brief.\n", to: notes.appending(path: "Claude/CLAUDE.md"))
         try write("{}\n", to: notes.appending(path: "Claude/settings.json"))
@@ -48,19 +48,10 @@ private struct Mac {
 
     /// What a tool of the repository prints when run on this Mac, as its owner, and whether it passes.
     func run(_ tool: String, _ arguments: [String], in place: URL) throws -> (words: String, passes: Bool) {
-        let process = Process()
-        let answer = Pipe()
-        process.executableURL = URL(filePath: tool)
-        process.arguments = arguments
-        process.currentDirectoryURL = place
         var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("GIT_") }
         environment["HOME"] = home.path
-        process.environment = environment
-        process.standardOutput = answer
-        try process.run()
-        process.waitUntilExit()
-        let words = String(decoding: answer.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        return (words, process.terminationStatus == 0)
+        let said = try Script.run(URL(filePath: tool), arguments, in: place, environment: environment)
+        return (said.words, said.passed)
     }
 
     func ready() throws -> String {
@@ -196,11 +187,11 @@ private func withADrive(_ body: (_ work: URL, _ home: URL) async throws -> Void)
         "/usr/bin/hdiutil", ["attach", "-quiet", "-nobrowse", "-mountpoint", drive.path, image], in: top, home: home)
     do {
         let work = drive.appending(path: "Developer/Work")
-        let project = URL(filePath: #filePath).appending(path: "../../..").standardizedFileURL
         for file in [".claude/hooks/start", "CONSTRAINTS.md", ".gitignore"] {
             try FileManager.default.createDirectory(
                 at: work.appending(path: file).deletingLastPathComponent(), withIntermediateDirectories: true)
-            try FileManager.default.copyItem(at: project.appending(path: file), to: work.appending(path: file))
+            try FileManager.default.copyItem(
+                at: Script.repository.appending(path: file), to: work.appending(path: file))
         }
         for arguments in [
             ["init", "-q", "-b", "main"], ["add", "-A"],
