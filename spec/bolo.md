@@ -86,13 +86,15 @@ heard. How well Bolo reads where you are decides how good it is, so most of this
    Apps, to put your clipboard back.
    *Proved by:* a test that every kind of thing on the clipboard comes back unchanged, and one that a
    password box is turned down; your try with a build.
-9. **A listening bar shows what Bolo is doing, without words.** While you speak, it moves with your
-   voice. While Bolo works on your words, a short animation shows it. Then the words land, and a small
-   mark shows whether Claude or this Mac tidied them; a different mark shows when something went wrong.
-   It is what you see many times a day, so it should feel special and your own, and never overdone. It
-   never takes the keyboard from the app you are in. Its look is the one you pick from moving mock-ups.
-   *Proved by:* the built bar filmed beside the mock-up you picked, through listening, working, both
-   marks and the error, judged by critics who did not build it, then your yes.
+9. **A small pill shows what Bolo is doing.** While you speak, it moves with your voice. A switch in
+   Settings also shows your words in it as you speak; it is off at first, so the pill shows only its
+   listening animation. While Bolo works on your words, a short animation shows it. Then the words land,
+   and a small mark shows whether Claude or this Mac tidied them; a different mark shows when something
+   went wrong. It is what you see many times a day, so it should feel special and your own, and never
+   overdone. It never takes the keyboard from the app you are in. Its look is the one you pick from
+   moving mock-ups.
+   *Proved by:* the built pill filmed beside the mock-up you picked, through listening with the switch off
+   and on, working, both marks and the error, judged by critics who did not build it, then your yes.
 10. **Nothing you say is lost.** Its card in the menu bar holds your latest dictations, with Copy, Paste,
     and Try Again for one that did not land. A history window finds any dictation by a word or a date,
     copies it, and shows what was heard and how long it took. Your words and their recordings are kept in
